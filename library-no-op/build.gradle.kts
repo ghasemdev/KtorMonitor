@@ -66,8 +66,6 @@ mavenPublishing {
 }
 
 apiValidation {
-    ignoredPackages.add("ro.cosminmihu.ktor.monitor.db.sqldelight")
-
     @OptIn(kotlinx.validation.ExperimentalBCVApi::class)
     klib {
         enabled = true
@@ -101,7 +99,6 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.ui)
             implementation(libs.ktor.client.core)
-            implementation(libs.sqldelight.runtime)
         }
     }
 }
@@ -116,11 +113,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
     }
     buildFeatures {
         buildConfig = true
