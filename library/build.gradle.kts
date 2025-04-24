@@ -110,6 +110,8 @@ sqldelight {
 }
 
 compose.resources {
+    publicResClass = true
+    generateResClass = always
     packageOfResClass = "ro.cosminmihu.ktor.monitor.ui.resources"
 }
 
