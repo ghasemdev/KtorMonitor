@@ -190,6 +190,7 @@ Feel free to send feedback or [file an issue](https://github.com/CosminMihuMDC/K
 [![SQLDelight](https://img.shields.io/badge/2.0.2-white?logo=sqlite&logoColor=white&color=003B57)](https://sqldelight.github.io/sqldelight)
 
 Some parts of this project are reusing ideas that are originally coming from [Chucker](https://github.com/ChuckerTeam/chucker).
+<br>
 KtorMonitor is available also on JetBrains' [klibs.io](https://klibs.io/project/CosminMihuMDC/KtorMonitor).
 
 Thanks to ChuckerTeam for Chucker!
