@@ -8,7 +8,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,7 +28,6 @@ import org.jetbrains.compose.resources.stringResource
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_back
-import ro.cosminmihu.ktor.monitor.ui.resources.ktor_more
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_request
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_summary
@@ -97,13 +95,13 @@ internal fun DetailScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = {}, enabled = false) {
-                            Icon(
-                                imageVector = Icons.Filled.MoreVert,
-                                contentDescription = stringResource(Res.string.ktor_more),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                            )
-                        }
+//                        IconButton(onClick = {}, enabled = false) {
+//                            Icon(
+//                                imageVector = Icons.Filled.MoreVert,
+//                                contentDescription = stringResource(Res.string.ktor_more),
+//                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+//                            )
+//                        }
                     },
                     scrollBehavior = scrollBehavior
                 )
