@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "browserfs": "^1.4.3",
+    "path-browserify": "^1.0.1"
+  }
+}

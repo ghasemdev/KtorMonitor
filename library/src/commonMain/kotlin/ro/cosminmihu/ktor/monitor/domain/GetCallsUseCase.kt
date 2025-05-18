@@ -1,6 +1,7 @@
 package ro.cosminmihu.ktor.monitor.domain
 
 import app.cash.sqldelight.Query
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import kotlinx.coroutines.flow.map
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCalls
@@ -10,5 +11,5 @@ internal class GetCallsUseCase(
 ) {
 
     operator fun invoke() = dao.getCalls()
-        .map(Query<SelectCalls>::executeAsList)
+        .map(Query<SelectCalls>::awaitAsList)
 }
