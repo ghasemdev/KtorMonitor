@@ -13,6 +13,8 @@ Powerful tool to monitor [Ktor Client](https://ktor.io/) requests and responses,
 <img src="extra/readme/ktomonitor_ios.gif" width="210"/>
 &emsp;
 <img src="extra/readme/ktormonitor_desktop.gif" width="430"/>
+&emsp;
+<img src="extra/readme/ktormonitor_wasm.gif" width="430"/>
 
 By default, **```KtorMonitor```**:
 - **android** -> is enabled for ```debug``` builds and disabled for ```release``` builds
