@@ -2,6 +2,7 @@ package ro.cosminmihu.ktor.monitor.ui.list
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -135,6 +136,8 @@ internal fun ListScreen(
                 }
 
                 uiState.calls != null -> {
+                    var selectedItemIndex by rememberSaveable(uiState.calls) { mutableStateOf(-1) }
+
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth()
                     ) {
@@ -144,7 +147,18 @@ internal fun ListScreen(
                         ) { index, item ->
                             CallItem(
                                 call = item,
-                                modifier = Modifier.animateItem().clickable { onCallClick(item.id) }
+                                modifier = Modifier
+                                    .animateItem()
+                                    .clickable {
+                                        selectedItemIndex = index
+                                        onCallClick(item.id)
+                                    }
+                                    .background(
+                                        when (selectedItemIndex) {
+                                            index -> MaterialTheme.colorScheme.surfaceVariant
+                                            else -> MaterialTheme.colorScheme.surface
+                                        }
+                                    )
                             )
                             HorizontalDivider()
                         }
