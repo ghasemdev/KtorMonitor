@@ -136,7 +136,9 @@ internal fun ListScreen(
                 }
 
                 uiState.calls != null -> {
-                    var selectedItemIndex by rememberSaveable(uiState.calls) { mutableStateOf(-1) }
+                    var selectedItemId: String? by rememberSaveable {
+                        mutableStateOf(null)
+                    }
 
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth()
@@ -150,12 +152,12 @@ internal fun ListScreen(
                                 modifier = Modifier
                                     .animateItem()
                                     .clickable {
-                                        selectedItemIndex = index
+                                        selectedItemId = item.id
                                         onCallClick(item.id)
                                     }
                                     .background(
-                                        when (selectedItemIndex) {
-                                            index -> MaterialTheme.colorScheme.surfaceVariant
+                                        when (selectedItemId) {
+                                            item.id -> MaterialTheme.colorScheme.surfaceVariant
                                             else -> MaterialTheme.colorScheme.surface
                                         }
                                     )
