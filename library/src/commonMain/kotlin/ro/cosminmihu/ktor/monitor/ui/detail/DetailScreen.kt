@@ -87,7 +87,6 @@ internal fun DetailScreen(
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
                                         ),
-                                        modifier = Modifier.padding(vertical = Dimens.MediumLarge)
                                     )
                                 }
                             }
