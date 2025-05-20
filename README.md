@@ -184,6 +184,36 @@ struct ContentView: View {
 <summary><b>Wasm</b></summary>
 
 ```kotlin
+kotlin {
+    sourceSets {
+        wasmJsMain.dependencies {
+            implementation(devNpm("copy-webpack-plugin", "9.1.0"))
+        }
+    }
+}
+```
+
+```javascript
+// {project}/webpack.config.d/sqljs.js
+config.resolve = {
+    fallback: {
+        fs: false,
+        path: false,
+        crypto: false,
+    }
+};
+
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+config.plugins.push(
+    new CopyWebpackPlugin({
+        patterns: [
+            '../../node_modules/sql.js/dist/sql-wasm.wasm'
+        ]
+    })
+);
+```
+
+```kotlin
 ComposeViewport(document.body!!) {
     App()
 }
