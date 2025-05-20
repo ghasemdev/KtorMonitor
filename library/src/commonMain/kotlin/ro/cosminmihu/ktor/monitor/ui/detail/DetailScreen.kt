@@ -18,11 +18,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import ro.cosminmihu.ktor.monitor.ui.Dimens
@@ -66,8 +66,6 @@ internal fun DetailScreen(
                         PrimaryTabRow(
                             selectedTabIndex = pagerState.currentPage,
                             divider = {},
-                            modifier = Modifier
-                                .fillMaxWidth()
                         ) {
                             val tabs = listOf(
                                 Res.string.ktor_summary,
@@ -87,6 +85,7 @@ internal fun DetailScreen(
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
                                         ),
+                                        modifier = Modifier.padding(vertical = Dimens.Medium + 4.dp)
                                     )
                                 }
                             }
