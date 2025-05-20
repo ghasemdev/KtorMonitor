@@ -47,7 +47,6 @@ internal fun DetailScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState { PAGE_COUNT }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         modifier = modifier,
@@ -103,7 +102,6 @@ internal fun DetailScreen(
 //                            )
 //                        }
                     },
-                    scrollBehavior = scrollBehavior
                 )
                 HorizontalDivider()
             }
