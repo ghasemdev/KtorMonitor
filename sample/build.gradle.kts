@@ -91,6 +91,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.ktor.client.cio)
         }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
     }
 }
 
