@@ -14,7 +14,7 @@ plugins {
 
 val artifact = "ktor-monitor-logging-no-op"
 group = "ro.cosminmihu.ktor"
-version = "1.7.0"
+version = "1.7.1"
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
