@@ -1,4 +1,5 @@
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -17,7 +18,7 @@ plugins {
 val module = "ktor-monitor"
 val artifact = "ktor-monitor-logging"
 group = "ro.cosminmihu.ktor"
-version = "1.6.1"
+version = "1.7.0-rc2"
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
@@ -104,6 +105,7 @@ sqldelight {
     databases {
         create("LibraryDatabase") {
             packageName.set("ro.cosminmihu.ktor.monitor.db.sqldelight")
+            generateAsync = true
         }
     }
     linkSqlite = true
@@ -120,6 +122,17 @@ kotlin {
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes") // TODO remove after jetbrains fix
+    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        outputModuleName = "KtorMonitor"
+        browser {
+            commonWebpackConfig {
+                outputFileName = "KtorMonitor.js"
+            }
+        }
+        binaries.executable()
     }
 
     androidTarget {
@@ -194,6 +207,14 @@ kotlin {
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.ktor.client.cio)
             implementation(libs.sqldelight.jvm)
+        }
+
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+            implementation(libs.sqldelight.web)
+            implementation(npm("sql.js", libs.versions.sqljs.get()))
+            implementation(npm("@cashapp/sqldelight-sqljs-worker", libs.versions.sqldelight.get()))
+            implementation(devNpm("copy-webpack-plugin", libs.versions.webpack.get()))
         }
     }
 }

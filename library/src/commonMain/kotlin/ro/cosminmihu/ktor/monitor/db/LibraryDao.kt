@@ -10,7 +10,7 @@ import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCallsWithLimit
 
 internal class LibraryDao(private val database: LibraryDatabase) {
 
-    fun saveRequest(
+    suspend fun saveRequest(
         id: String,
         method: String,
         url: String,
@@ -34,7 +34,7 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         )
     }
 
-    fun saveRequest(
+    suspend fun saveRequest(
         id: String,
         error: Throwable,
     ) {
@@ -44,7 +44,7 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         )
     }
 
-    fun saveResponse(
+    suspend fun saveResponse(
         id: String,
         protocol: String?,
         requestTimestamp: Long,
@@ -64,7 +64,7 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         )
     }
 
-    fun saveResponseBody(
+    suspend fun saveResponseBody(
         id: String,
         responseContentLength: Long?,
         responseBody: ByteArray?,
@@ -78,7 +78,7 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         )
     }
 
-    fun saveResponse(
+    suspend fun saveResponse(
         id: String,
         error: Throwable,
     ) {
@@ -97,11 +97,11 @@ internal class LibraryDao(private val database: LibraryDatabase) {
     fun getCalls(limit: Long): Flow<Query<SelectCallsWithLimit>> =
         database.callQueries.selectCallsWithLimit(limit).asFlow()
 
-    fun deleteCalls() {
+    suspend fun deleteCalls() {
         database.callQueries.deleteCalls()
     }
 
-    fun deleteCallsBefore(threshold: Long) {
+    suspend fun deleteCallsBefore(threshold: Long) {
         database.callQueries.deleteCallsBefore(threshold)
     }
 }

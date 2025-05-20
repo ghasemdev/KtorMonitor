@@ -1,7 +1,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/ro.cosminmihu.ktor/ktor-monitor-logging?logo=apachemaven&label=Maven%20Central&link=https://search.maven.org/artifact/ro.cosminmihu.ktor/ktor-monitor-logging/)](https://search.maven.org/artifact/ro.cosminmihu.ktor/ktor-monitor-logging)
 [![License](https://img.shields.io/github/license/CosminMihuMDC/KtorMonitor?label=License&logo=lintcode&logoColor=white&color=#3DA639)](https://github.com/CosminMihuMDC/KtorMonitor/blob/main/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-F05032.svg?logo=git&logoColor=white)](http://makeapullrequest.com)
-![Platforms](https://img.shields.io/badge/Platforms-Android%20+%20iOS%20+%20JVM-brightgreen?logo=bambulab&logoColor=white&color=8d69e0)
+![Platforms](https://img.shields.io/badge/Platforms-Android%20+%20iOS%20+%20JVM%20+%20Wasm-brightgreen?logo=bambulab&logoColor=white&color=8d69e0)
 [![GitHub stars](https://img.shields.io/github/stars/CosminMihuMDC/KtorMonitor)](https://github.com/CosminMihuMDC/KtorMonitor)
 [![GitHub forks](https://img.shields.io/github/forks/CosminMihuMDC/KtorMonitor)](https://github.com/CosminMihuMDC/KtorMonitor/fork)
 
@@ -13,11 +13,14 @@ Powerful tool to monitor [Ktor Client](https://ktor.io/) requests and responses,
 <img src="extra/readme/ktomonitor_ios.gif" width="210"/>
 &emsp;
 <img src="extra/readme/ktormonitor_desktop.gif" width="430"/>
+&emsp;
+<img src="extra/readme/ktormonitor_wasm.gif" width="430"/>
 
 By default, **```KtorMonitor```**:
 - **android** -> is enabled for ```debug``` builds and disabled for ```release``` builds
 - **ios** -> is enabled for ```debug``` builds and disabled for ```release``` builds
 - **desktop** -> is enabled for all builds
+- **wasm** -> is enabled for all builds
 
 ## Setup
 
@@ -27,7 +30,7 @@ By default, **```KtorMonitor```**:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.6.1")
+            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.7.0-rc2")
         }
     }
 }
@@ -39,7 +42,7 @@ In order to isolate KtorMonitor from release builds, use `ktor-monitor-logging-n
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.6.1")
+            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.7.0-rc2")
         }
     }
 }
@@ -177,6 +180,46 @@ struct ContentView: View {
 ```
 </details>
 
+<details>
+<summary><b>Wasm</b></summary>
+
+```kotlin
+kotlin {
+    sourceSets {
+        wasmJsMain.dependencies {
+            implementation(devNpm("copy-webpack-plugin", "9.1.0"))
+        }
+    }
+}
+```
+
+```javascript
+// {project}/webpack.config.d/sqljs.js
+config.resolve = {
+    fallback: {
+        fs: false,
+        path: false,
+        crypto: false,
+    }
+};
+
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+config.plugins.push(
+    new CopyWebpackPlugin({
+        patterns: [
+            '../../node_modules/sql.js/dist/sql-wasm.wasm'
+        ]
+    })
+);
+```
+
+```kotlin
+ComposeViewport(document.body!!) {
+    App()
+}
+```
+</details>
+
 ## ✍️ Feedback
 
 Feel free to send feedback or [file an issue](https://github.com/CosminMihuMDC/KtorMonitor/issues/new).
@@ -185,9 +228,9 @@ Feel free to send feedback or [file an issue](https://github.com/CosminMihuMDC/K
 
 [![Kotlin](https://img.shields.io/badge/2.1.20-white?logo=kotlin&logoColor=white&color=7F52FF)](http://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/1.8.0-white?logo=jetpackcompose&logoColor=white&color=4284F3)](https://www.jetbrains.com/lp/compose-multiplatform)
-[![Android](https://img.shields.io/badge/Android%2015-white?logo=android&logoColor=white&color=34A853)](https://developer.android.com/about/versions/15)
-[![Ktor](https://img.shields.io/badge/3.1.1-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
-[![SQLDelight](https://img.shields.io/badge/2.0.2-white?logo=sqlite&logoColor=white&color=003B57)](https://sqldelight.github.io/sqldelight)
+[![Android](https://img.shields.io/badge/Android%2016-white?logo=android&logoColor=white&color=34A853)](https://developer.android.com/about/versions/15)
+[![Ktor](https://img.shields.io/badge/3.1.3-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
+[![SQLDelight](https://img.shields.io/badge/2.1.0-white?logo=sqlite&logoColor=white&color=003B57)](https://sqldelight.github.io/sqldelight)
 
 Some parts of this project are reusing ideas that are originally coming from [Chucker](https://github.com/ChuckerTeam/chucker).
 <br>

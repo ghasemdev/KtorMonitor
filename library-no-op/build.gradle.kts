@@ -1,5 +1,7 @@
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -12,7 +14,7 @@ plugins {
 
 val artifact = "ktor-monitor-logging-no-op"
 group = "ro.cosminmihu.ktor"
-version = "1.6.1"
+version = "1.7.0-rc2"
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
@@ -78,6 +80,17 @@ kotlin {
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes") // TODO remove after jetbrains fix
+    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        outputModuleName = "KtorMonitor"
+        browser {
+            commonWebpackConfig {
+                outputFileName = "KtorMonitor.js"
+            }
+        }
+        binaries.executable()
     }
 
     androidTarget {

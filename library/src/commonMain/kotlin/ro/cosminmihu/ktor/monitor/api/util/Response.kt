@@ -7,7 +7,7 @@ import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 
-internal fun logResponseException(
+internal suspend fun logResponseException(
     dao: LibraryDao,
     id: String,
     cause: Throwable,
@@ -18,7 +18,7 @@ internal fun logResponseException(
     )
 }
 
-internal fun logResponse(
+internal suspend fun logResponse(
     dao: LibraryDao,
     id: String,
     response: HttpResponse,

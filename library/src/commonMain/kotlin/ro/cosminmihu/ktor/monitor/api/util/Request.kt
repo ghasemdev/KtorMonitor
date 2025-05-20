@@ -12,7 +12,7 @@ import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 
-internal fun logRequestException(
+internal suspend fun logRequestException(
     dao: LibraryDao,
     id: String,
     cause: Throwable,
