@@ -1,0 +1,679 @@
+#[1]GitHub [2]KtorMonitor Release Notes [3]KtorMonitor Tags
+
+   [4]Skip to content
+
+Navigation Menu
+
+   (BUTTON) Toggle navigation
+
+   (BUTTON)
+   [5]Sign in
+   (BUTTON) Appearance settings
+
+     * (BUTTON) Product
+          + [6]GitHub Copilot
+            Write better code with AI
+          + [7]GitHub Models New
+            Manage and compare prompts
+          + [8]GitHub Advanced Security
+            Find and fix vulnerabilities
+          + [9]Actions
+            Automate any workflow
+          + [10]Codespaces
+            Instant dev environments
+          + [11]Issues
+            Plan and track work
+          + [12]Code Review
+            Manage code changes
+          + [13]Discussions
+            Collaborate outside of code
+          + [14]Code Search
+            Find more, search less
+       Explore
+          + [15]Why GitHub
+          + [16]All features
+          + [17]Documentation
+          + [18]GitHub Skills
+          + [19]Blog
+     * (BUTTON) Solutions
+       By company size
+          + [20]Enterprises
+          + [21]Small and medium teams
+          + [22]Startups
+          + [23]Nonprofits
+       By use case
+          + [24]DevSecOps
+          + [25]DevOps
+          + [26]CI/CD
+          + [27]View all use cases
+       By industry
+          + [28]Healthcare
+          + [29]Financial services
+          + [30]Manufacturing
+          + [31]Government
+          + [32]View all industries
+       [33]View all solutions
+     * (BUTTON) Resources
+       Topics
+          + [34]AI
+          + [35]DevOps
+          + [36]Security
+          + [37]Software Development
+          + [38]View all
+       Explore
+          + [39]Learning Pathways
+          + [40]Events & Webinars
+          + [41]Ebooks & Whitepapers
+          + [42]Customer Stories
+          + [43]Partners
+          + [44]Executive Insights
+     * (BUTTON) Open Source
+          + [45]GitHub Sponsors
+            Fund open source developers
+          + [46]The ReadME Project
+            GitHub community articles
+       Repositories
+          + [47]Topics
+          + [48]Trending
+          + [49]Collections
+     * (BUTTON) Enterprise
+          + [50]Enterprise platform
+            AI-powered developer platform
+       Available add-ons
+          + [51]GitHub Advanced Security
+            Enterprise-grade security features
+          + [52]Copilot for business
+            Enterprise-grade AI features
+          + [53]Premium Support
+            Enterprise-grade 24/7 support
+     * [54]Pricing
+
+   (BUTTON)
+   Search or jump to...
+
+Search code, repositories, users, issues, pull requests...
+
+   Search
+   ____________________
+   Clear (BUTTON)
+
+   [55]Search syntax tips
+
+Provide feedback
+
+   (BUTTON)
+
+   We read every piece of feedback, and take your input very seriously.
+
+   ____________________________________________________________
+   ____________________________________________________________
+   ____________________________________________________________
+   ____________________________________________________________
+   [ ] Include my email address so I can be contacted
+   (BUTTON) Cancel (BUTTON) Submit feedback
+
+Saved searches
+
+Use saved searches to filter your results more quickly
+
+   (BUTTON)
+   Name ____________________
+   Query ____________________
+
+   To see all available qualifiers, see our [56]documentation.
+   (BUTTON) Cancel (BUTTON) Create saved search
+
+   [57]Sign in
+
+   [58]Sign up
+
+   (BUTTON) Appearance settings
+
+   (BUTTON) Resetting focus
+
+   You signed in with another tab or window. [59]Reload to refresh your
+   session. You signed out in another tab or window. [60]Reload to refresh
+   your session. You switched accounts on another tab or window.
+   [61]Reload to refresh your session. (BUTTON) Dismiss alert
+
+   (BUTTON)
+   {{ message }}
+
+   [62]CosminMihuMDC / [63]KtorMonitor Public
+     *
+
+Uh oh!
+       There was an error while loading. [64]Please reload this page.
+     * [65]Notifications You must be signed in to change notification
+       settings
+     * [66]Fork 12
+     * [67]Star 153
+
+     * [68]Code
+     * [69]Issues 4
+     * [70]Pull requests 0
+     * [71]Discussions
+     * [72]Actions
+     * [73]Projects 0
+     * [74]Security
+
+Uh oh!
+       There was an error while loading. [75]Please reload this page.
+     * [76]Insights
+
+   (BUTTON) Additional navigation options
+     * [77]Code
+     * [78]Issues
+     * [79]Pull requests
+     * [80]Discussions
+     * [81]Actions
+     * [82]Projects
+     * [83]Security
+     * [84]Insights
+
+Releases: CosminMihuMDC/KtorMonitor
+
+   [85]Releases [86]Tags
+   ____________________
+   Releases · CosminMihuMDC/KtorMonitor
+
+1.7.2
+
+   25 May 17:23
+   @CosminMihuMDC [87]CosminMihuMDC
+   [88]
+   v1.7.2
+   [89]0943dca
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [90]{{ refName }} default (*)
+   Loading
+
+   [91]View all tags
+   [92]1.7.2 [93]Latest
+   [94]Latest
+
+   Text selection support
+   Update versions for androidx-lifecycle, compose-adaptive, and
+   compose-multiplatform
+   Use TopBar
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [95]Please reload this page.
+   All reactions
+
+1.7.1
+
+   20 May 13:04
+   @CosminMihuMDC [96]CosminMihuMDC
+   [97]
+   v1.7.1
+   [98]fa6caf2
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [99]{{ refName }} default (*)
+   Loading
+
+   [100]View all tags
+   [101]1.7.1
+v1.7.1
+
+Bump library version to 1.7.1
+
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [102]Please reload this page.
+   All reactions
+
+1.7.0
+
+   20 May 12:42
+   @CosminMihuMDC [103]CosminMihuMDC
+   [104]
+   v1.7.0
+   [105]b01a537
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [106]{{ refName }} default (*)
+   Loading
+
+   [107]View all tags
+   [108]1.7.0
+
+   Add wasm target
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [109]Please reload this page.
+   All reactions
+
+1.7.0-rc2
+
+   19 May 17:16
+   @CosminMihuMDC [110]CosminMihuMDC
+   [111]
+   v1.7.0-rc2
+   [112]393295e
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [113]{{ refName }} default (*)
+   Loading
+
+   [114]View all tags
+   [115]1.7.0-rc2 Pre-release
+   Pre-release
+
+   Add Wasm support
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [116]Please reload this page.
+   All reactions
+
+1.7.0-rc1
+
+   18 May 15:44
+   @CosminMihuMDC [117]CosminMihuMDC
+   [118]
+   v1.7.0-rc1
+   [119]d94d408
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [120]{{ refName }} default (*)
+   Loading
+
+   [121]View all tags
+   [122]1.7.0-rc1 Pre-release
+   Pre-release
+
+   Add Wasm support
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [123]Please reload this page.
+   All reactions
+
+1.6.1
+
+   25 Apr 12:16
+   @CosminMihuMDC [124]CosminMihuMDC
+   [125]
+   v1.6.1
+   [126]25a8952
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [127]{{ refName }} default (*)
+   Loading
+
+   [128]View all tags
+   [129]1.6.1
+
+   Make Res public.
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [130]Please reload this page.
+   (ROCKET react) 🚀 2 pablichjenkov and jipariz reacted with rocket emoji
+   All reactions
+     * 🚀 2 reactions
+
+   2 people reacted
+
+1.6.0
+
+   07 Apr 13:40
+   @CosminMihuMDC [131]CosminMihuMDC
+   [132]
+   v1.6.0
+   [133]bd0f02e
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [134]{{ refName }} default (*)
+   Loading
+
+   [135]View all tags
+   [136]1.6.0
+
+   Implement Ktor Monitor Logging No-Op Library
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [137]Please reload this page.
+   All reactions
+
+1.5.0
+
+   02 Mar 13:17
+   @CosminMihuMDC [138]CosminMihuMDC
+   [139]
+   v1.5.0
+   [140]0efe52d
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [141]{{ refName }} default (*)
+   Loading
+
+   [142]View all tags
+   [143]1.5.0
+     * Enable gif preview for Android
+     * Add BackHandler to navigate back
+     * Enhance ContentType with more media types
+
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [144]Please reload this page.
+   All reactions
+
+1.4.0
+
+   27 Feb 14:45
+   @CosminMihuMDC [145]CosminMihuMDC
+   [146]
+   v1.4.0
+   [147]b8d39c3
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [148]{{ refName }} default (*)
+   Loading
+
+   [149]View all tags
+   [150]1.4.0
+
+   Adjust pane expansion anchors and add drag handle interaction.
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [151]Please reload this page.
+   All reactions
+
+1.3.0
+
+   15 Feb 18:40
+   @CosminMihuMDC [152]CosminMihuMDC
+   [153]
+   v1.3.0
+   [154]2cd8ae2
+   This commit was created on GitHub.com and signed with GitHub’s verified
+   signature.
+   GPG key ID: B5690EEEBB952194
+   Verified
+   [155]Learn about vigilant mode.
+   Compare
+
+   Choose a tag to compare (BUTTON)
+   ____________________
+   Could not load tags
+   Nothing to show
+   [156]{{ refName }} default (*)
+   Loading
+
+   [157]View all tags
+   [158]1.3.0
+Merge pull request #9 from CosminMihuMDC/release/1.3.0
+
+Release/1.3.0
+
+   Assets 2
+   Loading
+
+Uh oh!
+
+   There was an error while loading. [159]Please reload this page.
+   All reactions
+
+   Previous 1 [160]2 [161]Next
+
+   Previous [162]Next
+
+Footer
+
+   © 2025 GitHub, Inc.
+
+Footer navigation
+
+     * [163]Terms
+     * [164]Privacy
+     * [165]Security
+     * [166]Status
+     * [167]Docs
+     * [168]Contact
+     * (BUTTON) Manage cookies
+     * (BUTTON) Do not share my personal information
+
+   (BUTTON) You can’t perform that action at this time.
+
+   (BUTTON)
+
+References
+
+   Visible links:
+   1. https://github.com/opensearch.xml
+   2. https://github.com/CosminMihuMDC/KtorMonitor/releases.atom
+   3. https://github.com/CosminMihuMDC/KtorMonitor/tags.atom
+   4. https://github.com/CosminMihuMDC/KtorMonitor/releases#start-of-content
+   5. https://github.com/login?return_to=https://github.com/CosminMihuMDC/KtorMonitor/releases
+   6. https://github.com/features/copilot
+   7. https://github.com/features/models
+   8. https://github.com/security/advanced-security
+   9. https://github.com/features/actions
+  10. https://github.com/features/codespaces
+  11. https://github.com/features/issues
+  12. https://github.com/features/code-review
+  13. https://github.com/features/discussions
+  14. https://github.com/features/code-search
+  15. https://github.com/why-github
+  16. https://github.com/features
+  17. https://docs.github.com/
+  18. https://skills.github.com/
+  19. https://github.blog/
+  20. https://github.com/enterprise
+  21. https://github.com/team
+  22. https://github.com/enterprise/startups
+  23. https://github.com/solutions/industry/nonprofits
+  24. https://github.com/solutions/use-case/devsecops
+  25. https://github.com/solutions/use-case/devops
+  26. https://github.com/solutions/use-case/ci-cd
+  27. https://github.com/solutions/use-case
+  28. https://github.com/solutions/industry/healthcare
+  29. https://github.com/solutions/industry/financial-services
+  30. https://github.com/solutions/industry/manufacturing
+  31. https://github.com/solutions/industry/government
+  32. https://github.com/solutions/industry
+  33. https://github.com/solutions
+  34. https://github.com/resources/articles/ai
+  35. https://github.com/resources/articles/devops
+  36. https://github.com/resources/articles/security
+  37. https://github.com/resources/articles/software-development
+  38. https://github.com/resources/articles
+  39. https://resources.github.com/learn/pathways
+  40. https://resources.github.com/
+  41. https://github.com/resources/whitepapers
+  42. https://github.com/customer-stories
+  43. https://partner.github.com/
+  44. https://github.com/solutions/executive-insights
+  45. https://github.com/sponsors
+  46. https://github.com/readme
+  47. https://github.com/topics
+  48. https://github.com/trending
+  49. https://github.com/collections
+  50. https://github.com/enterprise
+  51. https://github.com/security/advanced-security
+  52. https://github.com/features/copilot/copilot-business
+  53. https://github.com/premium-support
+  54. https://github.com/pricing
+  55. https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax
+  56. https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax
+  57. https://github.com/login?return_to=https://github.com/CosminMihuMDC/KtorMonitor/releases
+  58. https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=/<user-name>/<repo-name>/releases/index&source=header-repo&source_repo=CosminMihuMDC/KtorMonitor
+  59. https://github.com/CosminMihuMDC/KtorMonitor/releases
+  60. https://github.com/CosminMihuMDC/KtorMonitor/releases
+  61. https://github.com/CosminMihuMDC/KtorMonitor/releases
+  62. https://github.com/CosminMihuMDC
+  63. https://github.com/CosminMihuMDC/KtorMonitor
+  64. https://github.com/CosminMihuMDC/KtorMonitor/releases
+  65. https://github.com/login?return_to=/CosminMihuMDC/KtorMonitor
+  66. https://github.com/login?return_to=/CosminMihuMDC/KtorMonitor
+  67. https://github.com/login?return_to=/CosminMihuMDC/KtorMonitor
+  68. https://github.com/CosminMihuMDC/KtorMonitor
+  69. https://github.com/CosminMihuMDC/KtorMonitor/issues
+  70. https://github.com/CosminMihuMDC/KtorMonitor/pulls
+  71. https://github.com/CosminMihuMDC/KtorMonitor/discussions
+  72. https://github.com/CosminMihuMDC/KtorMonitor/actions
+  73. https://github.com/CosminMihuMDC/KtorMonitor/projects
+  74. https://github.com/CosminMihuMDC/KtorMonitor/security
+  75. https://github.com/CosminMihuMDC/KtorMonitor/releases
+  76. https://github.com/CosminMihuMDC/KtorMonitor/pulse
+  77. https://github.com/CosminMihuMDC/KtorMonitor
+  78. https://github.com/CosminMihuMDC/KtorMonitor/issues
+  79. https://github.com/CosminMihuMDC/KtorMonitor/pulls
+  80. https://github.com/CosminMihuMDC/KtorMonitor/discussions
+  81. https://github.com/CosminMihuMDC/KtorMonitor/actions
+  82. https://github.com/CosminMihuMDC/KtorMonitor/projects
+  83. https://github.com/CosminMihuMDC/KtorMonitor/security
+  84. https://github.com/CosminMihuMDC/KtorMonitor/pulse
+  85. https://github.com/CosminMihuMDC/KtorMonitor/releases
+  86. https://github.com/CosminMihuMDC/KtorMonitor/tags
+  87. https://github.com/CosminMihuMDC
+  88. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.7.2
+  89. https://github.com/CosminMihuMDC/KtorMonitor/commit/0943dca708725bdd5acb944b1d7ebe1c13fda92d
+  90. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.7.2
+  91. https://github.com/CosminMihuMDC/KtorMonitor/tags
+  92. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.7.2
+  93. https://github.com/CosminMihuMDC/KtorMonitor/releases/latest
+  94. https://github.com/CosminMihuMDC/KtorMonitor/releases/latest
+  95. https://github.com/CosminMihuMDC/KtorMonitor/releases
+  96. https://github.com/CosminMihuMDC
+  97. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.7.1
+  98. https://github.com/CosminMihuMDC/KtorMonitor/commit/fa6caf25811b461124c83f0398bfed1571022064
+  99. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.7.1
+ 100. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 101. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.7.1
+ 102. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 103. https://github.com/CosminMihuMDC
+ 104. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.7.0
+ 105. https://github.com/CosminMihuMDC/KtorMonitor/commit/b01a5371ca0bbf6b6584193e42528951ff32c2a7
+ 106. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.7.0
+ 107. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 108. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.7.0
+ 109. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 110. https://github.com/CosminMihuMDC
+ 111. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.7.0-rc2
+ 112. https://github.com/CosminMihuMDC/KtorMonitor/commit/393295e46049436bc6d896749f17a03197eecc9f
+ 113. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.7.0-rc2
+ 114. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 115. https://github.com/CosminMihuMDC/KtorMDC/KtorMonitor/releases/tag/v1.7.0-rc2
+ 116. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 117. https://github.com/CosminMihuMDC
+ 118. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.7.0-rc1
+ 119. https://github.com/CosminMihuMDC/KtorMonitor/commit/d94d408e94174b92c759621f23b15c4bb3627103
+ 120. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.7.0-rc1
+ 121. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 122. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.7.0-rc1
+ 123. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 124. https://github.com/CosminMihuMDC
+ 125. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.6.1
+ 126. https://github.com/CosminMihuMDC/KtorMonitor/commit/25a89528ff13f43f7bc791b0f2d8ad7f066b17a2
+ 127. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.6.1
+ 128. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 129. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.6.1
+ 130. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 131. https://github.com/CosminMihuMDC
+ 132. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.6.0
+ 133. https://github.com/CosminMihuMDC/KtorMonitor/commit/bd0f02e267c0fa666c88c8b84040d8b2c327d046
+ 134. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.6.0
+ 135. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 136. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.6.0
+ 137. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 138. https://github.com/CosminMihuMDC
+ 139. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.5.0
+ 140. https://github.com/CosminMihuMDC/KtorMonitor/commit/0efe52d4e67fdd3b32d7e546d712c9460c3c515e
+ 141. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.5.0
+ 142. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 143. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.5.0
+ 144. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 145. https://github.com/CosminMihuMDC
+ 146. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.4.0
+ 147. https://github.com/CosminMihuMDC/KtorMonitor/commit/b8d39c348c0357c9a7f4e56eb7c40248acce3605
+ 148. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.4.0
+ 149. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 150. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.4.0
+ 151. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 152. https://github.com/CosminMihuMDC
+ 153. https://github.com/CosminMihuMDC/KtorMonitor/tree/v1.3.0
+ 154. https://github.com/CosminMihuMDC/KtorMonitor/commit/2cd8ae235f0896f61365821fa9f6df03ebda69ef
+ 155. https://docs.github.com/github/authenticating-to-github/displaying-verification-statuses-for-all-of-your-commits
+ 156. https://github.com/CosminMihuMDC/KtorMonitor/compare/{{ urlEncodedRefName }}...v1.3.0
+ 157. https://github.com/CosminMihuMDC/KtorMonitor/tags
+ 158. https://github.com/CosminMihuMDC/KtorMonitor/releases/tag/v1.3.0
+ 159. https://github.com/CosminMihuMDC/KtorMonitor/releases
+ 160. https://github.com/CosminMihuMDC/KtorMonitor/releases?page=2
+ 161. https://github.com/CosminMihuMDC/KtorMonitor/releases?page=2
+ 162. https://github.com/CosminMihuMDC/KtorMonitor/releases?page=2
+ 163. https://docs.github.com/site-policy/github-terms/github-terms-of-service
+ 164. https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+ 165. https://github.com/security
+ 166. https://www.githubstatus.com/
+ 167. https://docs.github.com/
+ 168. https://support.github.com/?tags=dotcom-footer
+
+   Hidden links:
+ 170. https://github.com/
+ 171. https://github.com/
+ Warning: User-Agent string does not contain "Lynx" or "L_y_n_x"!
