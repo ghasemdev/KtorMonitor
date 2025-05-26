@@ -232,6 +232,8 @@ Feel free to send feedback or [file an issue](https://github.com/CosminMihuMDC/K
 [![Ktor](https://img.shields.io/badge/3.1.3-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
 [![SQLDelight](https://img.shields.io/badge/2.1.0-white?logo=sqlite&logoColor=white&color=003B57)](https://sqldelight.github.io/sqldelight)
 
+Documentation is available at [KtorMonitor Documentation](https://cosminmihumdc.github.io/KtorMonitor/html).
+
 Some parts of this project are reusing ideas that are originally coming from [Chucker](https://github.com/ChuckerTeam/chucker).
 <br>
 KtorMonitor is available also on JetBrains' [klibs.io](https://klibs.io/project/CosminMihuMDC/KtorMonitor).
