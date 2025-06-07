@@ -16,12 +16,18 @@ internal actual fun createDatabaseDriver(): SqlDriver {
 
     val onConfiguration: (DatabaseConfiguration) -> DatabaseConfiguration =
         if (appGroupID != null) {
-            { config ->
-                config.copy(
-                    extendedConfig = config.extendedConfig.copy(
-                        basePath = getSharedDatabasePath(appGroupID)
+            try {
+                val path = getSharedDatabasePath(appGroupID)
+                val callback: (DatabaseConfiguration) -> DatabaseConfiguration = { config ->
+                    config.copy(
+                        extendedConfig = config.extendedConfig.copy(
+                            basePath = path
+                        )
                     )
-                )
+                }
+                callback
+            } catch (_: Exception) {
+                { it }
             }
         } else {
             { it }
