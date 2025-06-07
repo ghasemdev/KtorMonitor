@@ -7,6 +7,7 @@ $dokka.location:ro.cosminmihu.ktor.monitor//KtorMonitorMenuItem/androidx.compose
 $dokka.location:ro.cosminmihu.ktor.monitor//KtorMonitorPanel/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-ktor-monitor-panel.html
 $dokka.location:ro.cosminmihu.ktor.monitor//KtorMonitorViewController/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-ktor-monitor-view-controller.html
 $dokka.location:ro.cosminmihu.ktor.monitor//KtorMonitorWindow/#kotlin.Boolean#kotlin.Function0[kotlin.Unit]/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-ktor-monitor-window.html
+$dokka.location:ro.cosminmihu.ktor.monitor//sharedDB/ro.cosminmihu.ktor.monitor.KtorMonitorLoggingConfig#kotlin.Function1[ro.cosminmihu.ktor.monitor.SharedDBConfig,kotlin.Unit]/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/shared-d-b.html
 $dokka.location:ro.cosminmihu.ktor.monitor/ContentLength///PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-content-length/index.html
 $dokka.location:ro.cosminmihu.ktor.monitor/ContentLength/Default/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-content-length/-default.html
 $dokka.location:ro.cosminmihu.ktor.monitor/ContentLength/Full/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-content-length/-full.html
@@ -23,4 +24,7 @@ $dokka.location:ro.cosminmihu.ktor.monitor/RetentionPeriod/Forever/#/PointingToD
 $dokka.location:ro.cosminmihu.ktor.monitor/RetentionPeriod/OneDay/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-retention-period/-one-day.html
 $dokka.location:ro.cosminmihu.ktor.monitor/RetentionPeriod/OneHour/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-retention-period/-one-hour.html
 $dokka.location:ro.cosminmihu.ktor.monitor/RetentionPeriod/OneWeek/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-retention-period/-one-week.html
+$dokka.location:ro.cosminmihu.ktor.monitor/SharedDBConfig///PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-shared-d-b-config/index.html
+$dokka.location:ro.cosminmihu.ktor.monitor/SharedDBConfig/SharedDBConfig/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-shared-d-b-config/-shared-d-b-config.html
+$dokka.location:ro.cosminmihu.ktor.monitor/SharedDBConfig/groupID/#/PointingToDeclaration/ktor-monitor/ro.cosminmihu.ktor.monitor/-shared-d-b-config/group-i-d.html
 ro.cosminmihu.ktor.monitor
