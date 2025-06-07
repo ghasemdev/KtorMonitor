@@ -22,7 +22,6 @@ import ro.cosminmihu.ktor.monitor.di.inject
 import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 import ro.cosminmihu.ktor.monitor.domain.ListenByRecentCallsUseCase
 import ro.cosminmihu.ktor.monitor.domain.model.Config
-import kotlin.time.Duration
 
 private val DisableLogging = AttributeKey<Unit>("KtorMonitorDisableLogging")
 private val CallIdentifier = AttributeKey<String>("KtorMonitorCallIdentifier")
@@ -36,6 +35,7 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
             showNotification = pluginConfig.showNotification,
             retentionPeriod = pluginConfig.retentionPeriod,
             maxContentLength = pluginConfig.maxContentLength,
+            iosGroupId = pluginConfig.iosGroupId,
         )
         LibraryKoinContext.koin.get<ConfigUseCase>().setConfig(config)
 

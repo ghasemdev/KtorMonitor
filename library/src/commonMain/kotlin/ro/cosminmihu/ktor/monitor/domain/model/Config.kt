@@ -7,6 +7,7 @@ internal data class Config(
     val showNotification: Boolean,
     val retentionPeriod: Duration,
     val maxContentLength: Int,
+    val iosGroupId: String? = null,
 ) {
     companion object {
         internal val Disabled: Config
@@ -15,6 +16,7 @@ internal data class Config(
                 showNotification = false,
                 retentionPeriod = Duration.ZERO,
                 maxContentLength = 0,
+                iosGroupId = null,
             )
     }
 }

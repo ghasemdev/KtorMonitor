@@ -12,6 +12,7 @@ import kotlin.time.Duration
 public class KtorMonitorLoggingConfig {
     internal val filters = mutableListOf<(HttpRequestBuilder) -> Boolean>()
     internal val sanitizedHeaders = mutableListOf<SanitizedHeader>()
+    internal var iosGroupId: String? = null
 
     /**
      * Allows you to filter logs for calls matching a [predicate].

@@ -17,13 +17,13 @@ plugins {
 
 val module = "ktor-monitor"
 val artifact = "ktor-monitor-logging"
-group = "ro.cosminmihu.ktor"
-version = "1.7.2"
+group = "ir.parsuomash.ktor"
+version = "1.8.0"
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-    signAllPublications()
+//    signAllPublications()
 
     coordinates(group.toString(), artifact, version.toString())
 

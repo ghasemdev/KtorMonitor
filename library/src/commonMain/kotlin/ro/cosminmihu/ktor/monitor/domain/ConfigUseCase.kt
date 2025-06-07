@@ -19,5 +19,7 @@ internal class ConfigUseCase {
 
     internal suspend fun isShowNotification() = config.first().showNotification
 
+    internal fun getIosGroupId(): String? = config.value.iosGroupId
+
     internal fun getMaxContentLength() = config.value.maxContentLength
 }

@@ -1,7 +1,6 @@
 import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -13,13 +12,13 @@ plugins {
 }
 
 val artifact = "ktor-monitor-logging-no-op"
-group = "ro.cosminmihu.ktor"
-version = "1.7.2"
+group = "ir.parsuomash.ktor"
+version = "1.8.0"
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-    signAllPublications()
+//    signAllPublications()
 
     coordinates(group.toString(), artifact, version.toString())
 
