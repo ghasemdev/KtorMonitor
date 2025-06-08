@@ -14,6 +14,7 @@ internal actual fun createDatabaseDriver(): SqlDriver {
         .get<ConfigUseCase>()
         .getIosGroupId()
 
+    val defaultCallback: (DatabaseConfiguration) -> DatabaseConfiguration = { it }
     val onConfiguration: (DatabaseConfiguration) -> DatabaseConfiguration =
         if (appGroupID != null) {
             try {
@@ -27,10 +28,10 @@ internal actual fun createDatabaseDriver(): SqlDriver {
                 }
                 callback
             } catch (_: Exception) {
-                { it }
+                defaultCallback
             }
         } else {
-            { it }
+            defaultCallback
         }
 
     return NativeSqliteDriver(

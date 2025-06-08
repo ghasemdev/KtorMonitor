@@ -21,5 +21,9 @@ internal class ConfigUseCase {
 
     internal fun getIosGroupId(): String? = config.value.iosGroupId
 
+    internal fun setIosGroupId(groupId: String) {
+        config.update { it.copy(iosGroupId = groupId) }
+    }
+
     internal fun getMaxContentLength() = config.value.maxContentLength
 }
