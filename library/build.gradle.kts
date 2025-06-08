@@ -1,4 +1,4 @@
-import com.vanniktech.maven.publish.SonatypeHost
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -10,66 +10,15 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.kotlinx.atomicfu)
-    alias(libs.plugins.maven.publish)
     alias(libs.plugins.binary.compatibility.validator)
     alias(libs.plugins.dokka)
+    id("maven-publish")
 }
 
 val module = "ktor-monitor"
-val artifact = "ktor-monitor-logging"
+val artifactPrefix = "ktor-monitor-logging"
 group = "ir.parsuomash.ktor"
 version = "1.8.0"
-
-mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-
-//    signAllPublications()
-
-    coordinates(group.toString(), artifact, version.toString())
-
-    pom {
-        name.set("Ktor Monitor")
-        description.set("""Powerful tools to log Ktor Client requests and responses, making it easier to debug and analyze network communication.""".trimMargin())
-        inceptionYear.set("2025")
-        url.set("https://github.com/CosminMihuMDC/KtorMonitor")
-
-        licenses {
-            license {
-                name = "The Apache Software License, Version 2.0"
-                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
-                distribution = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            }
-        }
-
-        developers {
-            developer {
-                id = "Cosmin Mihu"
-                name = "Cosmin Mihu"
-                url = "https://www.cosminmihu.ro/"
-            }
-        }
-
-        scm {
-            url = "https://github.com/CosminMihuMDC/KtorMonitor.git"
-            connection = "scm:git:git://github.com/CosminMihuMDC/KtorMonitor.git"
-            developerConnection = "scm:git:git://github.com/CosminMihuMDC/KtorMonitor.git"
-        }
-
-        issueManagement {
-            system = "GitHub Issues"
-            url = "https://github.com/CosminMihuMDC/KtorMonitor/issues"
-        }
-
-        ciManagement {
-            system = "GitHub Actions"
-            url = "https://github.com/CosminMihuMDC/KtorMonitor/actions"
-        }
-
-        distributionManagement {
-            downloadUrl = "https://github.com/CosminMihuMDC/KtorMonitor/releases"
-        }
-    }
-}
 
 apiValidation {
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.db.sqldelight")
@@ -243,3 +192,32 @@ android {
 dependencies {
     debugImplementation(compose.uiTooling)
 }
+
+afterEvaluate {
+    publishing {
+        publications.withType<MavenPublication>().configureEach {
+            artifactId = when (name) {
+                "kotlinMultiplatform" -> artifactPrefix
+                else -> {
+                    val suffix = name
+                        .replace("Release", "")
+                        .replace("Debug", "-debug")
+                        .replaceFirstChar { it.lowercaseChar() }
+
+                    "$artifactPrefix-${suffix}"
+                }
+            }
+        }
+        repositories {
+            maven {
+                url = uri(getProperty("maven.url"))
+                credentials {
+                    username = getProperty("maven.username")
+                    password = getProperty("maven.password")
+                }
+            }
+        }
+    }
+}
+
+fun getProperty(key: String) = gradleLocalProperties(rootDir, providers).getProperty(key).orEmpty()
