@@ -31,6 +31,17 @@ public class SharedDBConfig {
  *
  * @param block A configuration block where the shared App Group ID can be specified.
  */
+public fun sharedDB(block: SharedDBConfig.() -> Unit): SharedDBConfig =
+    SharedDBConfig().apply(block)
+
+/**
+ * Configures the iOS shared database App Group ID for the logging system.
+ *
+ * This function should only be used from iOS-specific source sets.
+ * It will be ignored on other platforms.
+ *
+ * @param block A configuration block where the shared App Group ID can be specified.
+ */
 public fun KtorMonitorLoggingConfig.sharedDB(block: SharedDBConfig.() -> Unit) {
     val config = SharedDBConfig().apply(block)
     config.groupID?.let { iosGroupId = it }
