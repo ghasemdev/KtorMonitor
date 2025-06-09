@@ -13,7 +13,7 @@
             android:label="@string/ktor_activity_name"
             android:roundIcon="@mipmap/ktor_ic_launcher_round"
             android:taskAffinity="ro.cosminmihu.ktor.monitor.${applicationId}"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar">
+            android:theme="@style/KtorStartingTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

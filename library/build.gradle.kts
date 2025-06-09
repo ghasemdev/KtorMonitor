@@ -18,7 +18,7 @@ plugins {
 val module = "ktor-monitor"
 val artifact = "ktor-monitor-logging"
 group = "ir.parsuomash.ktor"
-version = "1.8.0"
+version = "1.8.1"
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
@@ -167,6 +167,8 @@ kotlin {
             implementation(libs.sqldelight.android)
             implementation(libs.koin.android)
             implementation(libs.coil.gif)
+            implementation(libs.core.splashscreen)
+            implementation(libs.material)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

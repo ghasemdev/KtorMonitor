@@ -1,0 +1,12 @@
+<resources>
+
+    <style name="KtorTheme" parent="Theme.MaterialComponents.Light.NoActionBar" />
+
+    <style name="KtorStartingTheme" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ktor_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ktor_ic_splash_screen</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/KtorTheme</item>
+    </style>
+
+</resources>
