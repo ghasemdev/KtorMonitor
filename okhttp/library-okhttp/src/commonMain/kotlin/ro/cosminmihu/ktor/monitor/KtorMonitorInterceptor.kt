@@ -1,6 +1,6 @@
 package ro.cosminmihu.ktor.monitor
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import okhttp3.Interceptor
 import okhttp3.Response
 import kotlin.math.abs
@@ -93,7 +93,7 @@ public class KtorMonitorInterceptor() : Interceptor {
             null
         }
 
-        runBlocking {
+        InternalLibraryBridge.coroutineScope().launch {
             try {
                 InternalLibraryBridge.saveRequest(
                     id = id,
@@ -115,8 +115,11 @@ public class KtorMonitorInterceptor() : Interceptor {
         try {
             response = chain.proceed(request)
         } catch (cause: Throwable) {
-            runBlocking {
-                InternalLibraryBridge.saveRequestError(id = id, error = cause)
+            InternalLibraryBridge.coroutineScope().launch {
+                try {
+                    InternalLibraryBridge.saveRequestError(id = id, error = cause)
+                } catch (_: Throwable) {
+                }
             }
             throw cause
         }
@@ -125,7 +128,7 @@ public class KtorMonitorInterceptor() : Interceptor {
         val responseTimestamp = Clock.System.now().toEpochMilliseconds()
         val responseCode = response.code
         val protocol = response.protocol.toString()
-        val responseContentType = response.body?.contentType()?.toString()
+        val responseContentType = response.body.contentType()?.toString()
 
         // Response headers.
         val responseHeaders = response.headers.toMultimap()
@@ -147,8 +150,9 @@ public class KtorMonitorInterceptor() : Interceptor {
             } else {
                 responseBodyBytes
             }
+        val isResponseBodyTruncated = (responseContentLength ?: 0L) > config.maxContentLength
 
-        runBlocking {
+        InternalLibraryBridge.coroutineScope().launch {
             try {
                 InternalLibraryBridge.saveResponse(
                     id = id,
@@ -163,8 +167,7 @@ public class KtorMonitorInterceptor() : Interceptor {
                     id = id,
                     responseContentLength = responseContentLength,
                     responseBody = truncatedBody,
-                    isResponseBodyTruncated = (responseContentLength
-                        ?: 0) > config.maxContentLength,
+                    isResponseBodyTruncated = isResponseBodyTruncated,
                 )
             } catch (_: Throwable) {
             }
