@@ -39,6 +39,10 @@ dokka {
             file("src/commonMain/kotlin/ro/cosminmihu/ktor/monitor/InternalLibraryBridge.kt")
         )
 
+        suppressedFiles.from(
+            file("src/commonMain/kotlin/ro/cosminmihu/ktor/monitor/domain/model/ClientSource.kt")
+        )
+
         perPackageOption {
             matchingRegex.set("ro.cosminmihu.ktor.monitor.db.sqldelight")
             suppress.set(true)
@@ -46,11 +50,6 @@ dokka {
 
         perPackageOption {
             matchingRegex.set("ro.cosminmihu.ktor.monitor.ui.resources")
-            suppress.set(true)
-        }
-
-        perPackageOption {
-            matchingRegex.set("ro.cosminmihu.ktor.monitor.domain.ClientSource")
             suppress.set(true)
         }
     }
@@ -66,9 +65,9 @@ apiValidation {
     publicPackages.add("ro.cosminmihu.ktor.monitor")
     ignoredClasses.add("ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi")
     ignoredClasses.add("ro.cosminmihu.ktor.monitor.InternalLibraryBridge")
+    ignoredClasses.add("ro.cosminmihu.ktor.monitor.domain.model.ClientSource")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.db")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.ui")
-    ignoredPackages.add("ro.cosminmihu.ktor.monitor.domain.ClientSource")
 }
 
 mavenPublishing {

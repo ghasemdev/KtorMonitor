@@ -1,7 +1,5 @@
 package ro.cosminmihu.ktor.monitor.domain.model
 
-import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
-
 /**
  * Identifies which HTTP client library is being monitored.
  *
