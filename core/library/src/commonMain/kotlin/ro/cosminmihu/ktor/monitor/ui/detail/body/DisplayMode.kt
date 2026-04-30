@@ -1,18 +1,24 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.body
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.resources.stringResource
@@ -31,6 +37,7 @@ import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
 import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun DisplayModeSelector(
     body: DetailUiState.Body,
@@ -94,27 +101,23 @@ internal fun DisplayModeSelector(
             )
         }
 
-        SingleChoiceSegmentedButtonRow(
+        FlowRow(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
-                .align(Alignment.CenterEnd),
+                .align(Alignment.CenterEnd)
+                .padding(horizontal = Dimens.Small),
+            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
         ) {
             segmentedButtons.forEachIndexed { index, item ->
-                val modifier = when (index) {
-                    0 -> Modifier.padding(start = Dimens.Small)
-                    segmentedButtons.lastIndex -> Modifier.padding(end = Dimens.Small)
-                    else -> Modifier
-                }
-
-                SegmentedButton(
-                    selected = item.selected,
-                    onClick = item.onClick,
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = segmentedButtons.size,
-                        baseShape = MaterialTheme.shapes.small,
-                    ),
-                    modifier = modifier,
+                ToggleButton(
+                    checked = item.selected,
+                    onCheckedChange = { if (it) item.onClick() },
+                    shapes = when (index) {
+                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                        segmentedButtons.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                    },
+                    modifier = Modifier.semantics { role = Role.RadioButton },
                 ) {
                     Text(text = item.text, fontWeight = FontWeight.Bold)
                 }
