@@ -48,6 +48,11 @@ dokka {
             matchingRegex.set("ro.cosminmihu.ktor.monitor.ui.resources")
             suppress.set(true)
         }
+
+        perPackageOption {
+            matchingRegex.set("ro.cosminmihu.ktor.monitor.domain.ClientSource")
+            suppress.set(true)
+        }
     }
 }
 
@@ -63,6 +68,7 @@ apiValidation {
     ignoredClasses.add("ro.cosminmihu.ktor.monitor.InternalLibraryBridge")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.db")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.ui")
+    ignoredPackages.add("ro.cosminmihu.ktor.monitor.domain.ClientSource")
 }
 
 mavenPublishing {

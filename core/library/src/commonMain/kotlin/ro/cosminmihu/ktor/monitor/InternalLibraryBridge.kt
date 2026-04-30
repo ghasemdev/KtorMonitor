@@ -6,6 +6,7 @@ import ro.cosminmihu.ktor.monitor.di.LibraryKoinContext
 import ro.cosminmihu.ktor.monitor.di.inject
 import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 import ro.cosminmihu.ktor.monitor.domain.ListenByRecentCallsUseCase
+import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
 import ro.cosminmihu.ktor.monitor.domain.model.Config
 import kotlin.time.Duration
 
@@ -43,6 +44,7 @@ public object InternalLibraryBridge {
         showNotification: Boolean,
         retentionPeriod: Duration,
         maxContentLength: Int,
+        clientSource: ClientSource,
     ) {
         LibraryKoinContext.koin.get<ConfigUseCase>().setConfig(
             Config(
@@ -50,6 +52,7 @@ public object InternalLibraryBridge {
                 showNotification = showNotification,
                 retentionPeriod = retentionPeriod,
                 maxContentLength = maxContentLength,
+                clientSource = clientSource,
             )
         )
     }
@@ -61,6 +64,7 @@ public object InternalLibraryBridge {
     public fun startListening() {
         LibraryKoinContext.koin.get<ListenByRecentCallsUseCase>()()
     }
+
 
     /**
      * Get the library coroutine scope.

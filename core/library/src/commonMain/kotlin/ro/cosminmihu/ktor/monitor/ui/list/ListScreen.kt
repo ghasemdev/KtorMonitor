@@ -43,11 +43,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.style.TextOverflow.Companion
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import ro.cosminmihu.ktor.monitor.core.URL
+import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.Loading
 import ro.cosminmihu.ktor.monitor.ui.notification.NotificationPermissionBanner
@@ -58,6 +58,8 @@ import ro.cosminmihu.ktor.monitor.ui.resources.ktor_filter
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_ic_launcher
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_ic_warning_off
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_library_name
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_ktor
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_okhttp
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,13 +91,30 @@ internal fun ListScreen(
             Column {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = stringResource(Res.string.ktor_library_name),
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { uriHandler.openUri(URL.GITHUB_REPO) },
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Column {
+                            Text(
+                                text = stringResource(Res.string.ktor_library_name),
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { uriHandler.openUri(URL.GITHUB_REPO) },
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            uiState.clientSource?.let { source ->
+                                val (label, url) = when (source) {
+                                    ClientSource.Ktor -> stringResource(Res.string.ktor_source_ktor) to URL.KTOR
+                                    ClientSource.OkHttp -> stringResource(Res.string.ktor_source_okhttp) to URL.OKHTTP
+                                }
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable { uriHandler.openUri(url) },
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
                     },
                     navigationIcon = {
                         Image(

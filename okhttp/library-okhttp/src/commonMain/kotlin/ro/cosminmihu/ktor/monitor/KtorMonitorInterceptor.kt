@@ -3,6 +3,7 @@ package ro.cosminmihu.ktor.monitor
 import kotlinx.coroutines.launch
 import okhttp3.Interceptor
 import okhttp3.Response
+import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
 import kotlin.math.abs
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -42,6 +43,7 @@ public class KtorMonitorInterceptor() : Interceptor {
             showNotification = config.showNotification,
             retentionPeriod = config.retentionPeriod,
             maxContentLength = config.maxContentLength,
+            clientSource = ClientSource.OkHttp,
         )
 
         if (config.isActive && config.retentionPeriod.isPositive()) {

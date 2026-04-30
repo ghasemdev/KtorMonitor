@@ -1,11 +1,13 @@
 package ro.cosminmihu.ktor.monitor.ui.list
 
+import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 
 internal data class ListUiState(
     val calls: List<Call>? = null,
     val filter: Filter = Filter.NoFilter,
     val showNotification: Boolean = false,
+    val clientSource: ClientSource? = null,
 ) {
     data class Call(
         val id: String,

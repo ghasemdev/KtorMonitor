@@ -1,6 +1,9 @@
 <resources>
     <string name="ktor_library_name">Ktor Monitor</string>
 
+    <string name="ktor_source_ktor">Ktor Plugin</string>
+    <string name="ktor_source_okhttp">OkHttp Interceptor</string>
+
     <string name="ktor_library_disabled">Ktor Monitor is disabled.</string>
 
     <string name="ktor_filter">Filter</string>

@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -17,6 +16,7 @@ import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCalls
 import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 import ro.cosminmihu.ktor.monitor.domain.DeleteCallsUseCase
 import ro.cosminmihu.ktor.monitor.domain.GetCallsUseCase
+import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
 import ro.cosminmihu.ktor.monitor.domain.model.durationAsText
@@ -40,10 +40,10 @@ internal class ListViewModel(
     private val filter = _filter.debounce(0.2.seconds)
     private val calls = getCallsUseCase()
 
-    val uiState = combine(this@ListViewModel.filter, calls, ::filter)
-        .map { (filterOption, calls) ->
-            buildUiState(filterOption, calls, configUseCase.isShowNotification())
-        }
+    val uiState = combine(this@ListViewModel.filter, calls, configUseCase.clientSource) { filterOption, calls, clientSource ->
+        val (appliedFilter, filtered) = filter(filterOption, calls)
+        buildUiState(appliedFilter, filtered, configUseCase.isShowNotification(), clientSource)
+    }
         .flowOn(Dispatchers.Default)
         .stateIn(
             viewModelScope,
@@ -73,9 +73,11 @@ internal class ListViewModel(
         filter: ListUiState.Filter,
         calls: List<SelectCalls>,
         showNotification: Boolean,
+        clientSource: ClientSource?,
     ): ListUiState = ListUiState(
         filter = filter,
         showNotification = showNotification,
+        clientSource = clientSource,
         calls = calls.map {
             ListUiState.Call(
                 id = it.id,
