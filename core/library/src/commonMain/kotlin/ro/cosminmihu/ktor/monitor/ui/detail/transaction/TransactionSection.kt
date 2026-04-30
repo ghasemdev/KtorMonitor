@@ -20,13 +20,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontStyle
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import ro.cosminmihu.ktor.monitor.core.ClipboardManager
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_copy
@@ -35,10 +39,12 @@ import ro.cosminmihu.ktor.monitor.ui.resources.ktor_copy
 internal fun TransactionSection(
     title: String,
     modifier: Modifier = Modifier,
-    onCopy: (() -> Unit)? = null,
+    copyText: (() -> String)? = null,
     content: @Composable () -> Unit
 ) {
     var show by rememberSaveable { mutableStateOf(true) }
+    val clipboard = koinInject<ClipboardManager>()
+    val scope = rememberCoroutineScope()
 
     Column(modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -51,13 +57,15 @@ internal fun TransactionSection(
 
             HorizontalDivider(modifier = Modifier.weight(1f))
 
-            if (onCopy != null) {
+            if (copyText != null) {
                 AnimatedVisibility(
                     visible = show,
                     enter = fadeIn() + expandHorizontally(),
                     exit = fadeOut() + shrinkHorizontally(),
                 ) {
-                    TextButton(onClick = onCopy) {
+                    TextButton(
+                        onClick = { scope.launch { clipboard.setText(copyText()) } },
+                    ) {
                         Text(text = stringResource(Res.string.ktor_copy))
                     }
                 }

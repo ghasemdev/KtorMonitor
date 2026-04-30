@@ -21,7 +21,19 @@ import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @Composable
 internal fun Headers(headers: Map<String, List<String>>) {
-    TransactionSection(title = stringResource(Res.string.ktor_headers)) {
+    TransactionSection(
+        title = stringResource(Res.string.ktor_headers),
+        copyText = when {
+            headers.isEmpty() -> null
+            else -> {
+                {
+                    headers.entries.joinToString(separator = "\n") { (key, values) ->
+                        "$key: ${values.joinToString(", ")}"
+                    }
+                }
+            }
+        },
+    ) {
         if (headers.isEmpty()) {
             NoHeaders()
             return@TransactionSection

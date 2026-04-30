@@ -118,3 +118,17 @@ internal val ContentType.contentFormat
 
         else -> null
     }
+
+internal fun DetailUiState.Body.hasCopyableContent(displayMode: DisplayMode): Boolean = when (displayMode) {
+    DisplayMode.CODE,
+    DisplayMode.RAW -> !raw.isNullOrEmpty()
+    DisplayMode.BYTES -> !bytes.isNullOrEmpty()
+    DisplayMode.IMAGE -> false
+}
+
+internal fun DetailUiState.Body.copyTextFor(displayMode: DisplayMode): String? = when (displayMode) {
+    DisplayMode.CODE,
+    DisplayMode.RAW -> raw?.takeIf { it.isNotEmpty() }
+    DisplayMode.BYTES -> bytes?.takeIf { it.isNotEmpty() }
+    DisplayMode.IMAGE -> null
+}

@@ -12,8 +12,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.Loading
 import ro.cosminmihu.ktor.monitor.ui.detail.DetailUiState
+import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
 import ro.cosminmihu.ktor.monitor.ui.detail.body.Body
-import ro.cosminmihu.ktor.monitor.ui.detail.body.DisplayMode
 import ro.cosminmihu.ktor.monitor.ui.detail.headers.Headers
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 

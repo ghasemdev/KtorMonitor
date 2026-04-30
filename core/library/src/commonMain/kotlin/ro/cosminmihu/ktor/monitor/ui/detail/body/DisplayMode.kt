@@ -27,6 +27,7 @@ import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_raw
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
+import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
 import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
@@ -128,9 +129,6 @@ private data class BodyShowTypeSegment(
     val onClick: () -> Unit,
 )
 
-internal enum class DisplayMode {
-    IMAGE, CODE, RAW, BYTES
-}
 
 @Preview(name = "Light")
 @Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)

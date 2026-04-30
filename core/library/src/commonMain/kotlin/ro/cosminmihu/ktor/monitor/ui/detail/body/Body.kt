@@ -9,6 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -18,19 +21,19 @@ import com.sebastianneubauer.jsontree.defaultLightColors
 import org.jetbrains.compose.resources.stringResource
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.detail.DetailUiState
+import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
+import ro.cosminmihu.ktor.monitor.ui.detail.copyTextFor
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.Css
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.FormUrlEncoded
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.Text
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.XmlTree
+import ro.cosminmihu.ktor.monitor.ui.detail.hasCopyableContent
 import ro.cosminmihu.ktor.monitor.ui.detail.noBody
 import ro.cosminmihu.ktor.monitor.ui.detail.transaction.TransactionSection
+import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_body
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
-import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
 
 @Composable
 internal fun Body(
@@ -38,7 +41,16 @@ internal fun Body(
     displayMode: DisplayMode,
     onDisplayMode: (DisplayMode) -> Unit,
 ) {
-    TransactionSection(title = stringResource(Res.string.ktor_body)) {
+    TransactionSection(
+        title = stringResource(Res.string.ktor_body),
+        copyText = when {
+            body?.hasCopyableContent(displayMode) == true -> {
+                { body.copyTextFor(displayMode).orEmpty() }
+            }
+
+            else -> null
+        },
+    ) {
         if (body == null || body.noBody) {
             NoBody()
             return@TransactionSection
