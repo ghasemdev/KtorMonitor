@@ -17,6 +17,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
@@ -29,6 +30,16 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.max
+
+/**
+ * Provides the maximum line number that will be rendered inside a code view,
+ * so [CodeLine] can left-pad smaller numbers with spaces and keep the gutter
+ * pixel-perfect (monospace font ⇒ identical glyph + space advance).
+ *
+ * Top-level formatters (e.g. CSS / XML / Form trees) wrap their content with
+ * `CompositionLocalProvider(LocalMaxLineNumber provides max)`.
+ */
+internal val LocalMaxLineNumber = compositionLocalOf { 0 }
 
 /**
  * A single "code editor" row: a fixed-width gutter cell with [lineNumber], a
@@ -50,13 +61,17 @@ internal fun CodeLine(
     horizontalPadding: Dp = 8.dp,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val maxLine = LocalMaxLineNumber.current
+    val digits = max(maxLine.toString().length, lineNumber.toString().length)
+    val label = lineNumber.toString().padStart(digits)
     Row(modifier = modifier.height(IntrinsicSize.Min)) {
         Text(
-            text = lineNumber.toString(),
+            text = label,
             color = gutterColor,
             fontFamily = FontFamily.Monospace,
             fontSize = fontSize,
             textAlign = TextAlign.End,
+            softWrap = false,
             modifier = Modifier
                 .widthIn(min = cellWidth)
                 .padding(horizontal = horizontalPadding),

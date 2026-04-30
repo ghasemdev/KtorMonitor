@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
+import ro.cosminmihu.ktor.monitor.ui.detail.body.LocalMaxLineNumber
+import kotlin.math.max
 
 // --------------------------------------------------------------------------------
 // PUBLIC API
@@ -68,19 +71,23 @@ internal fun Css(
 
     if (error != null) return
 
+    val maxLine = remember(nodes) { nodes.maxLine() }
+
     SelectionContainer {
         Column(
             modifier = modifier
                 .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(contentPadding),
         ) {
-            nodes.forEach { node ->
-                CssNodeView(
-                    node = node,
-                    colors = colors,
-                    depth = 0,
-                    isInitiallyExpanded = initialExpanded
-                )
+            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+                nodes.forEach { node ->
+                    CssNodeView(
+                        node = node,
+                        colors = colors,
+                        depth = 0,
+                        isInitiallyExpanded = initialExpanded
+                    )
+                }
             }
         }
     }
@@ -414,4 +421,21 @@ private class CssParser(private val input: String) {
     private fun consume(c: Char) {
         if (match(c)) pos++
     }
+}
+
+/** Largest line number that will appear in the gutter for this tree. */
+private fun List<CssNode>.maxLine(): Int {
+    var m = 0
+    fun visit(node: CssNode) {
+        when (node) {
+            is CssNode.Rule -> {
+                m = max(m, max(node.openingLine, node.closingLine))
+                node.children.forEach(::visit)
+            }
+            is CssNode.Declaration -> m = max(m, node.line)
+            is CssNode.Comment -> Unit
+        }
+    }
+    forEach(::visit)
+    return m
 }

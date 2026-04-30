@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
+import ro.cosminmihu.ktor.monitor.ui.detail.body.LocalMaxLineNumber
+import kotlin.math.max
 
 // --------------------------------------------------------------------------------
 // PUBLIC API
@@ -69,19 +72,23 @@ internal fun FormUrlEncoded(
 
     if (error != null || rootNodes.isEmpty()) return
 
+    val maxLine = remember(rootNodes) { rootNodes.maxLine() }
+
     SelectionContainer {
         Column(
             modifier = modifier
                 .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(contentPadding),
         ) {
-            rootNodes.forEach { node ->
-                FormNodeView(
-                    node = node,
-                    colors = colors,
-                    depth = 0,
-                    isInitiallyExpanded = initialExpanded
-                )
+            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+                rootNodes.forEach { node ->
+                    FormNodeView(
+                        node = node,
+                        colors = colors,
+                        depth = 0,
+                        isInitiallyExpanded = initialExpanded
+                    )
+                }
             }
         }
     }
@@ -386,3 +393,20 @@ private fun String.decodeUrlEncoded(): String {
     }
     return sb.toString()
 }
+
+/** Largest line number that will appear in the gutter for this tree. */
+private fun List<FormNode>.maxLine(): Int {
+    var m = 0
+    fun visit(node: FormNode) {
+        when (node) {
+            is FormNode.Parent -> {
+                m = max(m, max(node.openingLine, node.closingLine))
+                node.children.forEach(::visit)
+            }
+            is FormNode.Leaf -> m = max(m, node.openingLine)
+        }
+    }
+    forEach(::visit)
+    return m
+}
+

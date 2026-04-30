@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import com.fleeksoft.ksoup.nodes.TextNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
+import ro.cosminmihu.ktor.monitor.ui.detail.body.LocalMaxLineNumber
 
 /**
  * Entry point for the XmlTree.
@@ -87,20 +89,31 @@ internal fun XmlTree(
     val rootElements = rootElement?.children()
     if (error != null || rootElements.isNullOrEmpty()) return
 
+    val maxLine = remember(lineNumbers) {
+        var m = 0
+        for (arr in lineNumbers.values) {
+            if (arr.size >= 1 && arr[0] > m) m = arr[0]
+            if (arr.size >= 2 && arr[1] > m) m = arr[1]
+        }
+        m
+    }
+
     SelectionContainer {
         Column(
             modifier = modifier
                 .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(contentPadding),
         ) {
-            rootElements.forEach { child ->
-                XmlNodeView(
-                    node = child,
-                    colors = colors,
-                    depth = 0,
-                    isInitiallyExpanded = initialExpanded,
-                    lineNumbers = lineNumbers,
-                )
+            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+                rootElements.forEach { child ->
+                    XmlNodeView(
+                        node = child,
+                        colors = colors,
+                        depth = 0,
+                        isInitiallyExpanded = initialExpanded,
+                        lineNumbers = lineNumbers,
+                    )
+                }
             }
         }
     }
