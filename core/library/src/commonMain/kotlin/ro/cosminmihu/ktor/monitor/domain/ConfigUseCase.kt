@@ -17,6 +17,4 @@ internal class ConfigUseCase {
     internal fun getRetentionPeriod() = config.value.retentionPeriod
 
     internal fun isShowNotification() = config.value.showNotification
-
-    internal fun getMaxContentLength() = config.value.maxContentLength
 }

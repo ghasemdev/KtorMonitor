@@ -1,6 +1,5 @@
 package ro.cosminmihu.ktor.monitor.domain.model
 
-import androidx.compose.ui.graphics.Color
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
@@ -50,38 +49,6 @@ internal fun Long.sizeAsText(): String {
     return "$roundedSize ${units[exp]}"
 }
 
-internal fun String.toColor(): Color {
-    return if (this.startsWith("#")) {
-        val hex = this.removePrefix("#")
-        when (hex.length) {
-            6 -> {
-                val r = hex.substring(0, 2).toInt(16)
-                val g = hex.substring(2, 4).toInt(16)
-                val b = hex.substring(4, 6).toInt(16)
-                Color(r, g, b)
-            }
-
-            8 -> {
-                val a = hex.substring(0, 2).toInt(16)
-                val r = hex.substring(2, 4).toInt(16)
-                val g = hex.substring(4, 6).toInt(16)
-                val b = hex.substring(6, 8).toInt(16)
-                Color(r, g, b, a)
-            }
-
-            3 -> {
-                val r = hex.substring(0, 1).toInt(16) * 17
-                val g = hex.substring(1, 2).toInt(16) * 17
-                val b = hex.substring(2, 3).toInt(16) * 17
-                Color(r, g, b)
-            }
-
-            else -> throw IllegalArgumentException("Invalid hex color format")
-        }
-    } else {
-        throw IllegalArgumentException("Invalid hex color format")
-    }
-}
 
 internal fun String.shellEscape(): String = this
     .replace("\\", "\\\\")
