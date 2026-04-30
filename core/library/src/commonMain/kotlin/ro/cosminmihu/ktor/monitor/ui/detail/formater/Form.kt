@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
 
 // --------------------------------------------------------------------------------
 // PUBLIC API
@@ -49,6 +50,7 @@ internal fun FormUrlEncoded(
     colors: FormTreeColors = FormTreeDefaults.colors(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
     initialExpanded: Boolean = true,
+    verticalScroll: Boolean = true,
     onError: (Throwable) -> Unit = {}
 ) {
     var rootNodes by remember(body) { mutableStateOf<List<FormNode>>(emptyList()) }
@@ -57,6 +59,7 @@ internal fun FormUrlEncoded(
     LaunchedEffect(body) {
         try {
             rootNodes = withContext(Dispatchers.Default) { FormParser.parse(body) }
+                .assignLineNumbers()
             error = null
         } catch (e: Exception) {
             error = e.message
@@ -69,7 +72,7 @@ internal fun FormUrlEncoded(
     SelectionContainer {
         Column(
             modifier = modifier
-                .verticalScroll(rememberScrollState())
+                .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(contentPadding),
         ) {
             rootNodes.forEach { node ->
@@ -107,63 +110,69 @@ private fun FormNodeView(
     val arrowRotation by animateFloatAsState(targetValue = if (isExpanded) 0f else -90f)
 
     Column {
-        Row(
+        CodeLine(
+            lineNumber = node.openingLine,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = hasChildren) { isExpanded = !isExpanded }
-                .padding(start = (indentation * depth), top = 2.dp, bottom = 2.dp),
-            verticalAlignment = Alignment.Top
+                .clickable(enabled = hasChildren) { isExpanded = !isExpanded },
         ) {
-            // Expand Icon
-            Box(modifier = Modifier.size(24.dp)) {
-                if (hasChildren) {
-                    Image(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Expand/Collapse",
-                        colorFilter = ColorFilter.tint(colors.arrowColor),
-                        modifier = Modifier.fillMaxSize().rotate(arrowRotation)
-                    )
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = (indentation * depth), top = 2.dp, bottom = 2.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Expand Icon
+                Box(modifier = Modifier.size(24.dp)) {
+                    if (hasChildren) {
+                        Image(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Expand/Collapse",
+                            colorFilter = ColorFilter.tint(colors.arrowColor),
+                            modifier = Modifier.fillMaxSize().rotate(arrowRotation)
+                        )
+                    }
                 }
-            }
 
-            // Node Content
-            Text(
-                text = buildAnnotatedString {
-                    // Key
-                    withStyle(SpanStyle(color = colors.keyColor)) {
-                        append(node.key)
-                    }
+                // Node Content
+                Text(
+                    text = buildAnnotatedString {
+                        // Key
+                        withStyle(SpanStyle(color = colors.keyColor)) {
+                            append(node.key)
+                        }
 
-                    when (node) {
-                        is FormNode.Parent -> {
-                            // Visual hint for structure
-                            withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                append(if (node.isArray) " [" else " {")
-                            }
-                            if (!isExpanded) {
-                                withStyle(SpanStyle(color = colors.commentColor)) {
-                                    append(" ... ")
-                                }
+                        when (node) {
+                            is FormNode.Parent -> {
+                                // Visual hint for structure
                                 withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                    append(if (node.isArray) "]" else "}")
+                                    append(if (node.isArray) " [" else " {")
+                                }
+                                if (!isExpanded) {
+                                    withStyle(SpanStyle(color = colors.commentColor)) {
+                                        append(" ... ")
+                                    }
+                                    withStyle(SpanStyle(color = colors.punctuationColor)) {
+                                        append(if (node.isArray) "]" else "}")
+                                    }
+                                }
+                            }
+
+                            is FormNode.Leaf -> {
+                                withStyle(SpanStyle(color = colors.punctuationColor)) {
+                                    append(" = ")
+                                }
+                                withStyle(SpanStyle(color = colors.valueColor)) {
+                                    append(node.value)
                                 }
                             }
                         }
-
-                        is FormNode.Leaf -> {
-                            withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                append(" = ")
-                            }
-                            withStyle(SpanStyle(color = colors.valueColor)) {
-                                append(node.value)
-                            }
-                        }
-                    }
-                },
-                fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(start = 4.dp)
-            )
+                    },
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
         }
 
         // Children Recursive Render
@@ -175,13 +184,22 @@ private fun FormNodeView(
 
                 // Closing brackets for parents
                 if (node is FormNode.Parent) {
-                    Row(modifier = Modifier.padding(start = (indentation * depth) + 24.dp + 4.dp)) {
-                        Text(
-                            text = if (node.isArray) "]" else "}",
-                            color = colors.punctuationColor,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 14.sp
-                        )
+                    CodeLine(
+                        lineNumber = node.closingLine,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = (indentation * depth) + 24.dp + 4.dp),
+                        ) {
+                            Text(
+                                text = if (node.isArray) "]" else "}",
+                                color = colors.punctuationColor,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }
@@ -195,13 +213,40 @@ private fun FormNodeView(
 
 internal sealed class FormNode {
     abstract val key: String
+    abstract val openingLine: Int
 
-    data class Leaf(override val key: String, val value: String) : FormNode()
+    data class Leaf(
+        override val key: String,
+        val value: String,
+        override val openingLine: Int = 0,
+    ) : FormNode()
+
     data class Parent(
         override val key: String,
         val children: List<FormNode>,
-        val isArray: Boolean = false
+        val isArray: Boolean = false,
+        override val openingLine: Int = 0,
+        val closingLine: Int = 0,
     ) : FormNode()
+}
+
+/**
+ * Walks the parsed tree once and assigns a stable, monotonically increasing
+ * line number to every renderable row. Numbers are kept across collapse/expand
+ * toggles so the gutter behaves like code folding.
+ */
+private fun List<FormNode>.assignLineNumbers(): List<FormNode> {
+    var counter = 0
+    fun walk(node: FormNode): FormNode = when (node) {
+        is FormNode.Leaf -> node.copy(openingLine = ++counter)
+        is FormNode.Parent -> {
+            val opening = ++counter
+            val newChildren = node.children.map(::walk)
+            val closing = ++counter
+            node.copy(openingLine = opening, closingLine = closing, children = newChildren)
+        }
+    }
+    return map(::walk)
 }
 
 internal data class FormTreeColors(

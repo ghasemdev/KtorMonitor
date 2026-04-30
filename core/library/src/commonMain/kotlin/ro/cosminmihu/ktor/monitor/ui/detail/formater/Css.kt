@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
 
 // --------------------------------------------------------------------------------
 // PUBLIC API
@@ -49,6 +50,7 @@ internal fun Css(
     colors: CssTreeColors = CssTreeDefaults.colors(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
     initialExpanded: Boolean = false,
+    verticalScroll: Boolean = true,
     onError: (Throwable) -> Unit = {}
 ) {
     var nodes by remember(css) { mutableStateOf<List<CssNode>>(emptyList()) }
@@ -56,7 +58,7 @@ internal fun Css(
 
     LaunchedEffect(css) {
         try {
-            nodes = CssParser(css).parse()
+            nodes = CssParser(css).parse().assignLineNumbers()
             error = null
         } catch (e: Exception) {
             error = e.message
@@ -69,7 +71,7 @@ internal fun Css(
     SelectionContainer {
         Column(
             modifier = modifier
-                .verticalScroll(rememberScrollState())
+                .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(contentPadding),
         ) {
             nodes.forEach { node ->
@@ -105,44 +107,50 @@ private fun CssNodeView(
 
             Column {
                 // Selector Row: "selector {"
-                Row(
+                CodeLine(
+                    lineNumber = node.openingLine,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(enabled = hasChildren) { isExpanded = !isExpanded }
-                        .padding(start = (indentation * depth), top = 4.dp, bottom = 2.dp),
-                    verticalAlignment = Alignment.Top
+                        .clickable(enabled = hasChildren) { isExpanded = !isExpanded },
                 ) {
-                    // Expand Icon
-                    Box(modifier = Modifier.size(24.dp)) {
-                        if (hasChildren) {
-                            Image(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = null,
-                                colorFilter = ColorFilter.tint(colors.arrowColor),
-                                modifier = Modifier.fillMaxSize().rotate(arrowRotation)
-                            )
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = (indentation * depth), top = 4.dp, bottom = 2.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        // Expand Icon
+                        Box(modifier = Modifier.size(24.dp)) {
+                            if (hasChildren) {
+                                Image(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    colorFilter = ColorFilter.tint(colors.arrowColor),
+                                    modifier = Modifier.fillMaxSize().rotate(arrowRotation)
+                                )
+                            }
                         }
-                    }
 
-                    // Selector Text
-                    Text(
-                        text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = colors.selectorColor)) {
-                                append(node.selector.trim())
-                            }
-                            withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                append(" {")
-                            }
-                            if (!isExpanded && hasChildren) {
-                                withStyle(SpanStyle(color = colors.commentColor)) {
-                                    append(" ... }")
+                        // Selector Text
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(color = colors.selectorColor)) {
+                                    append(node.selector.trim())
                                 }
-                            }
-                        },
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
+                                withStyle(SpanStyle(color = colors.punctuationColor)) {
+                                    append(" {")
+                                }
+                                if (!isExpanded && hasChildren) {
+                                    withStyle(SpanStyle(color = colors.commentColor)) {
+                                        append(" ... }")
+                                    }
+                                }
+                            },
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
                 }
 
                 // Children (Properties or nested rules)
@@ -153,13 +161,22 @@ private fun CssNodeView(
                         }
 
                         // Closing Brace "}"
-                        Row(modifier = Modifier.padding(start = (indentation * depth) + 24.dp + 4.dp)) {
-                            Text(
-                                text = "}",
-                                color = colors.punctuationColor,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 14.sp
-                            )
+                        CodeLine(
+                            lineNumber = node.closingLine,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = (indentation * depth) + 24.dp + 4.dp),
+                            ) {
+                                Text(
+                                    text = "}",
+                                    color = colors.punctuationColor,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 14.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -168,33 +185,38 @@ private fun CssNodeView(
 
         is CssNode.Declaration -> {
             // Property Row: "key: value;"
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = (indentation * depth) + 24.dp + 4.dp,
-                        top = 1.dp,
-                        bottom = 1.dp
-                    )
+            CodeLine(
+                lineNumber = node.line,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(SpanStyle(color = colors.propertyColor)) {
-                            append(node.property.trim())
-                        }
-                        withStyle(SpanStyle(color = colors.punctuationColor)) {
-                            append(": ")
-                        }
-                        withStyle(SpanStyle(color = colors.valueColor)) {
-                            append(node.value.trim())
-                        }
-                        withStyle(SpanStyle(color = colors.punctuationColor)) {
-                            append(";")
-                        }
-                    },
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp
-                )
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(
+                            start = (indentation * depth) + 24.dp + 4.dp,
+                            top = 1.dp,
+                            bottom = 1.dp
+                        )
+                ) {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(SpanStyle(color = colors.propertyColor)) {
+                                append(node.property.trim())
+                            }
+                            withStyle(SpanStyle(color = colors.punctuationColor)) {
+                                append(": ")
+                            }
+                            withStyle(SpanStyle(color = colors.valueColor)) {
+                                append(node.value.trim())
+                            }
+                            withStyle(SpanStyle(color = colors.punctuationColor)) {
+                                append(";")
+                            }
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
 
@@ -209,9 +231,45 @@ private fun CssNodeView(
 // --------------------------------------------------------------------------------
 
 internal sealed class CssNode {
-    data class Rule(val selector: String, val children: List<CssNode>) : CssNode()
-    data class Declaration(val property: String, val value: String) : CssNode()
+    data class Rule(
+        val selector: String,
+        val children: List<CssNode>,
+        val openingLine: Int = 0,
+        val closingLine: Int = 0,
+    ) : CssNode()
+
+    data class Declaration(
+        val property: String,
+        val value: String,
+        val line: Int = 0,
+    ) : CssNode()
+
     data class Comment(val text: String) : CssNode()
+}
+
+/**
+ * Walks the parsed tree once and assigns a stable, monotonically increasing
+ * line number to every row that will ever be rendered (selector lines, closing
+ * braces, declarations). Numbers are kept across collapse/expand toggles so the
+ * gutter behaves like code folding.
+ */
+private fun List<CssNode>.assignLineNumbers(): List<CssNode> {
+    var counter = 0
+    fun walk(node: CssNode): CssNode = when (node) {
+        is CssNode.Rule -> {
+            val opening = ++counter
+            val newChildren = node.children.map(::walk)
+            val closing = ++counter
+            node.copy(
+                openingLine = opening,
+                closingLine = closing,
+                children = newChildren,
+            )
+        }
+        is CssNode.Declaration -> node.copy(line = ++counter)
+        is CssNode.Comment -> node
+    }
+    return map(::walk)
 }
 
 internal data class CssTreeColors(

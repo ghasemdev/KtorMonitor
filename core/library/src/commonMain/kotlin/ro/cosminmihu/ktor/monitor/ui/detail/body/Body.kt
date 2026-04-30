@@ -119,7 +119,13 @@ internal fun Body(
                 )
 
             body.raw != null && displayMode == DisplayMode.RAW ->
-                Text(text = body.raw, modifier = Modifier.padding(Dimens.Small))
+                LineNumberGutter(modifier = Modifier.fillMaxHeight()) {
+                    Text(
+                        text = body.raw,
+                        modifier = Modifier.padding(Dimens.Small),
+                        verticalScroll = false,
+                    )
+                }
 
             !body.bytes.isNullOrEmpty() && displayMode == DisplayMode.BYTES ->
                 Text(text = body.bytes, modifier = Modifier.padding(Dimens.Small))

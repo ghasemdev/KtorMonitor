@@ -11,10 +11,11 @@ import androidx.compose.ui.Modifier
 @Composable
 internal fun Text(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    verticalScroll: Boolean = true,
 ) {
     SelectionContainer(
-        modifier = modifier.verticalScroll(rememberScrollState())
+        modifier = if (verticalScroll) modifier.verticalScroll(rememberScrollState()) else modifier
     ) {
         Text(
             text = text,

@@ -44,6 +44,7 @@ import com.fleeksoft.ksoup.nodes.Node
 import com.fleeksoft.ksoup.nodes.TextNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
 
 /**
  * Entry point for the XmlTree.
@@ -62,15 +63,20 @@ internal fun XmlTree(
     colors: XmlTreeColors = XmlTreeDefaults.colors(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
     initialExpanded: Boolean = false,
+    verticalScroll: Boolean = true,
     onError: (Throwable) -> Unit = {}
 ) {
     var rootElement by remember(xml) { mutableStateOf<Element?>(null) }
+    var lineNumbers by remember(xml) { mutableStateOf<Map<Node, IntArray>>(emptyMap()) }
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(xml) {
         try {
             val document: Document = withContext(Dispatchers.Default) { Ksoup.parseXml(xml, "") }
             rootElement = document
+            lineNumbers = withContext(Dispatchers.Default) {
+                buildXmlLineNumbers(document.children())
+            }
             error = null
         } catch (e: Exception) {
             error = e.message
@@ -84,7 +90,7 @@ internal fun XmlTree(
     SelectionContainer {
         Column(
             modifier = modifier
-                .verticalScroll(rememberScrollState())
+                .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(contentPadding),
         ) {
             rootElements.forEach { child ->
@@ -92,11 +98,46 @@ internal fun XmlTree(
                     node = child,
                     colors = colors,
                     depth = 0,
-                    isInitiallyExpanded = initialExpanded
+                    isInitiallyExpanded = initialExpanded,
+                    lineNumbers = lineNumbers,
                 )
             }
         }
     }
+}
+
+/**
+ * Pre-computes a stable `[opening, closing]` line number for every node that
+ * will ever be rendered. Closing line is `0` for self-closing elements and
+ * text nodes. Numbers are kept across collapse/expand toggles so the gutter
+ * behaves like code folding.
+ */
+private fun buildXmlLineNumbers(roots: List<Node>): Map<Node, IntArray> {
+    val map = HashMap<Node, IntArray>()
+    var counter = 0
+    fun visit(node: Node) {
+        when (node) {
+            is Element -> {
+                val opening = ++counter
+                val children = node.childNodes()
+                if (children.isEmpty()) {
+                    map[node] = intArrayOf(opening, 0)
+                } else {
+                    children.forEach(::visit)
+                    val closing = ++counter
+                    map[node] = intArrayOf(opening, closing)
+                }
+            }
+            is TextNode -> {
+                if (node.text().trim().isNotEmpty()) {
+                    map[node] = intArrayOf(++counter, 0)
+                }
+            }
+            else -> Unit
+        }
+    }
+    roots.forEach(::visit)
+    return map
 }
 
 /**
@@ -107,9 +148,13 @@ private fun XmlNodeView(
     node: Node,
     colors: XmlTreeColors,
     depth: Int,
-    isInitiallyExpanded: Boolean
+    isInitiallyExpanded: Boolean,
+    lineNumbers: Map<Node, IntArray>,
 ) {
     val indentation = 16.dp // Indentation per level
+    val numbers = lineNumbers[node]
+    val openingLine = numbers?.getOrNull(0) ?: 0
+    val closingLine = numbers?.getOrNull(1) ?: 0
 
     when (node) {
         is Element -> {
@@ -120,66 +165,72 @@ private fun XmlNodeView(
             val arrowRotation by animateFloatAsState(targetValue = if (isExpanded) 0f else -90f)
 
             Column {
-                Row(
+                CodeLine(
+                    lineNumber = openingLine,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(enabled = hasChildren) { isExpanded = !isExpanded }
-                        .padding(start = (indentation * depth), top = 2.dp, bottom = 2.dp),
-                    verticalAlignment = Alignment.Top
+                        .clickable(enabled = hasChildren) { isExpanded = !isExpanded },
                 ) {
-                    // Expand/Collapse Icon
-                    Box(modifier = Modifier.size(24.dp)) {
-                        if (hasChildren) {
-                            Image(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Expand/Collapse",
-                                colorFilter = ColorFilter.tint(colors.arrowColor),
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .rotate(arrowRotation)
-                            )
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = (indentation * depth), top = 2.dp, bottom = 2.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        // Expand/Collapse Icon
+                        Box(modifier = Modifier.size(24.dp)) {
+                            if (hasChildren) {
+                                Image(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Expand/Collapse",
+                                    colorFilter = ColorFilter.tint(colors.arrowColor),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .rotate(arrowRotation)
+                                )
+                            }
                         }
-                    }
 
-                    // The opening tag: <TagName attr="val">
-                    Text(
-                        text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = colors.tagColor)) {
-                                append("<${node.tagName()}")
-                            }
-
-                            // Attributes
-                            node.attributes().forEach { attr: Attribute ->
-                                append(" ")
-                                withStyle(SpanStyle(color = colors.attributeKeyColor)) {
-                                    append(attr.key)
-                                }
-                                withStyle(SpanStyle(color = colors.symbolColor)) {
-                                    append("=")
-                                }
-                                withStyle(SpanStyle(color = colors.attributeValueColor)) {
-                                    append("\"${attr.value}\"")
-                                }
-                            }
-
-                            withStyle(SpanStyle(color = colors.tagColor)) {
-                                if (!hasChildren) append("/>") else append(">")
-                            }
-
-                            // Summary text for collapsed state (optional optimization)
-                            if (hasChildren && !isExpanded) {
-                                withStyle(SpanStyle(color = colors.symbolColor)) {
-                                    append(" ... ")
-                                }
+                        // The opening tag: <TagName attr="val">
+                        Text(
+                            text = buildAnnotatedString {
                                 withStyle(SpanStyle(color = colors.tagColor)) {
-                                    append("</${node.tagName()}>")
+                                    append("<${node.tagName()}")
                                 }
-                            }
-                        },
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
+
+                                // Attributes
+                                node.attributes().forEach { attr: Attribute ->
+                                    append(" ")
+                                    withStyle(SpanStyle(color = colors.attributeKeyColor)) {
+                                        append(attr.key)
+                                    }
+                                    withStyle(SpanStyle(color = colors.symbolColor)) {
+                                        append("=")
+                                    }
+                                    withStyle(SpanStyle(color = colors.attributeValueColor)) {
+                                        append("\"${attr.value}\"")
+                                    }
+                                }
+
+                                withStyle(SpanStyle(color = colors.tagColor)) {
+                                    if (!hasChildren) append("/>") else append(">")
+                                }
+
+                                // Summary text for collapsed state (optional optimization)
+                                if (hasChildren && !isExpanded) {
+                                    withStyle(SpanStyle(color = colors.symbolColor)) {
+                                        append(" ... ")
+                                    }
+                                    withStyle(SpanStyle(color = colors.tagColor)) {
+                                        append("</${node.tagName()}>")
+                                    }
+                                }
+                            },
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
                 }
 
                 // Children (Recursive Call)
@@ -192,28 +243,34 @@ private fun XmlNodeView(
                                 node = child,
                                 colors = colors,
                                 depth = depth + 1,
-                                isInitiallyExpanded = isInitiallyExpanded
+                                isInitiallyExpanded = isInitiallyExpanded,
+                                lineNumbers = lineNumbers,
                             )
                         }
 
                         // Closing tag: </TagName> (Only visible if expanded)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    start = (indentation * depth) + 24.dp + 4.dp,
-                                    bottom = 2.dp
-                                )
+                        CodeLine(
+                            lineNumber = closingLine,
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(
-                                text = buildAnnotatedString {
-                                    withStyle(SpanStyle(color = colors.tagColor)) {
-                                        append("</${node.tagName()}>")
-                                    }
-                                },
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 14.sp
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(
+                                        start = (indentation * depth) + 24.dp + 4.dp,
+                                        bottom = 2.dp
+                                    )
+                            ) {
+                                Text(
+                                    text = buildAnnotatedString {
+                                        withStyle(SpanStyle(color = colors.tagColor)) {
+                                            append("</${node.tagName()}>")
+                                        }
+                                    },
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 14.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -223,21 +280,26 @@ private fun XmlNodeView(
         is TextNode -> {
             val text = node.text().trim()
             if (text.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            start = (indentation * depth) + 24.dp + 4.dp,
-                            top = 1.dp,
-                            bottom = 1.dp
-                        )
+                CodeLine(
+                    lineNumber = openingLine,
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(
-                        text = text,
-                        color = colors.textColor,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 14.sp
-                    )
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(
+                                start = (indentation * depth) + 24.dp + 4.dp,
+                                top = 1.dp,
+                                bottom = 1.dp
+                            )
+                    ) {
+                        Text(
+                            text = text,
+                            color = colors.textColor,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }
