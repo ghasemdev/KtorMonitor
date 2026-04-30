@@ -59,7 +59,9 @@ import ro.cosminmihu.ktor.monitor.ui.resources.ktor_ic_launcher
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_ic_warning_off
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_library_name
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_ktor
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_none
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_okhttp
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_prefix
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -106,14 +108,20 @@ internal fun ListScreen(
                                     ClientSource.OkHttp -> stringResource(Res.string.ktor_source_okhttp) to URL.OKHTTP
                                 }
                                 Text(
-                                    text = label,
+                                    text = "${stringResource(Res.string.ktor_source_prefix)} $label",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.clickable { uriHandler.openUri(url) },
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-                            }
+                            } ?: Text(
+                                text = stringResource(Res.string.ktor_source_none),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
                     },
                     navigationIcon = {
