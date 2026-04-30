@@ -47,9 +47,11 @@ internal class ListenByRecentCallsUseCase(
                 }
                 .distinctUntilChanged()
                 .collectLatest {
-                    // Show notification
+                    // Show notification (or actively clear it when the user disabled it).
                     if (setupUseCase.isShowNotification()) {
                         notificationManager.notify(it)
+                    } else {
+                        notificationManager.clear()
                     }
 
                     // Delete old calls.
