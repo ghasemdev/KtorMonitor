@@ -107,14 +107,14 @@ internal class ListViewModel(
     }
 
     fun setSearchQuery(query: String) {
-        this@ListViewModel._filter.update { it.copy(searchQuery = query) }
+        _filter.update { it.copy(searchQuery = query) }
     }
 
     fun clearSearchQuery() {
-        this@ListViewModel._filter.update { it.copy(searchQuery = "") }
+        _filter.update { it.copy(searchQuery = "") }
     }
 
     fun toggleOnlyError() {
-        this@ListViewModel._filter.update { it.copy(onlyError = !it.onlyError) }
+        _filter.update { it.copy(onlyError = !it.onlyError) }
     }
 }

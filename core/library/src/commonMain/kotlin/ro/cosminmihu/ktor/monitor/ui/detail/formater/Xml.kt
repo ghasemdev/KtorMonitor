@@ -42,6 +42,8 @@ import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.nodes.Element
 import com.fleeksoft.ksoup.nodes.Node
 import com.fleeksoft.ksoup.nodes.TextNode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Entry point for the XmlTree.
@@ -67,7 +69,7 @@ internal fun XmlTree(
 
     LaunchedEffect(xml) {
         try {
-            val document: Document = Ksoup.parseXml(xml, "")
+            val document: Document = withContext(Dispatchers.Default) { Ksoup.parseXml(xml, "") }
             rootElement = document
             error = null
         } catch (e: Exception) {

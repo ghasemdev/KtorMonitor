@@ -45,7 +45,7 @@ internal fun CallItem(
 ) {
     SelectionContainer(modifier = modifier) {
         Row(
-            modifier = modifier.height(IntrinsicSize.Max).padding(vertical = Dimens.Small)
+            modifier = Modifier.height(IntrinsicSize.Max).padding(vertical = Dimens.Small)
         ) {
             Column(
                 modifier = Modifier.fillMaxHeight().weight(0.2f),

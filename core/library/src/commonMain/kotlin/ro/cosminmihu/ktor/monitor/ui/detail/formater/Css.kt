@@ -35,7 +35,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ro.cosminmihu.ktor.monitor.domain.model.isWhiteSpace
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // --------------------------------------------------------------------------------
 // PUBLIC API
@@ -277,7 +278,7 @@ private class CssParser(private val input: String) {
                 skipWhitespace()
                 if (pos >= len) break
 
-                // Check if this is a nested rule or a declaration
+                // Check if this is a nested rule or a declaration.
                 // A declaration looks like "key: value;"
                 // A nested rule looks like "selector { ... }"
 
@@ -336,7 +337,7 @@ private class CssParser(private val input: String) {
 
     private fun skipWhitespace() {
         while (pos < len) {
-            if (Char.isWhiteSpace(input[pos])) {
+            if (input[pos].isWhitespace()) {
                 pos++
             } else if (input.startsWith("/*", pos)) {
                 // Skip comment
@@ -355,7 +356,4 @@ private class CssParser(private val input: String) {
     private fun consume(c: Char) {
         if (match(c)) pos++
     }
-
-    private fun String.startsWith(prefix: String, startIndex: Int): Boolean =
-        this.regionMatches(startIndex, prefix, 0, prefix.length)
 }

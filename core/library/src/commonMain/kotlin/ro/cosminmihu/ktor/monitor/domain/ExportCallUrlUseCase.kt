@@ -6,9 +6,7 @@ import ro.cosminmihu.ktor.monitor.db.sqldelight.Call
 
 internal class ExportCallUrlUseCase {
 
-    suspend operator fun invoke(call: Call) = withContext(Dispatchers.Default) {
-        buildString {
-            append(call.url)
-        }
+    suspend operator fun invoke(call: Call): String = withContext(Dispatchers.Default) {
+        call.url
     }
 }

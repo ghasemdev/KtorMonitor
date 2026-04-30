@@ -35,6 +35,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // --------------------------------------------------------------------------------
 // PUBLIC API
@@ -54,7 +56,7 @@ internal fun FormUrlEncoded(
 
     LaunchedEffect(body) {
         try {
-            rootNodes = FormParser.parse(body)
+            rootNodes = withContext(Dispatchers.Default) { FormParser.parse(body) }
             error = null
         } catch (e: Exception) {
             error = e.message

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import coil3.ImageLoader
@@ -50,15 +51,20 @@ internal fun Body(
         )
 
         when {
-            body.image != null && displayMode == DisplayMode.IMAGE ->
+            body.image != null && displayMode == DisplayMode.IMAGE -> {
+                val context = LocalPlatformContext.current
+                val imageLoader = remember(context) {
+                    ImageLoader.Builder(context)
+                        .components { add(SvgDecoder.Factory()) }
+                        .build()
+                }
                 AsyncImage(
                     model = body.image,
-                    imageLoader = ImageLoader.Builder(LocalPlatformContext.current)
-                        .components { add(SvgDecoder.Factory()) }
-                        .build(),
+                    imageLoader = imageLoader,
                     contentDescription = null,
                     modifier = Modifier.horizontalScroll(rememberScrollState())
                 )
+            }
 
             body.contentFormat == DetailUiState.ContentFormat.CSS && displayMode == DisplayMode.CODE && body.raw != null ->
                 Css(

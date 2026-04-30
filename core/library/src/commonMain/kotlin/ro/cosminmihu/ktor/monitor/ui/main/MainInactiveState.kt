@@ -30,7 +30,7 @@ internal fun MainInactiveState(modifier: Modifier = Modifier) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.semantics(true) { string },
+            modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = string },
         ) {
             Icon(
                 imageVector = Icons.Default.DisabledByDefault,

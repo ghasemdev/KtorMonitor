@@ -87,16 +87,15 @@ internal class DetailViewModel(
                         headers = call.requestHeaders,
                         body = DetailUiState.Body(
                             bytes = call.requestBody?.toBytesString(),
-                            raw = checkBodyTruncated(
+                            raw = ifNotTruncated(
                                 call.isRequestBodyTruncated,
-                                { call.requestBody?.decodeBody(call.requestHeaders) },
-                                call.requestBody?.asString()
-                            ),
-                            image = checkBodyTruncated(call.isRequestBodyTruncated) {
+                                fallback = call.requestBody?.asString(),
+                            ) { call.requestBody?.decodeBody(call.requestHeaders) },
+                            image = ifNotTruncated(call.isRequestBodyTruncated) {
                                 bodyImage(call.requestContentType, call.requestBody)
                             },
                             isTrimmed = call.isRequestBodyTruncated == true,
-                            contentFormat = checkBodyTruncated(call.isRequestBodyTruncated) {
+                            contentFormat = ifNotTruncated(call.isRequestBodyTruncated) {
                                 call.requestContentType?.contentType?.contentFormat
                             }
                         ),
@@ -110,16 +109,15 @@ internal class DetailViewModel(
                         headers = call.responseHeaders ?: mapOf(),
                         body = DetailUiState.Body(
                             bytes = call.responseBody?.toBytesString(),
-                            raw = checkBodyTruncated(
+                            raw = ifNotTruncated(
                                 call.isResponseBodyTruncated,
-                                { call.responseBody?.decodeBody(call.responseHeaders) },
-                                call.responseBody?.asString()
-                            ),
-                            image = checkBodyTruncated(call.isResponseBodyTruncated) {
+                                fallback = call.responseBody?.asString(),
+                            ) { call.responseBody?.decodeBody(call.responseHeaders) },
+                            image = ifNotTruncated(call.isResponseBodyTruncated) {
                                 bodyImage(call.responseContentType, call.responseBody)
                             },
                             isTrimmed = call.isResponseBodyTruncated == true,
-                            contentFormat = checkBodyTruncated(call.isResponseBodyTruncated) {
+                            contentFormat = ifNotTruncated(call.isResponseBodyTruncated) {
                                 call.responseContentType?.contentType?.contentFormat
                             }
                         ),
@@ -163,17 +161,8 @@ internal class DetailViewModel(
 }
 
 
-private suspend fun <T> checkBodyTruncated(isTruncated: Boolean?, value: suspend () -> T): T? {
-    return checkBodyTruncated(isTruncated, value, null)
-}
-
-private suspend fun <T> checkBodyTruncated(
+private inline fun <T> ifNotTruncated(
     isTruncated: Boolean?,
-    value: suspend () -> T,
-    default: T?
-): T? {
-    return when (isTruncated) {
-        true -> default
-        else -> value()
-    }
-}
+    fallback: T? = null,
+    value: () -> T?,
+): T? = if (isTruncated == true) fallback else value()

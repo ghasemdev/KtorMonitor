@@ -6,64 +6,41 @@ import ro.cosminmihu.ktor.monitor.db.sqldelight.Call
 
 internal class ExportCallAsTextUseCase {
 
-    suspend operator fun invoke(call: Call) = withContext(Dispatchers.Default) {
+    suspend operator fun invoke(call: Call): String = withContext(Dispatchers.Default) {
+        val protocol = call.protocol ?: "HTTP/1.1"
+
         buildString {
-            val requestStartLine = buildString {
-                append(call.method)
-                append(' ')
-                append(call.url)
-                append(' ')
-                append(call.protocol ?: "HTTP/1.1")
-            }
-            val requestHeaders = call.requestHeaders
-                .entries
-                .joinToString(separator = "\n") { (key, values) ->
-                    "$key: ${values.joinToString(separator = "; ")}"
-                }
-            val requestBody = call.requestBody
-                ?.decodeToString()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let { it + call.isRequestBodyTruncated.truncatedLabel() }
+            // Request line + headers
+            appendLine("${call.method} ${call.url} $protocol")
+            call.requestHeaders.appendHeaderBlock(this)
+            appendLine()
 
-            val responseProtocol = call.protocol ?: "HTTP/1.1"
-            val responseStartLine = buildString {
-                append(responseProtocol)
-                append(' ')
-                append(call.responseCode?.toString() ?: "-")
-            }
-            val responseHeaders = (call.responseHeaders ?: emptyMap())
-                .entries
-                .joinToString(separator = "\n") { (key, values) ->
-                    "$key: ${
-                        values.joinToString(
-                            separator = "; "
-                        )
-                    }"
-                }
-            val responseBody = call.responseBody
+            // Request body
+            call.requestBody
                 ?.decodeToString()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let { it + call.isResponseBodyTruncated.truncatedLabel() }
+                ?.takeIf { it.isNotBlank() }
+                ?.let { appendLine(it + call.isRequestBodyTruncated.truncatedLabel()) }
+            appendLine()
 
-            appendLine(requestStartLine)
-            if (requestHeaders.isNotBlank()) {
-                appendLine(requestHeaders)
-            }
+            // Response line + headers
+            appendLine("$protocol ${call.responseCode?.toString() ?: "-"}")
+            call.responseHeaders.orEmpty().appendHeaderBlock(this)
             appendLine()
-            if (!requestBody.isNullOrBlank()) {
-                appendLine(requestBody)
-            }
-            appendLine()
-            appendLine(responseStartLine)
-            if (responseHeaders.isNotBlank()) {
-                appendLine(responseHeaders)
-            }
-            appendLine()
-            if (!responseBody.isNullOrBlank()) {
-                appendLine(responseBody)
-            }
+
+            // Response body
+            call.responseBody
+                ?.decodeToString()
+                ?.takeIf { it.isNotBlank() }
+                ?.let { appendLine(it + call.isResponseBodyTruncated.truncatedLabel()) }
             appendLine()
         }
+    }
+}
+
+private fun Map<String, List<String>>.appendHeaderBlock(out: StringBuilder) {
+    if (isEmpty()) return
+    entries.joinTo(out, separator = "\n", postfix = "\n") { (key, values) ->
+        "$key: ${values.joinToString(separator = "; ")}"
     }
 }
 
