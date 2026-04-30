@@ -1,17 +1,22 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.transaction
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,13 +24,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontStyle
+import org.jetbrains.compose.resources.stringResource
 import ro.cosminmihu.ktor.monitor.ui.Dimens
+import ro.cosminmihu.ktor.monitor.ui.resources.Res
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_copy
 
 @Composable
 internal fun TransactionSection(
     title: String,
     modifier: Modifier = Modifier,
+    onCopy: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     var show by rememberSaveable { mutableStateOf(true) }
@@ -41,13 +51,24 @@ internal fun TransactionSection(
 
             HorizontalDivider(modifier = Modifier.weight(1f))
 
+            if (onCopy != null) {
+                AnimatedVisibility(
+                    visible = show,
+                    enter = fadeIn() + expandHorizontally(),
+                    exit = fadeOut() + shrinkHorizontally(),
+                ) {
+                    TextButton(onClick = onCopy) {
+                        Text(text = stringResource(Res.string.ktor_copy))
+                    }
+                }
+            }
+
             IconButton(onClick = { show = !show }) {
+                val rotation by animateFloatAsState(targetValue = if (show) 180f else 0f)
                 Icon(
-                    imageVector = when (show) {
-                        true -> Icons.Default.KeyboardArrowUp
-                        false -> Icons.Default.KeyboardArrowDown
-                    },
-                    contentDescription = null
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier.rotate(rotation),
                 )
             }
         }

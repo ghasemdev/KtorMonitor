@@ -13,6 +13,7 @@
     <string name="ktor_request">Request</string>
     <string name="ktor_response">Response</string>
 
+    <string name="ktor_copy">Copy</string>
     <string name="ktor_copy_url">Copy URL</string>
     <string name="ktor_copy_as_curl">Copy as cURL</string>
     <string name="ktor_copy_as_wget">Copy as wget</string>
