@@ -1,11 +1,15 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.transaction
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -40,6 +44,8 @@ internal fun TransactionSection(
     title: String,
     modifier: Modifier = Modifier,
     copyText: (() -> String)? = null,
+    contentEnter: EnterTransition = fadeIn() + expandVertically(),
+    contentExit: ExitTransition = fadeOut() + shrinkVertically(),
     content: @Composable () -> Unit
 ) {
     var show by rememberSaveable { mutableStateOf(true) }
@@ -81,7 +87,11 @@ internal fun TransactionSection(
             }
         }
 
-        AnimatedVisibility(show) {
+        AnimatedVisibility(
+            visible = show,
+            enter = contentEnter,
+            exit = contentExit,
+        ) {
             Column {
                 content()
             }

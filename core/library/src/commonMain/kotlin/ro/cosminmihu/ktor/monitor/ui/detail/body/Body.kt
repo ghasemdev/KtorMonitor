@@ -1,5 +1,10 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.body
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -50,6 +55,8 @@ internal fun Body(
 
             else -> null
         },
+        contentEnter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.97f),
+        contentExit = fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.97f),
     ) {
         if (body == null || body.noBody) {
             NoBody()
