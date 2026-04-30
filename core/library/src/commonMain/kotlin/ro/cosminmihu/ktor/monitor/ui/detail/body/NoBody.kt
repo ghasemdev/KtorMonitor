@@ -10,6 +10,9 @@ import org.jetbrains.compose.resources.stringResource
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_no_body
+import androidx.compose.ui.tooling.preview.Preview
+import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
+import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @Composable
 internal fun NoBody() {
@@ -22,4 +25,13 @@ internal fun NoBody() {
             horizontal = Dimens.Medium
         ),
     )
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun NoBodyPreview() {
+    LibraryTheme {
+        NoBody()
+    }
 }

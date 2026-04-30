@@ -25,6 +25,11 @@ import ro.cosminmihu.ktor.monitor.ui.detail.noBody
 import ro.cosminmihu.ktor.monitor.ui.detail.transaction.TransactionSection
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_body
+import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
+import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
 
 @Composable
 internal fun Body(
@@ -94,5 +99,63 @@ internal fun Body(
             !body.bytes.isNullOrEmpty() && displayMode == DisplayMode.BYTES ->
                 Text(text = body.bytes, modifier = Modifier.padding(Dimens.Small))
         }
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun BodyPreview(
+    @PreviewParameter(LoremIpsum::class) lorem: String,
+) {
+    val raw = lorem.take(160)
+    LibraryTheme {
+        Body(
+            body = DetailUiState.Body(
+                bytes = raw.encodeToByteArray().toString(),
+                raw = raw,
+                image = null,
+                isTrimmed = false,
+                contentFormat = null,
+            ),
+            displayMode = DisplayMode.RAW,
+            onDisplayMode = {},
+        )
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun BodyJsonPreview(
+    @PreviewParameter(LoremIpsum::class) lorem: String,
+) {
+    val sentence = lorem.take(40).replace("\"", "")
+    val raw = """{"title":"$sentence","value":42}"""
+    LibraryTheme {
+        Body(
+            body = DetailUiState.Body(
+                bytes = raw.encodeToByteArray().toString(),
+                raw = raw,
+                image = null,
+                isTrimmed = true,
+                contentFormat = DetailUiState.ContentFormat.JSON,
+            ),
+            displayMode = DisplayMode.CODE,
+            onDisplayMode = {},
+        )
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun BodyEmptyPreview() {
+    LibraryTheme {
+        Body(
+            body = null,
+            displayMode = DisplayMode.RAW,
+            onDisplayMode = {},
+        )
     }
 }

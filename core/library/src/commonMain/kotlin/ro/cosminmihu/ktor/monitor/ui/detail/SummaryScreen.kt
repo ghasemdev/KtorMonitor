@@ -31,6 +31,11 @@ import ro.cosminmihu.ktor.monitor.ui.resources.ktor_summary_response_time
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_summary_status
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_summary_total_size
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_summary_url
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
+import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
+import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @Composable
 internal fun SummaryScreen(summary: DetailUiState.Summary, modifier: Modifier = Modifier) {
@@ -162,5 +167,85 @@ private fun KeyError(key: String) {
                 tint = MaterialTheme.colorScheme.error,
             )
         }
+    }
+}
+
+private fun sampleSummary(
+    slug: String,
+    isLoading: Boolean = false,
+    isError: Boolean = false,
+    isHttpError: Boolean = false,
+    isRedirect: Boolean = false,
+    responseCode: String = "200 OK",
+): DetailUiState.Summary = DetailUiState.Summary(
+    url = "https://api.example.com/v1/$slug?limit=20",
+    method = "GET",
+    protocol = "HTTP/2.0",
+    requestTime = "10:23:45.123",
+    responseCode = responseCode,
+    responseTime = "10:23:45.456",
+    duration = "333 ms",
+    requestSize = "0 B",
+    responseSize = "1.2 KB",
+    totalSize = "1.2 KB",
+    isLoading = isLoading,
+    isRedirect = isRedirect,
+    isError = isError,
+    isHttpError = isHttpError,
+)
+
+private fun String.toSlug(): String = take(24)
+    .lowercase()
+    .replace(Regex("[^a-z0-9]+"), "-")
+    .trim('-')
+    .ifEmpty { "users" }
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun SummaryScreenPreview(
+    @PreviewParameter(LoremIpsum::class) lorem: String,
+) {
+    LibraryTheme {
+        SummaryScreen(summary = sampleSummary(slug = lorem.toSlug()))
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun SummaryScreenLoadingPreview(
+    @PreviewParameter(LoremIpsum::class) lorem: String,
+) {
+    LibraryTheme {
+        SummaryScreen(summary = sampleSummary(slug = lorem.toSlug(), isLoading = true, responseCode = ""))
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun SummaryScreenErrorPreview(
+    @PreviewParameter(LoremIpsum::class) lorem: String,
+) {
+    LibraryTheme {
+        SummaryScreen(summary = sampleSummary(slug = lorem.toSlug(), isError = true, responseCode = ""))
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun SummaryScreenHttpErrorPreview(
+    @PreviewParameter(LoremIpsum::class) lorem: String,
+) {
+    LibraryTheme {
+        SummaryScreen(
+            summary = sampleSummary(
+                slug = lorem.toSlug(),
+                isHttpError = true,
+                responseCode = "500 Internal Server Error",
+            ),
+        )
     }
 }

@@ -24,6 +24,11 @@ import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_binary
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_code
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_image
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_raw
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
+import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
+import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @Composable
 internal fun DisplayModeSelector(
@@ -125,4 +130,49 @@ private data class BodyShowTypeSegment(
 
 internal enum class DisplayMode {
     IMAGE, CODE, RAW, BYTES
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun DisplayModeSelectorPreview(
+    @PreviewParameter(LoremIpsum::class) lorem: String,
+) {
+    val sentence = lorem.take(40).replace("\"", "")
+    val raw = """{"message":"$sentence"}"""
+    LibraryTheme {
+        DisplayModeSelector(
+            body = DetailUiState.Body(
+                bytes = raw.encodeToByteArray().toString(),
+                raw = raw,
+                image = null,
+                isTrimmed = false,
+                contentFormat = DetailUiState.ContentFormat.JSON,
+            ),
+            displayMode = DisplayMode.CODE,
+            onDisplayMode = {},
+        )
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun DisplayModeSelectorTrimmedPreview(
+    @PreviewParameter(LoremIpsum::class) lorem: String,
+) {
+    val raw = lorem.take(80)
+    LibraryTheme {
+        DisplayModeSelector(
+            body = DetailUiState.Body(
+                bytes = raw.encodeToByteArray().toString(),
+                raw = raw,
+                image = null,
+                isTrimmed = true,
+                contentFormat = null,
+            ),
+            displayMode = DisplayMode.RAW,
+            onDisplayMode = {},
+        )
+    }
 }

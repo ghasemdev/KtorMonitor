@@ -17,6 +17,9 @@ import org.jetbrains.compose.resources.stringResource
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_list_empty
+import androidx.compose.ui.tooling.preview.Preview
+import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
+import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @Composable
 internal fun ListEmptyState(modifier: Modifier = Modifier) {
@@ -40,5 +43,14 @@ internal fun ListEmptyState(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = Dimens.Medium)
             )
         }
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun ListEmptyStatePreview() {
+    LibraryTheme {
+        ListEmptyState()
     }
 }
