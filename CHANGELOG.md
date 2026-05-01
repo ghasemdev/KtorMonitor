@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.12.1] - TBA
+* Add Filter By Method, Status Code and Response Size
+
 ## [1.12.0] - 2026-05-01
 * Context7 Integration
 * UI improvements: client source, viewer enhancements, lines number, display mode buttons
