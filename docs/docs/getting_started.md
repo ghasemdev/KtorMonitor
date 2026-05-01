@@ -6,7 +6,7 @@
     kotlin {
         sourceSets {
             commonMain.dependencies {
-                implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.12.0")
+                implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.13.0")
             }
         }
     }
@@ -20,7 +20,7 @@
     kotlin {
         sourceSets {
             commonMain.dependencies {
-                implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.12.0")
+                implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.13.0")
             }
         }
     }
@@ -30,8 +30,8 @@
     
     ```kotlin hl_lines="2-3"
     dependencies {
-        debugImplementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.12.0")
-        releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.12.0")
+        debugImplementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.13.0")
+        releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.13.0")
     }
     ```
 
@@ -41,8 +41,8 @@
 
     ```kotlin hl_lines="2-3"
     dependencies {
-        debugImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.12.0")
-        releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.12.0")
+        debugImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.13.0")
+        releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.13.0")
     }
     ```
 
@@ -52,8 +52,8 @@
 
     ```kotlin hl_lines="2-3"
     dependencies {
-        debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.12.0")
-        releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.12.0")
+        debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.13.0")
+        releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.13.0")
     }
     ```
 
@@ -107,8 +107,8 @@
 
 === "http4k Filter"
 
-    ```kotlin hl_lines="2-9"
-    val client: HttpHandler = KtorMonitorFilter {
+    ```kotlin hl_lines="1-6"
+    KtorMonitorFilter {
         sanitizeHeader { header -> header == "Authorization" }
         filter { request -> !request.uri.host.contains("cosminmihu.ro") }
         showNotification = true

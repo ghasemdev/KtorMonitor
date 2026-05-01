@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.13.0] - TBA
+## [1.13.0] - 2026-05-01
 * Add Filter By Host, Duration and Content-Type, Method, Status Code and Response Size
 * Wrap Code Viewer in a scrollable container
 * Support for http4k Filter

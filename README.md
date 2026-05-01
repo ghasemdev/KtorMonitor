@@ -34,7 +34,7 @@ Powerful tool to monitor [Ktor Client](https://ktor.io/), [OkHttp](https://squar
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.12.0")
+            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.13.0")
         }
     }
 }
@@ -48,7 +48,7 @@ To isolate KtorMonitor from release builds, use the `ktor-monitor-logging-no-op`
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.12.0")
+            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.13.0")
         }
     }
 }
@@ -60,8 +60,8 @@ kotlin {
 
 ```kotlin
 dependencies {
-    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.12.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.12.0")
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.13.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.13.0")
 }
 ```
 
@@ -94,8 +94,8 @@ HttpClient {
 
 ```kotlin
 dependencies {
-    debugImplementation("`ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.12.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.12.0")
+    debugImplementation("`ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.13.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.13.0")
 }
 ```
 
@@ -129,8 +129,8 @@ OkHttpClient.Builder()
 
 ```kotlin
 dependencies {
-    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.12.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.12.0")
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.13.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.13.0")
 }
 ```
 
@@ -139,7 +139,7 @@ For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.andro
 ### <img src="https://images.opencollective.com/http4k/4b91f7a/logo/256.png" width="30" style="background:#eee;"/> Install http4k Filter
 
 ```kotlin
-val client: HttpHandler = KtorMonitorFilter {
+KtorMonitorFilter {
     sanitizeHeader { header -> header == "Authorization" }
     filter { request -> !request.uri.host.contains("cosminmihu.ro") }
     showNotification = true

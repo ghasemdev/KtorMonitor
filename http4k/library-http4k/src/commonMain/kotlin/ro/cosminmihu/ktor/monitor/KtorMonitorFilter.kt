@@ -15,7 +15,7 @@ import kotlin.time.ExperimentalTime
  * You can learn more from [KtorMonitor](https://github.com/CosminMihuMDC/KtorMonitor).
  *
  * ```kotlin
- * val client: HttpHandler = KtorMonitorFilter {
+ * KtorMonitorFilter {
  *     sanitizeHeader { header -> header == "Authorization" }
  *     isActive = true
  *     showNotification = true

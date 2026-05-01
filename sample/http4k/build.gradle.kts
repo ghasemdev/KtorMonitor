@@ -38,9 +38,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.http4k.core)
             implementation(projects.http4k.libraryHttp4k)
-//            implementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.12.0")
+//            implementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.13.0")
 //            implementation(projects.http4k.libraryHttp4kNoOp)
-//            implementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.12.0")
+//            implementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.13.0")
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
