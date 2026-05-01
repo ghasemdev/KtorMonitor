@@ -4,6 +4,8 @@ import io.ktor.client.plugins.sse.sse
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.delete
 import io.ktor.client.request.forms.FormDataContent
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
@@ -11,6 +13,8 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.websocket.Frame
@@ -157,6 +161,51 @@ internal suspend fun samples() {
 
         // Other Utilities
         runCatching { this@with.get("$HTTP_BIN_URL/forms/post") }
+
+        // Form URL-encoded
+        runCatching {
+            this@with.post("$HTTP_BIN_URL/post") {
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody(
+                    FormDataContent(
+                        Parameters.build {
+                            append("username", "ktor-monitor")
+                            append("email", "demo@example.com")
+                            append("subscribe", "true")
+                        }
+                    )
+                )
+            }
+        }
+
+        // Multipart / form-data
+        runCatching {
+            this@with.post("$HTTP_BIN_URL/post") {
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("username", "ktor-monitor")
+                            append("email", "demo@example.com")
+                            append(
+                                key = "notes",
+                                value = "Hello from Ktor Monitor sample",
+                                headers = Headers.build {
+                                    append(HttpHeaders.ContentType, "text/plain; charset=utf-8")
+                                },
+                            )
+                            append(
+                                key = "file",
+                                value = "Sample file content\nLine 2\nLine 3".encodeToByteArray(),
+                                headers = Headers.build {
+                                    append(HttpHeaders.ContentType, "text/plain")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"sample.txt\"")
+                                },
+                            )
+                        }
+                    )
+                )
+            }
+        }
 
         // Javascript
         runCatching { this@with.get("https://code.jquery.com/jquery-3.7.1.min.js") }

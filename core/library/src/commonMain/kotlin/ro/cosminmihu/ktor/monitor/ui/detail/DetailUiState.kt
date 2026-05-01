@@ -99,6 +99,7 @@ internal data class DetailUiState(
         FORM_URLENCODED,
         JAVASCRIPT,
         JSON,
+        MULTIPART,
         XML,
     }
 }
@@ -135,6 +136,16 @@ internal val ContentType.contentFormat
 
         ContentType.APPLICATION_FORM_URLENCODED,
             -> DetailUiState.ContentFormat.FORM_URLENCODED
+
+        ContentType.MULTIPART_ANY,
+        ContentType.MULTIPART_MIXED,
+        ContentType.MULTIPART_ALTERNATIVE,
+        ContentType.MULTIPART_RELATED,
+        ContentType.MULTIPART_FORM_DATA,
+        ContentType.MULTIPART_SIGNED,
+        ContentType.MULTIPART_ENCRYPTED,
+        ContentType.MULTIPART_BYTE_RANGES,
+            -> DetailUiState.ContentFormat.MULTIPART
 
         ContentType.APPLICATION_JSON,
         ContentType.APPLICATION_HAL_JSON,

@@ -2,6 +2,8 @@ package ro.cosminmihu.ktor.monitor.sample
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
@@ -41,5 +43,23 @@ internal suspend fun samples() = withContext(Dispatchers.IO) {
     runCatching { client.newCall(Request.Builder().url("$HTTP_BIN_URL/uuid").build()).execute() }
     runCatching { client.newCall(Request.Builder().url("$HTTP_BIN_URL/bytes/1024").build()).execute() }
     runCatching { client.newCall(Request.Builder().url("$HTTP_BIN_URL/delay/1").build()).execute() }
+
+    // Multipart / form-data
+    runCatching {
+        val multipart = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("username", "ktor-monitor")
+            .addFormDataPart("email", "demo@example.com")
+            .addFormDataPart("notes", "Hello from OkHttp Monitor sample")
+            .addFormDataPart(
+                "file",
+                "sample.txt",
+                "Sample file content\nLine 2\nLine 3".toRequestBody("text/plain".toMediaType()),
+            )
+            .build()
+        client.newCall(
+            Request.Builder().url("$HTTP_BIN_URL/post").post(multipart).build()
+        ).execute()
+    }
 }
 

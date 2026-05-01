@@ -28,7 +28,7 @@ import ro.cosminmihu.ktor.monitor.ui.detail.formater.Css
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.FormUrlEncoded
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.JavaScript
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.JsonTree
-import ro.cosminmihu.ktor.monitor.ui.detail.formater.Text
+import ro.cosminmihu.ktor.monitor.ui.detail.formater.Multipart
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.TextLines
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.XmlTree
 import ro.cosminmihu.ktor.monitor.ui.detail.hasCopyableContent
@@ -93,6 +93,13 @@ internal fun Body(
 
             body.contentFormat == DetailUiState.ContentFormat.FORM_URLENCODED && displayMode == DisplayMode.CODE && body.raw != null ->
                 FormUrlEncoded(
+                    body = body.raw,
+                    modifier = Modifier.fillMaxHeight().codeBlock(),
+                    contentPadding = PaddingValues(Dimens.Small),
+                )
+
+            body.contentFormat == DetailUiState.ContentFormat.MULTIPART && displayMode == DisplayMode.CODE && body.raw != null ->
+                Multipart(
                     body = body.raw,
                     modifier = Modifier.fillMaxHeight().codeBlock(),
                     contentPadding = PaddingValues(Dimens.Small),
