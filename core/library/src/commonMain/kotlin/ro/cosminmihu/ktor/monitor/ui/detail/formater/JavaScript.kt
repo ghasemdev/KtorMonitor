@@ -491,7 +491,7 @@ private fun beautifyJavaScript(input: String): String {
 
     fun newline() {
         // Trim trailing spaces on the current line.
-        while (sb.isNotEmpty() && (sb.last() == ' ' || sb.last() == '\t')) sb.deleteCharAt(sb.lastIndex)
+        while (sb.isNotEmpty() && (sb.last() == ' ' || sb.last() == '\t')) sb.deleteAt(sb.lastIndex)
         sb.append('\n')
         repeat(indent) { sb.append(indentUnit) }
     }
@@ -639,7 +639,7 @@ private fun beautifyJavaScript(input: String): String {
     }
 
     // Trim trailing blank lines.
-    while (sb.isNotEmpty() && (sb.last() == '\n' || sb.last() == ' ')) sb.deleteCharAt(sb.lastIndex)
+    while (sb.isNotEmpty() && (sb.last() == '\n' || sb.last() == ' ')) sb.deleteAt(sb.lastIndex)
     return sb.toString()
 }
 
