@@ -60,7 +60,28 @@ internal data class DetailUiState(
         val image: ByteArray?,
         val isTrimmed: Boolean,
         val contentFormat: ContentFormat?
-    )
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Body) return false
+            if (bytes != other.bytes) return false
+            if (raw != other.raw) return false
+            if (isTrimmed != other.isTrimmed) return false
+            if (contentFormat != other.contentFormat) return false
+            if (image == null) return other.image == null
+            if (other.image == null) return false
+            return image.contentEquals(other.image)
+        }
+
+        override fun hashCode(): Int {
+            var result = bytes?.hashCode() ?: 0
+            result = 31 * result + (raw?.hashCode() ?: 0)
+            result = 31 * result + (image?.contentHashCode() ?: 0)
+            result = 31 * result + isTrimmed.hashCode()
+            result = 31 * result + (contentFormat?.hashCode() ?: 0)
+            return result
+        }
+    }
 
     enum class ClipboardCopyType {
         Url,
