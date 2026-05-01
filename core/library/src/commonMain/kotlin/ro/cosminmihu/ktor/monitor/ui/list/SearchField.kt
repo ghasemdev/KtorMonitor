@@ -38,8 +38,7 @@ internal fun SearchField(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.Small)
-            .padding(bottom = Dimens.Small),
+            .padding(horizontal = Dimens.Small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(

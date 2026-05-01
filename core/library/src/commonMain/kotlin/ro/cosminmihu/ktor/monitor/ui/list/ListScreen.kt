@@ -189,23 +189,23 @@ internal fun ListScreen(
 
                 AnimatedVisibility(visible = showSearchBar) {
                     Surface {
-                        SearchField(
-                            modifier = Modifier.focusRequester(searchFocusRequester),
-                            onSearch = setSearchQuery,
-                            onClear = clearSearchQuery
-                        )
-                    }
-                }
+                        Column {
+                            SearchField(
+                                modifier = Modifier.focusRequester(searchFocusRequester),
+                                onSearch = setSearchQuery,
+                                onClear = clearSearchQuery
+                            )
 
-                if (!uiState.isLoading && !uiState.isEmpty) {
-                    Surface {
-                        FilterChipsRow(
-                            filter = uiState.filter,
-                            availableMethods = uiState.availableMethods,
-                            onToggleMethod = toggleMethod,
-                            onToggleResponseCodeRange = toggleResponseCodeRange,
-                            onSetSizeSort = setSizeSort,
-                        )
+                            if (!uiState.isLoading && !uiState.isEmpty) {
+                                FilterChipsRow(
+                                    filter = uiState.filter,
+                                    availableMethods = uiState.availableMethods,
+                                    onToggleMethod = toggleMethod,
+                                    onToggleResponseCodeRange = toggleResponseCodeRange,
+                                    onSetSizeSort = setSizeSort,
+                                )
+                            }
+                        }
                     }
                 }
 

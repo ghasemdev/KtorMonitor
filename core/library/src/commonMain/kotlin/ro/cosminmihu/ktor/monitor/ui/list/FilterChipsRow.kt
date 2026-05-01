@@ -46,9 +46,8 @@ internal fun FilterChipsRow(
     FlowRow(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.Small)
-            .padding(bottom = Dimens.Small),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(horizontal = Dimens.Small),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.ExtraSmall),
     ) {
         // Chip 1: Method
         if (availableMethods.isNotEmpty()) {

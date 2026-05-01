@@ -3,6 +3,7 @@ package ro.cosminmihu.ktor.monitor.ui
 import androidx.compose.ui.unit.dp
 
 internal object Dimens {
+    val ExtraSmall = 8.dp
     val Small = 8.dp
     val Medium = 16.dp
     val MediumLarge = 20.dp
