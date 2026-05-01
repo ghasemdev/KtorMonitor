@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +39,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.svg.SvgDecoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
@@ -50,13 +55,18 @@ import ro.cosminmihu.ktor.monitor.ui.detail.body.LocalMaxLineNumber
 /**
  * Renders a multipart body (e.g. `multipart/form-data`) as a tree of parts.
  * Each part shows its Content-Disposition (name / filename), Content-Type and
- * body preview, and can be collapsed.
+ * body preview, and can be collapsed. Image parts are rendered inline.
  *
  * The boundary is auto-detected from the first line that starts with `--`.
+ *
+ * @param bytes Optional space-separated decimal byte string of the raw body
+ *   (from `DetailUiState.Body.bytes`). When provided, binary image parts are
+ *   extracted at the byte level and shown as inline previews.
  */
 @Composable
 internal fun Multipart(
     body: String,
+    bytes: String? = null,
     modifier: Modifier = Modifier,
     colors: MultipartColors = MultipartDefaults.colors(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
@@ -66,9 +76,14 @@ internal fun Multipart(
     var parts by remember(body) { mutableStateOf<List<MultipartPart>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(body) {
+    LaunchedEffect(body, bytes) {
         try {
-            parts = withContext(Dispatchers.Default) { parseMultipart(body) }
+            parts = withContext(Dispatchers.Default) {
+                val rawParts = parseMultipart(body)
+                val bodyBytes = bytes?.let { parseBodyBytesString(it) }
+                if (bodyBytes != null) enrichPartsWithImageBytes(rawParts, body, bodyBytes)
+                else rawParts
+            }
             error = null
         } catch (e: Exception) {
             error = e.message
@@ -125,6 +140,36 @@ private fun MultipartRowView(
     val indentation = 16.dp
 
     when (row.kind) {
+        MultipartRowKind.IMAGE -> {
+            CodeLine(
+                lineNumber = row.lineNumber,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(
+                            start = indentation * row.depth + 24.dp + 4.dp,
+                            top = 4.dp,
+                            bottom = 4.dp,
+                        ),
+                ) {
+                    val context = LocalPlatformContext.current
+                    val imageLoader = remember(context) {
+                        ImageLoader.Builder(context)
+                            .components { add(SvgDecoder.Factory()) }
+                            .build()
+                    }
+                    AsyncImage(
+                        model = row.imageBytes,
+                        imageLoader = imageLoader,
+                        contentDescription = null,
+                        modifier = Modifier.heightIn(max = 200.dp),
+                    )
+                }
+            }
+        }
+
         MultipartRowKind.PART_OPEN -> {
             val arrowRotation by animateFloatAsState(targetValue = if (!row.isCollapsed) 0f else -90f)
             CodeLine(
@@ -220,7 +265,7 @@ private fun MultipartRowView(
 // FLATTENING
 // --------------------------------------------------------------------------------
 
-private enum class MultipartRowKind { PART_OPEN, HEADER, BODY_LINE }
+private enum class MultipartRowKind { PART_OPEN, HEADER, BODY_LINE, IMAGE }
 
 private data class MultipartRow(
     val id: Int,
@@ -233,6 +278,7 @@ private data class MultipartRow(
     val text: String? = null,
     val value: String? = null,
     val isCollapsed: Boolean = false,
+    val imageBytes: ByteArray? = null,
 )
 
 private data class NumberedPart(
@@ -250,8 +296,11 @@ private fun List<MultipartPart>.assignLineNumbers(): List<NumberedPart> {
     return map { part ->
         val opening = ++counter
         val headerLines = part.headers.map { ++counter }
-        val bodyLines = if (part.bodyPreview.isEmpty()) emptyList()
-        else part.bodyPreview.map { ++counter }
+        val bodyLines = when {
+            part.imageBytes != null -> listOf(++counter)  // single image row
+            part.bodyPreview.isEmpty() -> emptyList()
+            else -> part.bodyPreview.map { ++counter }
+        }
         NumberedPart(part, opening, headerLines, bodyLines)
     }
 }
@@ -285,14 +334,27 @@ private fun flattenMultipart(
                 value = header.second,
             )
         }
-        p.part.bodyPreview.forEachIndexed { bi, line ->
+
+        if (p.part.imageBytes != null) {
+            // Render the image inline instead of raw text body lines.
+            val imgLine = p.bodyLines.firstOrNull() ?: return@forEachIndexed
             out += MultipartRow(
-                id = p.bodyLines[bi] + BODY_ID_OFFSET,
-                kind = MultipartRowKind.BODY_LINE,
+                id = imgLine + BODY_ID_OFFSET,
+                kind = MultipartRowKind.IMAGE,
                 depth = 1,
-                lineNumber = p.bodyLines[bi],
-                text = line,
+                lineNumber = imgLine,
+                imageBytes = p.part.imageBytes,
             )
+        } else {
+            p.part.bodyPreview.forEachIndexed { bi, line ->
+                out += MultipartRow(
+                    id = p.bodyLines[bi] + BODY_ID_OFFSET,
+                    kind = MultipartRowKind.BODY_LINE,
+                    depth = 1,
+                    lineNumber = p.bodyLines[bi],
+                    text = line,
+                )
+            }
         }
     }
     return out
@@ -308,7 +370,9 @@ internal data class MultipartPart(
     val headers: List<Pair<String, String>>,
     val name: String?,
     val filename: String?,
+    val contentType: String? = null,
     val bodyPreview: List<String>,
+    val imageBytes: ByteArray? = null,
 )
 
 private const val MAX_BODY_LINES = 20
@@ -378,6 +442,7 @@ private fun parsePart(raw: String): MultipartPart {
     val disposition = headers.firstOrNull { it.first.equals("Content-Disposition", true) }?.second.orEmpty()
     val name = extractParam(disposition, "name")
     val filename = extractParam(disposition, "filename")
+    val contentType = headers.firstOrNull { it.first.equals("Content-Type", true) }?.second
 
     val bodyPreview = if (body.isEmpty()) emptyList()
     else body.split('\n')
@@ -393,6 +458,7 @@ private fun parsePart(raw: String): MultipartPart {
         headers = headers,
         name = name,
         filename = filename,
+        contentType = contentType,
         bodyPreview = bodyPreview,
     )
 }
@@ -400,6 +466,115 @@ private fun parsePart(raw: String): MultipartPart {
 private fun extractParam(header: String, name: String): String? {
     val pattern = Regex("""${Regex.escape(name)}\s*=\s*"?([^";]+)"?""", RegexOption.IGNORE_CASE)
     return pattern.find(header)?.groupValues?.getOrNull(1)?.trim()
+}
+
+// --------------------------------------------------------------------------------
+// BYTE-LEVEL IMAGE EXTRACTION
+// --------------------------------------------------------------------------------
+
+/**
+ * Parses a space-separated decimal byte string (produced by `ByteArray.toBytesString`) back
+ * into a [ByteArray].  Returns `null` if the string is blank or unparseable.
+ */
+internal fun parseBodyBytesString(bytesStr: String): ByteArray? {
+    if (bytesStr.isBlank()) return null
+    return try {
+        val tokens = bytesStr.split(' ')
+        ByteArray(tokens.size) { i -> tokens[i].toInt().toByte() }
+    } catch (_: Exception) {
+        null
+    }
+}
+
+/**
+ * Enriches [parts] with [MultipartPart.imageBytes] by locating each part's body at the byte
+ * level inside [bodyBytes].  Both text-based (SVG) and binary (PNG, JPEG, …) images are
+ * handled correctly.
+ */
+private fun enrichPartsWithImageBytes(
+    parts: List<MultipartPart>,
+    body: String,
+    bodyBytes: ByteArray,
+): List<MultipartPart> {
+    // Detect boundary from the decoded string (same as parseMultipart).
+    val lines = body.split("\r\n", "\n")
+    val first = lines.firstOrNull { it.startsWith("--") } ?: return parts
+    val boundary = first.removePrefix("--").trimEnd('-').trim()
+    if (boundary.isEmpty()) return parts
+
+    val boundaryBytes = "--$boundary".encodeToByteArray()
+    val positions = findAllOccurrences(bodyBytes, boundaryBytes)
+
+    return parts.mapIndexed { index, part ->
+        val contentType = part.contentType ?: return@mapIndexed part
+        if (!contentType.startsWith("image/", ignoreCase = true)) return@mapIndexed part
+
+        val partStart = positions.getOrNull(index)
+        val nextPartStart = positions.getOrNull(index + 1)
+
+        val imageBytes = extractPartBodyBytes(bodyBytes, boundaryBytes, partStart, nextPartStart)
+        part.copy(imageBytes = imageBytes)
+    }
+}
+
+private fun extractPartBodyBytes(
+    bodyBytes: ByteArray,
+    boundaryBytes: ByteArray,
+    partStart: Int?,
+    nextPartStart: Int?,
+): ByteArray? {
+    if (partStart == null) return null
+
+    // Skip past "--boundary\r\n"
+    var pos = partStart + boundaryBytes.size
+    if (pos < bodyBytes.size - 1 &&
+        bodyBytes[pos] == 0x0D.toByte() && bodyBytes[pos + 1] == 0x0A.toByte()
+    ) pos += 2 // consume \r\n
+
+    val partEnd = if (nextPartStart != null) {
+        // Trim the trailing \r\n before the next boundary.
+        (nextPartStart - 2).coerceAtLeast(pos)
+    } else {
+        bodyBytes.size
+    }
+
+    val partSlice = bodyBytes.copyOfRange(pos, partEnd)
+
+    // Find the double-CRLF (or double-LF) header separator.
+    val doubleCrlf = byteArrayOf(0x0D, 0x0A, 0x0D, 0x0A)
+    val doubleLf = byteArrayOf(0x0A, 0x0A)
+    val headerEnd = findSequence(partSlice, doubleCrlf)
+    val bodyOffset = when {
+        headerEnd != null -> headerEnd + doubleCrlf.size
+        else -> (findSequence(partSlice, doubleLf) ?: return null) + doubleLf.size
+    }
+
+    if (bodyOffset >= partSlice.size) return null
+    return partSlice.copyOfRange(bodyOffset, partSlice.size)
+}
+
+private fun findAllOccurrences(haystack: ByteArray, needle: ByteArray): List<Int> {
+    val result = mutableListOf<Int>()
+    var i = 0
+    outer@ while (i <= haystack.size - needle.size) {
+        for (j in needle.indices) {
+            if (haystack[i + j] != needle[j]) { i++; continue@outer }
+        }
+        result += i
+        i += needle.size
+    }
+    return result
+}
+
+private fun findSequence(haystack: ByteArray, needle: ByteArray): Int? {
+    for (i in 0..(haystack.size - needle.size)) {
+        var match = true
+        for (j in needle.indices) {
+            if (haystack[i + j] != needle[j]) { match = false; break }
+        }
+        if (match) return i
+    }
+    return null
 }
 
 // --------------------------------------------------------------------------------
@@ -439,4 +614,3 @@ internal object MultipartDefaults {
         commentColor = commentColor,
     )
 }
-

@@ -101,6 +101,7 @@ internal fun Body(
             body.contentFormat == DetailUiState.ContentFormat.MULTIPART && displayMode == DisplayMode.CODE && body.raw != null ->
                 Multipart(
                     body = body.raw,
+                    bytes = body.bytes,
                     modifier = Modifier.fillMaxHeight().codeBlock(),
                     contentPadding = PaddingValues(Dimens.Small),
                 )
