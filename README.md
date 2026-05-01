@@ -9,7 +9,7 @@
 [![GitHub forks](https://img.shields.io/github/forks/CosminMihuMDC/KtorMonitor)](https://github.com/CosminMihuMDC/KtorMonitor/fork)
 
 # <img src="./extra/ktor_monitor_ic_launcher.svg" width="35"/> KtorMonitor
-Powerful tool to monitor [Ktor Client](https://ktor.io/) and [OkHttp](https://square.github.io/okhttp/) requests and responses, making it easier to debug and analyze network communication.
+Powerful tool to monitor [Ktor Client](https://ktor.io/), [OkHttp](https://square.github.io/okhttp/) and [http4k](https://www.http4k.org/) requests and responses, making it easier to debug and analyze network communication.
 
 <img src="extra/readme/ktormonitor.png" alt="ktormonitor"/>
 
@@ -17,6 +17,7 @@ Powerful tool to monitor [Ktor Client](https://ktor.io/) and [OkHttp](https://sq
 
 *   🌐**Ktor Network Monitoring**: Real-time interception and logging of [Ktor Client](https://ktor.io/) traffic.
 *   🌐**OkHttp Network Monitoring**: Real-time interception and logging of [OkHttp](https://square.github.io/okhttp/) traffic.
+*   🌐**http4k Network Monitoring**: Real-time interception and logging of [http4k](https://www.http4k.org/) traffic.
 *   📱**Kotlin Multiplatform (KMP)**: Full support for **Android**, **iOS**, **Desktop (JVM)**, **Wasm**, and **JS**.
 *   🛠️**Highly Configurable**: Customize retention periods, content length limits, and notification behavior.
 *   🔒**Security First**: Redact sensitive headers (e.g., *Authorization*).
@@ -119,6 +120,37 @@ OkHttpClient.Builder()
 - ```sanitizeHeader``` - sanitize sensitive headers to avoid their values appearing in the logs
 - ```filter``` - filter logs for calls matching a predicate.
 - ```showNotification``` - Keep track of latest requests and responses into notification. Default is **true**. Android and iOS only. Notifications permission needs to be granted.
+- ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
+- ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
+
+## 📦 Setup (Android & JVM only) for [http4k](https://www.http4k.org/)
+
+### <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Gradle_logo.svg" width="100"/>
+
+```kotlin
+dependencies {
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.12.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.12.0")
+}
+```
+
+For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) is required.
+
+### <img src="https://images.opencollective.com/http4k/4b91f7a/logo/256.png" width="30" style="background:#eee;"/> Install http4k Filter
+
+```kotlin
+val client: HttpHandler = KtorMonitorFilter {
+    sanitizeHeader { header -> header == "Authorization" }
+    filter { request -> !request.uri.host.contains("cosminmihu.ro") }
+    showNotification = true
+    retentionPeriod = RetentionPeriod.OneHour
+    maxContentLength = ContentLength.Default
+}.then(JavaHttpClient())
+```
+
+- ```sanitizeHeader``` - sanitize sensitive headers to avoid their values appearing in the logs
+- ```filter``` - filter logs for calls matching a predicate.
+- ```showNotification``` - Keep track of latest requests and responses into notification. Default is **true**. Android only. Notifications permission needs to be granted.
 - ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
 - ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
 
@@ -285,6 +317,8 @@ Found a bug or have a feature request? [File an issue](https://github.com/Cosmin
 [![Compose Multiplatform](https://img.shields.io/badge/1.11.0-white?logo=jetpackcompose&logoColor=white&color=4284F3)](https://www.jetbrains.com/lp/compose-multiplatform)
 [![Android](https://img.shields.io/badge/Android%2017-white?logo=android&logoColor=white&color=34A853)](https://developer.android.com/about/versions/16)
 [![Ktor](https://img.shields.io/badge/3.4.3-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
+[![OkHttp](https://img.shields.io/badge/4.11.0-white?logo=square&logoColor=white&color=003B57)](https://square.github.io/okhttp/)
+[![http4k](https://img.shields.io/badge/6.45.1.0-white?logo=httpie&logoColor=white&color=087CFA)](https://www.http4k.org/)
 [![SQLDelight](https://img.shields.io/badge/2.3.2-white?logo=sqlite&logoColor=white&color=003B57)](https://sqldelight.github.io/sqldelight)
 
 Community discussions on Slack — join us in the [#ktormonitor](https://kotlinlang.slack.com/archives/C0AB9GA32H0) channel.

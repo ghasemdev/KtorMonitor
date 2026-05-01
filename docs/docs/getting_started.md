@@ -48,6 +48,17 @@
 
     For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) is required.
 
+=== "http4k - Android & JVM Only"
+
+    ```kotlin hl_lines="2-3"
+    dependencies {
+        debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.12.0")
+        releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.12.0")
+    }
+    ```
+
+    For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) is required.
+
 
 ### 📦 Install Ktor Monitor
 
@@ -91,5 +102,23 @@
     - ```sanitizeHeader``` - sanitize sensitive headers to avoid their values appearing in the logs
     - ```filter``` - filter logs for calls matching a predicate.
     - ```showNotification``` - Keep track of latest requests and responses into notification. Default is **true**. Android and iOS only. Notifications permission needs to be granted.
+    - ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
+    - ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
+
+=== "http4k Filter"
+
+    ```kotlin hl_lines="2-9"
+    val client: HttpHandler = KtorMonitorFilter {
+        sanitizeHeader { header -> header == "Authorization" }
+        filter { request -> !request.uri.host.contains("cosminmihu.ro") }
+        showNotification = true
+        retentionPeriod = RetentionPeriod.OneHour
+        maxContentLength = ContentLength.Default
+    }.then(JavaHttpClient())
+    ```
+    
+    - ```sanitizeHeader``` - sanitize sensitive headers to avoid their values appearing in the logs
+    - ```filter``` - filter logs for calls matching a predicate.
+    - ```showNotification``` - Keep track of latest requests and responses into notification. Default is **true**. Android only. Notifications permission needs to be granted.
     - ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
     - ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
