@@ -13,7 +13,7 @@ Operational guide for AI coding agents (and new contributors) working in this re
 Multiplatform UI for inspecting requests and responses.
 
 - **Targets:** Android, iOS (arm64 / simulator arm64), Desktop JVM (Windows / macOS / Linux), JS (browser), Wasm/JS (browser).
-- **Tech stack:** Kotlin **2.3.20**, Compose Multiplatform **1.11.0-beta01**, Ktor **3.4.2**, OkHttp **5.3.2**, SQLDelight **2.3.2** (async driver, `sql.js` on web), Koin **4.2.1**, Coil **3.4.0**, kotlinx.atomicfu, kotlinx.coroutines, kotlinx.datetime, kotlinx.serialization.
+- **Tech stack:** Kotlin **2.3.21**, Compose Multiplatform **1.11.0-beta01**, Ktor **3.4.3**, OkHttp **5.3.2**, SQLDelight **2.3.2** (async driver, `sql.js` on web), Koin **4.2.1**, Coil **3.4.0**, kotlinx.atomicfu, kotlinx.coroutines, kotlinx.datetime, kotlinx.serialization.
 - **Group / artifacts** (group `ro.cosminmihu.ktor`):
   - `ktor-monitor-core`            — shared core (UI + storage)
   - `ktor-monitor-core-no-op`      — ABI-equivalent no-op

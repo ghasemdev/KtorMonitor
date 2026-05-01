@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.12.0] - TBA
+## [1.12.0] - 2026-05-01
 * Context7 Integration
 * UI improvements: client source, viewer enhancements, lines number, display mode buttons
 * Support for JavaScript display mode
