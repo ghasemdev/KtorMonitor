@@ -1,10 +1,15 @@
 package ro.cosminmihu.ktor.monitor.ui.detail
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
@@ -39,12 +44,16 @@ import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @Composable
 internal fun SummaryScreen(summary: DetailUiState.Summary, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(
-            vertical = Dimens.Small,
-            horizontal = Dimens.Medium
-        )
-    ) {
+    val scrollState = rememberScrollState()
+    VerticalScrollbarBox(scrollState, modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(scrollState)
+                .padding(
+                    vertical = Dimens.Small,
+                    horizontal = Dimens.Medium
+                )
+        ) {
         KeyValue(
             key = stringResource(Res.string.ktor_summary_url),
             value = summary.url
@@ -102,6 +111,7 @@ internal fun SummaryScreen(summary: DetailUiState.Summary, modifier: Modifier = 
             key = stringResource(Res.string.ktor_summary_total_size),
             value = summary.totalSize
         )
+        }
     }
 }
 

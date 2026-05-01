@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -105,22 +107,26 @@ internal fun Multipart(
         derivedStateOf { flattenMultipart(rows, collapsed) }
     }
 
-    SelectionContainer {
-        CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
-            LazyColumn(
-                modifier = modifier,
-                contentPadding = contentPadding,
-            ) {
-                itemsIndexed(
-                    items = visible,
-                    key = { _, row -> row.id },
-                    contentType = { _, row -> row.kind.name },
-                ) { _, row ->
-                    MultipartRowView(
-                        row = row,
-                        colors = colors,
-                        onToggle = { id -> collapsed[id] = !(collapsed[id] == true) },
-                    )
+    val listState = rememberLazyListState()
+    VerticalScrollbarBox(listState, modifier) {
+        SelectionContainer {
+            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding,
+                ) {
+                    itemsIndexed(
+                        items = visible,
+                        key = { _, row -> row.id },
+                        contentType = { _, row -> row.kind.name },
+                    ) { _, row ->
+                        MultipartRowView(
+                            row = row,
+                            colors = colors,
+                            onToggle = { id -> collapsed[id] = !(collapsed[id] == true) },
+                        )
+                    }
                 }
             }
         }

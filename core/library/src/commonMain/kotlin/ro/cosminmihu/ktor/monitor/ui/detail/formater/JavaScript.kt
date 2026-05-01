@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -84,25 +86,29 @@ internal fun JavaScript(
         derivedStateOf { computeVisibleIndices(lines.size, folds, collapsed) }
     }
 
-    SelectionContainer {
-        CompositionLocalProvider(LocalMaxLineNumber provides lines.size) {
-            LazyColumn(
-                modifier = modifier,
-                contentPadding = contentPadding,
-            ) {
-                itemsIndexed(
-                    items = visibleIndices,
-                    key = { _, lineIndex -> lineIndex },
-                    contentType = { _, _ -> "js-line" },
-                ) { _, lineIndex ->
-                    JsCodeRow(
-                        lineIndex = lineIndex,
-                        line = lines[lineIndex],
-                        foldClosing = folds[lineIndex],
-                        isCollapsed = collapsed[lineIndex] == true,
-                        colors = colors,
-                        onToggle = { collapsed[lineIndex] = !(collapsed[lineIndex] == true) },
-                    )
+    val listState = rememberLazyListState()
+    VerticalScrollbarBox(listState, modifier) {
+        SelectionContainer {
+            CompositionLocalProvider(LocalMaxLineNumber provides lines.size) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding,
+                ) {
+                    itemsIndexed(
+                        items = visibleIndices,
+                        key = { _, lineIndex -> lineIndex },
+                        contentType = { _, _ -> "js-line" },
+                    ) { _, lineIndex ->
+                        JsCodeRow(
+                            lineIndex = lineIndex,
+                            line = lines[lineIndex],
+                            foldClosing = folds[lineIndex],
+                            isCollapsed = collapsed[lineIndex] == true,
+                            colors = colors,
+                            onToggle = { collapsed[lineIndex] = !(collapsed[lineIndex] == true) },
+                        )
+                    }
                 }
             }
         }

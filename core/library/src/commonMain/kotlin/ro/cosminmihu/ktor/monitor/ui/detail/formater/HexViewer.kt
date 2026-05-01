@@ -4,9 +4,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.LocalTextStyle
@@ -28,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ro.cosminmihu.ktor.monitor.ui.BothScrollbarsBox
 import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
 import ro.cosminmihu.ktor.monitor.ui.detail.body.LocalMaxLineNumber
 
@@ -69,45 +72,51 @@ internal fun HexViewer(
     if (rows.isEmpty()) return
 
     val hScrollState = rememberScrollState()
-    Box(modifier = modifier.horizontalScroll(hScrollState)) {
-        SelectionContainer {
-            CompositionLocalProvider(LocalMaxLineNumber provides rows.size) {
-                LazyColumn(
-                    contentPadding = contentPadding,
-                ) {
-                    itemsIndexed(
-                        items = rows,
-                        key = { _, row -> row.offset },
-                        contentType = { _, _ -> "hex-row" },
-                    ) { index, row ->
-                        CodeLine(
-                            lineNumber = index + 1,
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(start = 8.dp, top = 1.dp, bottom = 1.dp),
+    val vListState = rememberLazyListState()
+
+    BothScrollbarsBox(vListState, hScrollState, modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .horizontalScroll(hScrollState),
+        ) {
+            SelectionContainer {
+                CompositionLocalProvider(LocalMaxLineNumber provides rows.size) {
+                    LazyColumn(
+                        state = vListState,
+                        contentPadding = contentPadding,
+                    ) {
+                        itemsIndexed(
+                            items = rows,
+                            key = { _, row -> row.offset },
+                            contentType = { _, _ -> "hex-row" },
+                        ) { index, row ->
+                            CodeLine(
+                                lineNumber = index + 1,
                             ) {
-                                Text(
-                                    text = buildAnnotatedString {
-                                        // Offset
-                                        withStyle(SpanStyle(color = offsetColor)) {
-                                            append(row.offsetText)
+                                Row(
+                                    modifier = Modifier
+                                        .padding(start = 8.dp, top = 1.dp, bottom = 1.dp),
+                                ) {
+                                    Text(
+                                        text = buildAnnotatedString {
+                                            withStyle(SpanStyle(color = offsetColor)) {
+                                                append(row.offsetText)
+                                                append("  ")
+                                            }
+                                            withStyle(SpanStyle(color = hexColor)) {
+                                                append(row.hexText)
+                                            }
                                             append("  ")
-                                        }
-                                        // Hex bytes
-                                        withStyle(SpanStyle(color = hexColor)) {
-                                            append(row.hexText)
-                                        }
-                                        append("  ")
-                                        // ASCII
-                                        withStyle(SpanStyle(color = asciiColor)) {
-                                            append(row.asciiText)
-                                        }
-                                    },
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 13.sp,
-                                    softWrap = false,
-                                )
+                                            withStyle(SpanStyle(color = asciiColor)) {
+                                                append(row.asciiText)
+                                            }
+                                        },
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.sp,
+                                        softWrap = false,
+                                    )
+                                }
                             }
                         }
                     }

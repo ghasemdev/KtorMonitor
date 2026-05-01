@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.LocalTextStyle
@@ -99,20 +100,23 @@ internal fun XmlTree(
     }
 
     SelectionContainer {
-        Column(
-            modifier = modifier
-                .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(contentPadding),
-        ) {
-            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
-                rootElements.forEach { child ->
-                    XmlNodeView(
-                        node = child,
-                        colors = colors,
-                        depth = 0,
-                        isInitiallyExpanded = initialExpanded,
-                        lineNumbers = lineNumbers,
-                    )
+        val scrollState = rememberScrollState()
+        VerticalScrollbarBox(scrollState, modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .then(if (verticalScroll) Modifier.verticalScroll(scrollState) else Modifier)
+                    .padding(contentPadding),
+            ) {
+                CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+                    rootElements.forEach { child ->
+                        XmlNodeView(
+                            node = child,
+                            colors = colors,
+                            depth = 0,
+                            isInitiallyExpanded = initialExpanded,
+                            lineNumbers = lineNumbers,
+                        )
+                    }
                 }
             }
         }

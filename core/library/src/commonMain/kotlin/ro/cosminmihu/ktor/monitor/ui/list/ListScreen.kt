@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
@@ -224,29 +226,36 @@ internal fun ListScreen(
                         mutableStateOf(null)
                     }
 
-                    LazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxWidth()
+                    val listState = rememberLazyListState()
+                    VerticalScrollbarBox(
+                        state = listState,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                     ) {
-                        items(
-                            items = uiState.calls,
-                            key = { item -> item.id }
-                        ) { item ->
-                            CallItem(
-                                call = item,
-                                modifier = Modifier
-                                    .animateItem()
-                                    .clickable {
-                                        selectedItemId = item.id
-                                        onCallClick(item.id)
-                                    }
-                                    .background(
-                                        when (selectedItemId) {
-                                            item.id -> MaterialTheme.colorScheme.surfaceVariant
-                                            else -> MaterialTheme.colorScheme.surface
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(
+                                items = uiState.calls,
+                                key = { item -> item.id }
+                            ) { item ->
+                                CallItem(
+                                    call = item,
+                                    modifier = Modifier
+                                        .animateItem()
+                                        .clickable {
+                                            selectedItemId = item.id
+                                            onCallClick(item.id)
                                         }
-                                    )
-                            )
-                            HorizontalDivider()
+                                        .background(
+                                            when (selectedItemId) {
+                                                item.id -> MaterialTheme.colorScheme.surfaceVariant
+                                                else -> MaterialTheme.colorScheme.surface
+                                            }
+                                        )
+                                )
+                                HorizontalDivider()
+                            }
                         }
                     }
                 }
