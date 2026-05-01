@@ -52,11 +52,22 @@ internal fun FilterChipsRow(
         // Chip 1: Method
         if (availableMethods.isNotEmpty()) {
             var methodMenuExpanded by remember { mutableStateOf(false) }
+            val methodLabel = when {
+                filter.methods.isEmpty() -> {
+                    stringResource(Res.string.ktor_filter_method)
+                }
+                else -> {
+                    val methodOrder = HttpMethod.DefaultMethods.map { it.value }
+                    filter.methods.sortedWith(compareBy {
+                        methodOrder.indexOf(it.uppercase()).takeIf { i -> i >= 0 } ?: Int.MAX_VALUE
+                    }).joinToString(", ")
+                }
+            }
             Box {
                 FilterChip(
                     selected = filter.methods.isNotEmpty(),
                     onClick = { methodMenuExpanded = true },
-                    label = { Text(stringResource(Res.string.ktor_filter_method)) },
+                    label = { Text(methodLabel) },
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Filled.ArrowDropDown,
@@ -87,11 +98,15 @@ internal fun FilterChipsRow(
 
         // Chip 2: Response code range
         var codeMenuExpanded by remember { mutableStateOf(false) }
+        val codeLabel = when {
+            filter.responseCodeRanges.isEmpty() -> stringResource(Res.string.ktor_filter_response_code)
+            else -> filter.responseCodeRanges.sortedBy { it.ordinal }.joinToString(", ") { it.label }
+        }
         Box {
             FilterChip(
                 selected = filter.responseCodeRanges.isNotEmpty(),
                 onClick = { codeMenuExpanded = true },
-                label = { Text(stringResource(Res.string.ktor_filter_response_code)) },
+                label = { Text(codeLabel) },
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Filled.ArrowDropDown,
