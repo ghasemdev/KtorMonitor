@@ -1,25 +1,40 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.formater
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -36,12 +51,13 @@ import ro.cosminmihu.ktor.monitor.ui.detail.body.LocalMaxLineNumber
 /**
  * Renders JavaScript source code with simple syntax highlighting and a
  * left-side line-number gutter. Each source line is displayed as a [CodeLine].
+ * Brace-delimited blocks (`{ ... }`) can be folded by tapping the chevron on
+ * the opening line.
  *
  * @param code The JavaScript content string.
  * @param modifier Modifier for the root layout.
  * @param colors Custom colors for the highlighter.
  * @param contentPadding Padding for the container.
- * @param verticalScroll Whether the view should be vertically scrollable.
  */
 @Composable
 internal fun JavaScript(
@@ -50,15 +66,23 @@ internal fun JavaScript(
     colors: JsCodeColors = JsCodeDefaults.colors(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    var lines by remember(code, colors) { mutableStateOf<List<AnnotatedString>>(emptyList()) }
+    var highlighted by remember(code, colors) { mutableStateOf(JsHighlighted.EMPTY) }
 
     LaunchedEffect(code, colors) {
-        lines = withContext(Dispatchers.Default) {
+        highlighted = withContext(Dispatchers.Default) {
             highlightJavaScript(beautifyJavaScript(code), colors)
         }
     }
 
+    val lines = highlighted.lines
+    val folds = highlighted.folds
     if (lines.isEmpty()) return
+
+    val collapsed = remember(highlighted) { mutableStateMapOf<Int, Boolean>() }
+
+    val visibleIndices by remember(highlighted) {
+        derivedStateOf { computeVisibleIndices(lines.size, folds, collapsed) }
+    }
 
     SelectionContainer {
         CompositionLocalProvider(LocalMaxLineNumber provides lines.size) {
@@ -67,30 +91,95 @@ internal fun JavaScript(
                 contentPadding = contentPadding,
             ) {
                 itemsIndexed(
-                    items = lines,
-                    key = { index, _ -> index },
+                    items = visibleIndices,
+                    key = { _, lineIndex -> lineIndex },
                     contentType = { _, _ -> "js-line" },
-                ) { index, line ->
-                    CodeLine(
-                        lineNumber = index + 1,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp, top = 1.dp, bottom = 1.dp),
-                        ) {
-                            Text(
-                                text = line,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 14.sp,
-                            )
-                        }
-                    }
+                ) { _, lineIndex ->
+                    JsCodeRow(
+                        lineIndex = lineIndex,
+                        line = lines[lineIndex],
+                        foldClosing = folds[lineIndex],
+                        isCollapsed = collapsed[lineIndex] == true,
+                        colors = colors,
+                        onToggle = { collapsed[lineIndex] = !(collapsed[lineIndex] == true) },
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun JsCodeRow(
+    lineIndex: Int,
+    line: AnnotatedString,
+    foldClosing: Int?,
+    isCollapsed: Boolean,
+    colors: JsCodeColors,
+    onToggle: () -> Unit,
+) {
+    val isFoldOpener = foldClosing != null
+    val arrowRotation by animateFloatAsState(targetValue = if (!isCollapsed) 0f else -90f)
+
+    CodeLine(
+        lineNumber = lineIndex + 1,
+        modifier = if (isFoldOpener) {
+            Modifier.fillMaxWidth().clickable(onClick = onToggle)
+        } else {
+            Modifier.fillMaxWidth()
+        },
+    ) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 1.dp, bottom = 1.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Box(modifier = Modifier.size(20.dp)) {
+                if (isFoldOpener) {
+                    Image(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(colors.punctuationColor),
+                        modifier = Modifier.fillMaxSize().rotate(arrowRotation),
+                    )
+                }
+            }
+            Text(
+                text = if (isCollapsed) {
+                    buildAnnotatedString {
+                        append(line)
+                        withStyle(SpanStyle(color = colors.commentColor)) { append(" ... ") }
+                        withStyle(SpanStyle(color = colors.punctuationColor)) { append("}") }
+                    }
+                } else {
+                    line
+                },
+                fontFamily = FontFamily.Monospace,
+                fontSize = 14.sp,
+            )
+        }
+    }
+}
+
+private fun computeVisibleIndices(
+    totalLines: Int,
+    folds: Map<Int, Int>,
+    collapsed: SnapshotStateMap<Int, Boolean>,
+): List<Int> {
+    if (totalLines == 0) return emptyList()
+    val out = ArrayList<Int>(totalLines)
+    var i = 0
+    while (i < totalLines) {
+        out += i
+        val close = folds[i]
+        if (close != null && collapsed[i] == true) {
+            i = close + 1
+        } else {
+            i++
+        }
+    }
+    return out
 }
 
 // --------------------------------------------------------------------------------
@@ -153,16 +242,30 @@ private val JS_LITERALS = setOf("true", "false", "null", "undefined", "NaN", "In
 
 private val JS_PUNCTUATION = setOf('{', '}', '(', ')', '[', ']', ',', ';', '.', ':')
 
-private fun highlightJavaScript(code: String, colors: JsCodeColors): List<AnnotatedString> {
+private fun highlightJavaScript(code: String, colors: JsCodeColors): JsHighlighted {
     val tokens = tokenizeJavaScript(code)
     val lines = mutableListOf<AnnotatedString>()
     var current = AnnotatedString.Builder()
+    var currentLine = 0
+    val openStack = ArrayDeque<Int>()
+    val folds = HashMap<Int, Int>()
 
     fun appendToken(text: String, color: Color) {
         current.withStyle(SpanStyle(color = color)) { append(text) }
     }
 
     for (token in tokens) {
+        // Track folds at token boundary (before splitting on newlines).
+        if (token.kind == JsTokenKind.PUNCTUATION) {
+            when (token.text) {
+                "{" -> openStack.addLast(currentLine)
+                "}" -> {
+                    val open = openStack.removeLastOrNull()
+                    if (open != null && open != currentLine) folds[open] = currentLine
+                }
+            }
+        }
+
         val parts = token.text.split('\n')
         parts.forEachIndexed { idx, part ->
             if (part.isNotEmpty()) {
@@ -183,6 +286,7 @@ private fun highlightJavaScript(code: String, colors: JsCodeColors): List<Annota
             if (idx < parts.lastIndex) {
                 lines += current.toAnnotatedString()
                 current = AnnotatedString.Builder()
+                currentLine++
             }
         }
     }
@@ -192,7 +296,16 @@ private fun highlightJavaScript(code: String, colors: JsCodeColors): List<Annota
         lines.removeAt(lines.lastIndex)
     }
     if (lines.isEmpty()) lines += AnnotatedString("")
-    return lines
+    return JsHighlighted(lines = lines, folds = folds)
+}
+
+internal data class JsHighlighted(
+    val lines: List<AnnotatedString>,
+    val folds: Map<Int, Int>,
+) {
+    companion object {
+        val EMPTY = JsHighlighted(emptyList(), emptyMap())
+    }
 }
 
 private enum class JsTokenKind {
