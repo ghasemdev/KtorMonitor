@@ -21,6 +21,7 @@ allprojects {
 dependencies {
     dokka(project(":ktor:library-ktor"))
     dokka(project(":okhttp:library-okhttp"))
+    dokka(project(":http4k:library-http4k"))
 }
 
 dokka {
