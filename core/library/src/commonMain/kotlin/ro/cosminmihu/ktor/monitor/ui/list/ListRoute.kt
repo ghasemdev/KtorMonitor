@@ -29,5 +29,8 @@ internal fun ListRoute(
         toggleMethod = viewModel::toggleMethod,
         toggleResponseCodeRange = viewModel::toggleResponseCodeRange,
         setSizeSort = viewModel::setSizeSort,
+        toggleHost = viewModel::toggleHost,
+        toggleDuration = viewModel::toggleDuration,
+        toggleContentType = viewModel::toggleContentType,
     )
 }

@@ -78,6 +78,9 @@ internal fun ListScreen(
     toggleMethod: (String) -> Unit,
     toggleResponseCodeRange: (ListUiState.Filter.ResponseCodeRange) -> Unit,
     setSizeSort: (ListUiState.Filter.SizeSort?) -> Unit,
+    toggleHost: (String) -> Unit,
+    toggleDuration: (ListUiState.Filter.DurationRange) -> Unit,
+    toggleContentType: (ro.cosminmihu.ktor.monitor.domain.model.ContentType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -200,9 +203,14 @@ internal fun ListScreen(
                                 FilterChipsRow(
                                     filter = uiState.filter,
                                     availableMethods = uiState.availableMethods,
+                                    availableHosts = uiState.availableHosts,
+                                    availableContentTypes = uiState.availableContentTypes,
                                     onToggleMethod = toggleMethod,
                                     onToggleResponseCodeRange = toggleResponseCodeRange,
                                     onSetSizeSort = setSizeSort,
+                                    onToggleHost = toggleHost,
+                                    onToggleDuration = toggleDuration,
+                                    onToggleContentType = toggleContentType,
                                 )
                             }
                         }
@@ -294,6 +302,9 @@ private fun ListScreenPreview() {
             toggleMethod = {},
             toggleResponseCodeRange = {},
             setSizeSort = {},
+            toggleHost = {},
+            toggleDuration = {},
+            toggleContentType = {},
         )
     }
 }

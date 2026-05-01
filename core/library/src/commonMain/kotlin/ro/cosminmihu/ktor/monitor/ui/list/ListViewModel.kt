@@ -43,7 +43,14 @@ internal class ListViewModel(
     val uiState = combine(this@ListViewModel.filter, calls, configUseCase.clientSource) { filterOption, calls, clientSource ->
         val (appliedFilter, filtered) = filter(filterOption, calls)
         val availableMethods = calls.map { it.method }.toSet()
-        buildUiState(appliedFilter, filtered, configUseCase.isShowNotification(), clientSource, availableMethods)
+        val availableHosts = calls.map { it.host }.toSet()
+        val availableContentTypes = calls.mapNotNull { call ->
+            when {
+                call.isWebsocket -> ContentType.WEB_SOCKET
+                else -> call.responseContentType?.contentType?.takeIf { it != ContentType.UNKNOWN }
+            }
+        }.toSet()
+        buildUiState(appliedFilter, filtered, configUseCase.isShowNotification(), clientSource, availableMethods, availableHosts, availableContentTypes)
     }
         .flowOn(Dispatchers.Default)
         .stateIn(
@@ -72,6 +79,27 @@ internal class ListViewModel(
             }
         }
 
+        if (query.hosts.isNotEmpty()) {
+            filterCalls = filterCalls.filter { it.host in query.hosts }
+        }
+
+        if (query.durations.isNotEmpty()) {
+            filterCalls = filterCalls.filter { call ->
+                val durationMs = call.responseTimestamp?.minus(call.requestTimestamp)
+                durationMs != null && query.durations.any { durationMs in it.rangeMs }
+            }
+        }
+
+        if (query.contentTypes.isNotEmpty()) {
+            filterCalls = filterCalls.filter { call ->
+                val ct = when {
+                    call.isWebsocket -> ContentType.WEB_SOCKET
+                    else -> call.responseContentType?.contentType ?: ContentType.UNKNOWN
+                }
+                ct in query.contentTypes
+            }
+        }
+
         filterCalls = when {
             query.searchQuery.isBlank() -> filterCalls
             else -> filterCalls.filter {
@@ -94,11 +122,15 @@ internal class ListViewModel(
         showNotification: Boolean,
         clientSource: ClientSource?,
         availableMethods: Set<String> = emptySet(),
+        availableHosts: Set<String> = emptySet(),
+        availableContentTypes: Set<ContentType> = emptySet(),
     ): ListUiState = ListUiState(
         filter = filter,
         showNotification = showNotification,
         clientSource = clientSource,
         availableMethods = availableMethods,
+        availableHosts = availableHosts,
+        availableContentTypes = availableContentTypes,
         calls = calls.map {
             ListUiState.Call(
                 id = it.id,
@@ -160,5 +192,26 @@ internal class ListViewModel(
 
     fun setSizeSort(sort: ListUiState.Filter.SizeSort?) {
         _filter.update { it.copy(sizeSort = sort) }
+    }
+
+    fun toggleHost(host: String) {
+        _filter.update { filter ->
+            val updated = if (host in filter.hosts) filter.hosts - host else filter.hosts + host
+            filter.copy(hosts = updated)
+        }
+    }
+
+    fun toggleDuration(range: ListUiState.Filter.DurationRange) {
+        _filter.update { filter ->
+            val updated = if (range in filter.durations) filter.durations - range else filter.durations + range
+            filter.copy(durations = updated)
+        }
+    }
+
+    fun toggleContentType(contentType: ContentType) {
+        _filter.update { filter ->
+            val updated = if (contentType in filter.contentTypes) filter.contentTypes - contentType else filter.contentTypes + contentType
+            filter.copy(contentTypes = updated)
+        }
     }
 }
