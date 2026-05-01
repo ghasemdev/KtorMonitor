@@ -3,17 +3,18 @@ package ro.cosminmihu.ktor.monitor.ui.detail.formater
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
+import ro.cosminmihu.ktor.monitor.ui.BothScrollbarsBox
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -87,25 +88,27 @@ internal fun Css(
         derivedStateOf { flattenCss(nodes, collapsed) }
     }
 
+    val hScrollState = rememberScrollState()
     val listState = rememberLazyListState()
-    VerticalScrollbarBox(listState, modifier) {
-        SelectionContainer {
-            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = contentPadding,
-                ) {
-                    itemsIndexed(
-                        items = rows,
-                        key = { _, row -> row.id },
-                        contentType = { _, row -> row.kind.name },
-                    ) { _, row ->
-                        CssRowView(
-                            row = row,
-                            colors = colors,
-                            onToggle = { id -> collapsed[id] = !(collapsed[id] == true) },
-                        )
+    BothScrollbarsBox(listState, hScrollState, modifier) {
+        Box(Modifier.fillMaxSize().horizontalScroll(hScrollState)) {
+            SelectionContainer {
+                CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+                    LazyColumn(
+                        state = listState,
+                        contentPadding = contentPadding,
+                    ) {
+                        itemsIndexed(
+                            items = rows,
+                            key = { _, row -> row.id },
+                            contentType = { _, row -> row.kind.name },
+                        ) { _, row ->
+                            CssRowView(
+                                row = row,
+                                colors = colors,
+                                onToggle = { id -> collapsed[id] = !(collapsed[id] == true) },
+                            )
+                        }
                     }
                 }
             }
@@ -131,12 +134,10 @@ private fun CssRowView(
             CodeLine(
                 lineNumber = row.lineNumber,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .clickable(enabled = row.hasChildren) { if (row.hasChildren) onToggle(row.id) },
             ) {
                 Row(
                     modifier = Modifier
-                        .weight(1f)
                         .padding(start = indentation * row.depth, top = 4.dp, bottom = 2.dp),
                     verticalAlignment = Alignment.Top,
                 ) {
@@ -162,6 +163,7 @@ private fun CssRowView(
                         },
                         fontFamily = FontFamily.Monospace,
                         fontSize = 14.sp,
+                        softWrap = false,
                         modifier = Modifier.padding(start = 4.dp),
                     )
                 }
@@ -171,11 +173,9 @@ private fun CssRowView(
         CssRowKind.DECLARATION -> {
             CodeLine(
                 lineNumber = row.lineNumber,
-                modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
                     modifier = Modifier
-                        .weight(1f)
                         .padding(start = indentation * row.depth + 24.dp + 4.dp, top = 1.dp, bottom = 1.dp),
                 ) {
                     Text(
@@ -187,6 +187,7 @@ private fun CssRowView(
                         },
                         fontFamily = FontFamily.Monospace,
                         fontSize = 14.sp,
+                        softWrap = false,
                     )
                 }
             }
@@ -195,11 +196,9 @@ private fun CssRowView(
         CssRowKind.CLOSE -> {
             CodeLine(
                 lineNumber = row.lineNumber,
-                modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
                     modifier = Modifier
-                        .weight(1f)
                         .padding(start = indentation * row.depth + 24.dp + 4.dp),
                 ) {
                     Text(
@@ -207,6 +206,7 @@ private fun CssRowView(
                         color = colors.punctuationColor,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 14.sp,
+                        softWrap = false,
                     )
                 }
             }

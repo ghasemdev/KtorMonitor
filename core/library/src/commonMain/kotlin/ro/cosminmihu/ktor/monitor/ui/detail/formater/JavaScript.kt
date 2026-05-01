@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -130,14 +129,13 @@ private fun JsCodeRow(
     CodeLine(
         lineNumber = lineIndex + 1,
         modifier = if (isFoldOpener) {
-            Modifier.fillMaxWidth().clickable(onClick = onToggle)
+            Modifier.clickable(onClick = onToggle)
         } else {
-            Modifier.fillMaxWidth()
+            Modifier
         },
     ) {
         Row(
             modifier = Modifier
-                .weight(1f)
                 .padding(top = 1.dp, bottom = 1.dp),
             verticalAlignment = Alignment.Top,
         ) {
@@ -163,6 +161,7 @@ private fun JsCodeRow(
                 },
                 fontFamily = FontFamily.Monospace,
                 fontSize = 14.sp,
+                softWrap = false,
             )
         }
     }

@@ -9,12 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -101,10 +101,12 @@ internal fun XmlTree(
 
     SelectionContainer {
         val scrollState = rememberScrollState()
+        val hScrollState = rememberScrollState()
         VerticalScrollbarBox(scrollState, modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .then(if (verticalScroll) Modifier.verticalScroll(scrollState) else Modifier)
+                    .horizontalScroll(hScrollState)
                     .padding(contentPadding),
             ) {
                 CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
@@ -185,12 +187,10 @@ private fun XmlNodeView(
                 CodeLine(
                     lineNumber = openingLine,
                     modifier = Modifier
-                        .fillMaxWidth()
                         .clickable(enabled = hasChildren) { isExpanded = !isExpanded },
                 ) {
                     Row(
                         modifier = Modifier
-                            .weight(1f)
                             .padding(start = (indentation * depth), top = 2.dp, bottom = 2.dp),
                         verticalAlignment = Alignment.Top
                     ) {
@@ -245,6 +245,7 @@ private fun XmlNodeView(
                             },
                             fontFamily = FontFamily.Monospace,
                             fontSize = 14.sp,
+                            softWrap = false,
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
@@ -268,11 +269,9 @@ private fun XmlNodeView(
                         // Closing tag: </TagName> (Only visible if expanded)
                         CodeLine(
                             lineNumber = closingLine,
-                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Row(
                                 modifier = Modifier
-                                    .weight(1f)
                                     .padding(
                                         start = (indentation * depth) + 24.dp + 4.dp,
                                         bottom = 2.dp
@@ -285,7 +284,8 @@ private fun XmlNodeView(
                                         }
                                     },
                                     fontFamily = FontFamily.Monospace,
-                                    fontSize = 14.sp
+                                    fontSize = 14.sp,
+                                    softWrap = false
                                 )
                             }
                         }
@@ -299,11 +299,9 @@ private fun XmlNodeView(
             if (text.isNotEmpty()) {
                 CodeLine(
                     lineNumber = openingLine,
-                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
                         modifier = Modifier
-                            .weight(1f)
                             .padding(
                                 start = (indentation * depth) + 24.dp + 4.dp,
                                 top = 1.dp,
@@ -314,7 +312,8 @@ private fun XmlNodeView(
                             text = text,
                             color = colors.textColor,
                             fontFamily = FontFamily.Monospace,
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
+                            softWrap = false
                         )
                     }
                 }

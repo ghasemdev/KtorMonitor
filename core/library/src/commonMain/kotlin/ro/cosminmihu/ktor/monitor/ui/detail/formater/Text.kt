@@ -1,9 +1,10 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.formater
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ro.cosminmihu.ktor.monitor.ui.BothScrollbarsBox
 import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
 import ro.cosminmihu.ktor.monitor.ui.detail.body.CodeLine
 import ro.cosminmihu.ktor.monitor.ui.detail.body.LocalMaxLineNumber
@@ -78,42 +80,43 @@ internal fun TextLines(
 
     if (lines.isEmpty()) return
 
+    val hScrollState = rememberScrollState()
     val listState = rememberLazyListState()
-    VerticalScrollbarBox(listState, modifier) {
-        SelectionContainer {
-            CompositionLocalProvider(LocalMaxLineNumber provides lines.size) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = contentPadding,
-                ) {
-                    itemsIndexed(
-                        items = lines,
-                        key = { index, _ -> index },
-                        contentType = { _, _ -> "text-line" },
-                    ) { index, line ->
-                        if (showLineNumbers) {
-                            CodeLine(
-                                lineNumber = index + 1,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 8.dp, top = 1.dp, bottom = 1.dp),
+    BothScrollbarsBox(listState, hScrollState, modifier) {
+        Box(Modifier.fillMaxSize().horizontalScroll(hScrollState)) {
+            SelectionContainer {
+                CompositionLocalProvider(LocalMaxLineNumber provides lines.size) {
+                    LazyColumn(
+                        state = listState,
+                        contentPadding = contentPadding,
+                    ) {
+                        itemsIndexed(
+                            items = lines,
+                            key = { index, _ -> index },
+                            contentType = { _, _ -> "text-line" },
+                        ) { index, line ->
+                            if (showLineNumbers) {
+                                CodeLine(
+                                    lineNumber = index + 1,
                                 ) {
-                                    Text(
-                                        text = line,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .padding(start = 8.dp, top = 1.dp, bottom = 1.dp),
+                                    ) {
+                                        Text(
+                                            text = line,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            softWrap = false,
+                                        )
+                                    }
                                 }
+                            } else {
+                                Text(
+                                    text = line,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    softWrap = false,
+                                )
                             }
-                        } else {
-                            Text(
-                                text = line,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
                         }
                     }
                 }
