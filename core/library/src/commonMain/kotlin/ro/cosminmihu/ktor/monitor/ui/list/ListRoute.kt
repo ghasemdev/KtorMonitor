@@ -32,5 +32,6 @@ internal fun ListRoute(
         toggleHost = viewModel::toggleHost,
         toggleDuration = viewModel::toggleDuration,
         toggleContentType = viewModel::toggleContentType,
+        resetFilter = viewModel::resetFilter,
     )
 }

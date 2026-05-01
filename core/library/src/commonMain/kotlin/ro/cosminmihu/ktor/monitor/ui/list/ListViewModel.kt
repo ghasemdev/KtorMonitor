@@ -169,6 +169,10 @@ internal class ListViewModel(
         _filter.update { it.copy(searchQuery = "") }
     }
 
+    fun resetFilter() {
+        _filter.value = ListUiState.Filter.NoFilter
+    }
+
     fun toggleOnlyError() {
         _filter.update { it.copy(onlyError = !it.onlyError) }
     }

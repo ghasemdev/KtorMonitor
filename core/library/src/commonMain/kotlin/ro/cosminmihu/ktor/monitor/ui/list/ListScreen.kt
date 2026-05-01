@@ -81,6 +81,7 @@ internal fun ListScreen(
     toggleHost: (String) -> Unit,
     toggleDuration: (ListUiState.Filter.DurationRange) -> Unit,
     toggleContentType: (ro.cosminmihu.ktor.monitor.domain.model.ContentType) -> Unit,
+    resetFilter: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -161,7 +162,7 @@ internal fun ListScreen(
                             onClick = {
                                 showSearchBar = !showSearchBar
                                 if (!showSearchBar) {
-                                    clearSearchQuery()
+                                    resetFilter()
                                 }
                             }
                         ) {
@@ -177,7 +178,7 @@ internal fun ListScreen(
                         IconButton(
                             onClick = {
                                 deleteCalls()
-                                clearSearchQuery()
+                                resetFilter()
                                 showSearchBar = false
                             }
                         ) {
@@ -305,6 +306,7 @@ private fun ListScreenPreview() {
             toggleHost = {},
             toggleDuration = {},
             toggleContentType = {},
+            resetFilter = {},
         )
     }
 }
