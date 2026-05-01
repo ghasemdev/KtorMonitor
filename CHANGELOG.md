@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Context7 Integration
 * UI improvements: client source, viewer enhancements, lines number, display mode buttons
 * Support for JavaScript display mode
+* HexViewer Improvements: show offset, support for more content types, and enhance hex formatting
 
 ## [1.11.2] - 2026-04-20
 * Add RetentionPeriod and ContentLength for no-op core library

@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -29,6 +30,7 @@ import ro.cosminmihu.ktor.monitor.ui.detail.formater.FormUrlEncoded
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.JavaScript
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.JsonTree
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.Multipart
+import ro.cosminmihu.ktor.monitor.ui.detail.formater.HexViewer
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.TextLines
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.XmlTree
 import ro.cosminmihu.ktor.monitor.ui.detail.hasCopyableContent
@@ -136,9 +138,9 @@ internal fun Body(
                 )
 
             !body.bytes.isNullOrEmpty() && displayMode == DisplayMode.BYTES ->
-                TextLines(
-                    text = body.bytes,
-                    modifier = Modifier.fillMaxHeight().codeBlock(),
+                HexViewer(
+                    bytes = body.bytes,
+                    modifier = Modifier.fillMaxHeight().fillMaxWidth().codeBlock(),
                     contentPadding = PaddingValues(Dimens.Small),
                 )
         }
