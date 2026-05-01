@@ -27,6 +27,20 @@ import kotlin.time.Duration.Companion.seconds
 private const val HTTP_BIN_URL = "https://httpbin.org"
 private const val REDIRECT_URL = "https://cosminmihu.ro/"
 
+/** 1x1 transparent PNG (67 bytes) used as a tiny multipart image attachment. */
+@OptIn(kotlin.ExperimentalUnsignedTypes::class)
+private val PNG_1X1: ByteArray = ubyteArrayOf(
+    0x89u, 0x50u, 0x4Eu, 0x47u, 0x0Du, 0x0Au, 0x1Au, 0x0Au,
+    0x00u, 0x00u, 0x00u, 0x0Du, 0x49u, 0x48u, 0x44u, 0x52u,
+    0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x01u,
+    0x08u, 0x06u, 0x00u, 0x00u, 0x00u, 0x1Fu, 0x15u, 0xC4u,
+    0x89u, 0x00u, 0x00u, 0x00u, 0x0Du, 0x49u, 0x44u, 0x41u,
+    0x54u, 0x78u, 0x9Cu, 0x63u, 0x00u, 0x01u, 0x00u, 0x00u,
+    0x05u, 0x00u, 0x01u, 0x0Du, 0x0Au, 0x2Du, 0xB4u, 0x00u,
+    0x00u, 0x00u, 0x00u, 0x49u, 0x45u, 0x4Eu, 0x44u, 0xAEu,
+    0x42u, 0x60u, 0x82u,
+).toByteArray()
+
 internal suspend fun samples() {
     with(httpClient()) {
         // HTTP Methods
@@ -199,6 +213,14 @@ internal suspend fun samples() {
                                 headers = Headers.build {
                                     append(HttpHeaders.ContentType, "text/plain")
                                     append(HttpHeaders.ContentDisposition, "filename=\"sample.txt\"")
+                                },
+                            )
+                            append(
+                                key = "avatar",
+                                value = PNG_1X1,
+                                headers = Headers.build {
+                                    append(HttpHeaders.ContentType, "image/png")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"pixel.png\"")
                                 },
                             )
                         }
