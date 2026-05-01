@@ -37,7 +37,7 @@
 
     For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) is required.
 
-=== "OkHttp - Android & JVM Only"
+=== "OkHttp - Android & JVM"
 
     ```kotlin hl_lines="2-3"
     dependencies {
@@ -48,7 +48,7 @@
 
     For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) is required.
 
-=== "http4k - Android & JVM Only"
+=== "http4k - Android & JVM"
 
     ```kotlin hl_lines="2-3"
     dependencies {

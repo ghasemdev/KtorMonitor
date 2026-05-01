@@ -88,7 +88,7 @@ HttpClient {
 - ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
 - ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
 
-## 📦 Setup (Android & JVM only) for [OkHttp](https://square.github.io/okhttp/)
+## 📦 Setup (Android & JVM) for [OkHttp](https://square.github.io/okhttp/)
 
 ### <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Gradle_logo.svg" width="100"/>
 
@@ -123,7 +123,7 @@ OkHttpClient.Builder()
 - ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
 - ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
 
-## 📦 Setup (Android & JVM only) for [http4k](https://www.http4k.org/)
+## 📦 Setup (Android & JVM) for [http4k](https://www.http4k.org/)
 
 ### <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Gradle_logo.svg" width="100"/>
 
