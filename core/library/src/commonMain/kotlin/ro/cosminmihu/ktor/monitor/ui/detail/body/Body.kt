@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
@@ -21,8 +20,6 @@ import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.svg.SvgDecoder
-import com.sebastianneubauer.jsontree.JsonTree
-import com.sebastianneubauer.jsontree.defaultLightColors
 import org.jetbrains.compose.resources.stringResource
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.detail.DetailUiState
@@ -30,6 +27,7 @@ import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
 import ro.cosminmihu.ktor.monitor.ui.detail.copyTextFor
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.Css
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.FormUrlEncoded
+import ro.cosminmihu.ktor.monitor.ui.detail.formater.JsonTree
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.Text
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.XmlTree
 import ro.cosminmihu.ktor.monitor.ui.detail.hasCopyableContent
@@ -102,11 +100,6 @@ internal fun Body(
             body.contentFormat == DetailUiState.ContentFormat.JSON && displayMode == DisplayMode.CODE && body.raw != null ->
                 JsonTree(
                     json = body.raw,
-                    onLoading = {},
-                    colors = defaultLightColors.copy(
-                        symbolColor = Color(0xFF2E86C1),
-                        iconColor = Color(0xFF2E86C1),
-                    ),
                     modifier = Modifier.fillMaxHeight().codeBlock(),
                     contentPadding = PaddingValues(Dimens.Small),
                 )

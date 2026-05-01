@@ -194,7 +194,6 @@ kotlin {
             implementation(libs.coil.network.ktor)
             implementation(libs.coil.svg)
             implementation(libs.kotlinx.atomicfu)
-            implementation(libs.jsontree)
             implementation(libs.ksoup)
             implementation(libs.ktor.utils)
         }
