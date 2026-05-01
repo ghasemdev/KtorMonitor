@@ -75,6 +75,9 @@ internal fun ListScreen(
     clearSearchQuery: () -> Unit,
     deleteCalls: () -> Unit,
     onCallClick: (String) -> Unit,
+    toggleMethod: (String) -> Unit,
+    toggleResponseCodeRange: (ListUiState.Filter.ResponseCodeRange) -> Unit,
+    setSizeSort: (ListUiState.Filter.SizeSort?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -194,6 +197,18 @@ internal fun ListScreen(
                     }
                 }
 
+                if (!uiState.isLoading && !uiState.isEmpty) {
+                    Surface {
+                        FilterChipsRow(
+                            filter = uiState.filter,
+                            availableMethods = uiState.availableMethods,
+                            onToggleMethod = toggleMethod,
+                            onToggleResponseCodeRange = toggleResponseCodeRange,
+                            onSetSizeSort = setSizeSort,
+                        )
+                    }
+                }
+
                 HorizontalDivider()
             }
         }
@@ -275,7 +290,10 @@ private fun ListScreenPreview() {
             setSearchQuery = {},
             clearSearchQuery = {},
             deleteCalls = {},
-            onCallClick = {}
+            onCallClick = {},
+            toggleMethod = {},
+            toggleResponseCodeRange = {},
+            setSizeSort = {},
         )
     }
 }

@@ -8,6 +8,7 @@ internal data class ListUiState(
     val filter: Filter = Filter.NoFilter,
     val showNotification: Boolean = false,
     val clientSource: ClientSource? = null,
+    val availableMethods: Set<String> = emptySet(),
 ) {
     data class Call(
         val id: String,
@@ -34,9 +35,27 @@ internal data class ListUiState(
     data class Filter(
         val searchQuery: String,
         val onlyError: Boolean,
+        val methods: Set<String>,
+        val responseCodeRanges: Set<ResponseCodeRange>,
+        val sizeSort: SizeSort?,
     ) {
+        enum class ResponseCodeRange(val label: String, val range: IntRange) {
+            R2XX("2xx", 200..299),
+            R3XX("3xx", 300..399),
+            R4XX("4xx", 400..499),
+            R5XX("5xx", 500..599),
+        }
+
+        enum class SizeSort { ASC, DESC }
+
         companion object {
-            internal val NoFilter = Filter(searchQuery = "", onlyError = false)
+            internal val NoFilter = Filter(
+                searchQuery = "",
+                onlyError = false,
+                methods = emptySet(),
+                responseCodeRanges = emptySet(),
+                sizeSort = null
+            )
         }
     }
 }

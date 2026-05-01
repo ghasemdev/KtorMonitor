@@ -26,5 +26,8 @@ internal fun ListRoute(
             onClear()
         },
         onCallClick = onClick,
+        toggleMethod = viewModel::toggleMethod,
+        toggleResponseCodeRange = viewModel::toggleResponseCodeRange,
+        setSizeSort = viewModel::setSizeSort,
     )
 }
