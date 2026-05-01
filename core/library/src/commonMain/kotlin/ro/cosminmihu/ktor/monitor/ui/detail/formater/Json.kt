@@ -1,20 +1,18 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.formater
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.LocalTextStyle
@@ -22,10 +20,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -53,18 +54,6 @@ import kotlin.math.max
 // PUBLIC API
 // --------------------------------------------------------------------------------
 
-/**
- * Entry point for the JsonTree.
- * Parses the JSON string and displays the tree.
- *
- * @param json The JSON content string.
- * @param modifier Modifier for the root layout.
- * @param colors Custom colors for the tree.
- * @param contentPadding Padding for the container.
- * @param initialExpanded Whether composite nodes start expanded.
- * @param verticalScroll Whether the tree should be vertically scrollable.
- * @param onError Callback for parsing errors.
- */
 @Composable
 internal fun JsonTree(
     json: String,
@@ -72,7 +61,6 @@ internal fun JsonTree(
     colors: JsonTreeColors = JsonTreeDefaults.colors(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
     initialExpanded: Boolean = true,
-    verticalScroll: Boolean = true,
     onError: (Throwable) -> Unit = {}
 ) {
     var root by remember(json) { mutableStateOf<JsonNode?>(null) }
@@ -97,21 +85,32 @@ internal fun JsonTree(
     if (error != null) return
 
     val maxLine = remember(node) { node.maxLine() }
+    val collapsed = remember(node) { mutableStateMapOf<Int, Boolean>() }
+    if (!initialExpanded) {
+        remember(node) { node.forEachComposite { collapsed[it.openingLine] = true } }
+    }
+
+    val rows by remember(node) {
+        derivedStateOf { flattenJson(node, collapsed) }
+    }
 
     SelectionContainer {
-        Column(
-            modifier = modifier
-                .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(contentPadding),
-        ) {
-            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
-                JsonNodeView(
-                    node = node,
-                    colors = colors,
-                    depth = 0,
-                    isLast = true,
-                    isInitiallyExpanded = initialExpanded,
-                )
+        CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+            LazyColumn(
+                modifier = modifier,
+                contentPadding = contentPadding,
+            ) {
+                itemsIndexed(
+                    items = rows,
+                    key = { _, row -> row.id },
+                    contentType = { _, row -> row.kind.name },
+                ) { _, row ->
+                    JsonRowView(
+                        row = row,
+                        colors = colors,
+                        onToggle = { id -> collapsed[id] = !(collapsed[id] == true) },
+                    )
+                }
             }
         }
     }
@@ -120,175 +119,217 @@ internal fun JsonTree(
 private val jsonParser = Json { isLenient = true; ignoreUnknownKeys = true }
 
 // --------------------------------------------------------------------------------
-// UI COMPONENTS
+// UI ROW
 // --------------------------------------------------------------------------------
 
 @Composable
-private fun JsonNodeView(
-    node: JsonNode,
+private fun JsonRowView(
+    row: JsonRow,
     colors: JsonTreeColors,
-    depth: Int,
-    isLast: Boolean,
-    isInitiallyExpanded: Boolean,
+    onToggle: (Int) -> Unit,
 ) {
     val indentation = 16.dp
 
-    when (node) {
-        is JsonNode.Composite -> {
-            var isExpanded by remember { mutableStateOf(isInitiallyExpanded) }
-            val arrowRotation by animateFloatAsState(targetValue = if (isExpanded) 0f else -90f)
-            val hasChildren = node.children.isNotEmpty()
-            val openBrace = if (node.isArray) "[" else "{"
-            val closeBrace = if (node.isArray) "]" else "}"
-
-            Column {
-                // Opening line: "key": { ...
-                CodeLine(
-                    lineNumber = node.openingLine,
+    when (row.kind) {
+        JsonRowKind.OPEN -> {
+            val arrowRotation by animateFloatAsState(targetValue = if (!row.isCollapsed) 0f else -90f)
+            val openBrace = if (row.isArray) "[" else "{"
+            val closeBrace = if (row.isArray) "]" else "}"
+            CodeLine(
+                lineNumber = row.lineNumber,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = row.hasChildren) { if (row.hasChildren) onToggle(row.id) },
+            ) {
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = hasChildren) { isExpanded = !isExpanded },
+                        .weight(1f)
+                        .padding(start = indentation * row.depth, top = 2.dp, bottom = 2.dp),
+                    verticalAlignment = Alignment.Top,
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = (indentation * depth), top = 2.dp, bottom = 2.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Box(modifier = Modifier.size(24.dp)) {
-                            if (hasChildren) {
-                                Image(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    colorFilter = ColorFilter.tint(colors.arrowColor),
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .rotate(arrowRotation)
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = buildAnnotatedString {
-                                if (node.key != null) {
-                                    withStyle(SpanStyle(color = colors.keyColor)) {
-                                        append("\"${node.key}\"")
-                                    }
-                                    withStyle(SpanStyle(color = colors.symbolColor)) {
-                                        append(": ")
-                                    }
-                                }
-                                withStyle(SpanStyle(color = colors.symbolColor)) {
-                                    append(openBrace)
-                                }
-                                if (!hasChildren) {
-                                    withStyle(SpanStyle(color = colors.symbolColor)) {
-                                        append(closeBrace)
-                                        if (!isLast) append(",")
-                                    }
-                                } else if (!isExpanded) {
-                                    withStyle(SpanStyle(color = colors.symbolColor)) {
-                                        append(" ... ")
-                                        append(closeBrace)
-                                        if (!isLast) append(",")
-                                    }
-                                }
-                            },
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
-                }
-
-                AnimatedVisibility(visible = isExpanded && hasChildren) {
-                    Column {
-                        node.children.forEachIndexed { index, child ->
-                            JsonNodeView(
-                                node = child,
-                                colors = colors,
-                                depth = depth + 1,
-                                isLast = index == node.children.lastIndex,
-                                isInitiallyExpanded = isInitiallyExpanded,
+                    Box(modifier = Modifier.size(24.dp)) {
+                        if (row.hasChildren) {
+                            Image(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                colorFilter = ColorFilter.tint(colors.arrowColor),
+                                modifier = Modifier.fillMaxSize().rotate(arrowRotation),
                             )
                         }
-
-                        // Closing brace
-                        CodeLine(
-                            lineNumber = node.closingLine,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(
-                                        start = (indentation * depth) + 24.dp + 4.dp,
-                                        bottom = 2.dp
-                                    )
-                            ) {
-                                Text(
-                                    text = buildAnnotatedString {
-                                        withStyle(SpanStyle(color = colors.symbolColor)) {
-                                            append(closeBrace)
-                                            if (!isLast) append(",")
-                                        }
-                                    },
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
                     }
+                    Text(
+                        text = buildAnnotatedString {
+                            if (row.key != null) {
+                                withStyle(SpanStyle(color = colors.keyColor)) { append("\"${row.key}\"") }
+                                withStyle(SpanStyle(color = colors.symbolColor)) { append(": ") }
+                            }
+                            withStyle(SpanStyle(color = colors.symbolColor)) { append(openBrace) }
+                            if (!row.hasChildren) {
+                                withStyle(SpanStyle(color = colors.symbolColor)) {
+                                    append(closeBrace)
+                                    if (!row.isLast) append(",")
+                                }
+                            } else if (row.isCollapsed) {
+                                withStyle(SpanStyle(color = colors.symbolColor)) {
+                                    append(" ... ")
+                                    append(closeBrace)
+                                    if (!row.isLast) append(",")
+                                }
+                            }
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
                 }
             }
         }
 
-        is JsonNode.Primitive -> {
+        JsonRowKind.CLOSE -> {
+            val closeBrace = if (row.isArray) "]" else "}"
             CodeLine(
-                lineNumber = node.line,
+                lineNumber = row.lineNumber,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(
-                            start = (indentation * depth) + 24.dp + 4.dp,
-                            top = 1.dp,
-                            bottom = 1.dp
-                        )
+                        .padding(start = indentation * row.depth + 24.dp + 4.dp, bottom = 2.dp),
                 ) {
                     Text(
                         text = buildAnnotatedString {
-                            if (node.key != null) {
-                                withStyle(SpanStyle(color = colors.keyColor)) {
-                                    append("\"${node.key}\"")
-                                }
-                                withStyle(SpanStyle(color = colors.symbolColor)) {
-                                    append(": ")
-                                }
+                            withStyle(SpanStyle(color = colors.symbolColor)) {
+                                append(closeBrace)
+                                if (!row.isLast) append(",")
                             }
-                            val valueColor = when (node.kind) {
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                    )
+                }
+            }
+        }
+
+        JsonRowKind.PRIMITIVE -> {
+            CodeLine(
+                lineNumber = row.lineNumber,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = indentation * row.depth + 24.dp + 4.dp, top = 1.dp, bottom = 1.dp),
+                ) {
+                    Text(
+                        text = buildAnnotatedString {
+                            if (row.key != null) {
+                                withStyle(SpanStyle(color = colors.keyColor)) { append("\"${row.key}\"") }
+                                withStyle(SpanStyle(color = colors.symbolColor)) { append(": ") }
+                            }
+                            val valueColor = when (row.primitiveKind) {
                                 JsonPrimitiveKind.STRING -> colors.stringColor
                                 JsonPrimitiveKind.NUMBER -> colors.numberColor
                                 JsonPrimitiveKind.BOOLEAN -> colors.booleanColor
                                 JsonPrimitiveKind.NULL -> colors.nullColor
+                                null -> colors.nullColor
                             }
                             withStyle(SpanStyle(color = valueColor)) {
-                                append(node.displayValue)
+                                append(row.value.orEmpty())
                             }
-                            if (!isLast) {
-                                withStyle(SpanStyle(color = colors.symbolColor)) {
-                                    append(",")
-                                }
+                            if (!row.isLast) {
+                                withStyle(SpanStyle(color = colors.symbolColor)) { append(",") }
                             }
                         },
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
                     )
                 }
             }
         }
     }
+}
+
+// --------------------------------------------------------------------------------
+// FLATTENING
+// --------------------------------------------------------------------------------
+
+private enum class JsonRowKind { OPEN, CLOSE, PRIMITIVE }
+
+private data class JsonRow(
+    val id: Int,
+    val kind: JsonRowKind,
+    val depth: Int,
+    val lineNumber: Int,
+    val key: String?,
+    val isArray: Boolean = false,
+    val hasChildren: Boolean = false,
+    val isCollapsed: Boolean = false,
+    val isLast: Boolean = true,
+    val value: String? = null,
+    val primitiveKind: JsonPrimitiveKind? = null,
+)
+
+private fun flattenJson(
+    root: JsonNode,
+    collapsed: SnapshotStateMap<Int, Boolean>,
+): List<JsonRow> {
+    val out = ArrayList<JsonRow>()
+    fun visit(node: JsonNode, depth: Int, isLast: Boolean) {
+        when (node) {
+            is JsonNode.Composite -> {
+                val hasChildren = node.children.isNotEmpty()
+                val isCollapsed = hasChildren && collapsed[node.openingLine] == true
+                out += JsonRow(
+                    id = node.openingLine,
+                    kind = JsonRowKind.OPEN,
+                    depth = depth,
+                    lineNumber = node.openingLine,
+                    key = node.key,
+                    isArray = node.isArray,
+                    hasChildren = hasChildren,
+                    isCollapsed = isCollapsed,
+                    isLast = isLast,
+                )
+                if (hasChildren && !isCollapsed) {
+                    val lastIdx = node.children.lastIndex
+                    node.children.forEachIndexed { idx, child ->
+                        visit(child, depth + 1, idx == lastIdx)
+                    }
+                    out += JsonRow(
+                        id = -node.closingLine,
+                        kind = JsonRowKind.CLOSE,
+                        depth = depth,
+                        lineNumber = node.closingLine,
+                        key = null,
+                        isArray = node.isArray,
+                        isLast = isLast,
+                    )
+                }
+            }
+            is JsonNode.Primitive -> out += JsonRow(
+                id = node.line,
+                kind = JsonRowKind.PRIMITIVE,
+                depth = depth,
+                lineNumber = node.line,
+                key = node.key,
+                isLast = isLast,
+                value = node.displayValue,
+                primitiveKind = node.kind,
+            )
+        }
+    }
+    visit(root, 0, isLast = true)
+    return out
+}
+
+private fun JsonNode.forEachComposite(action: (JsonNode.Composite) -> Unit) {
+    fun visit(node: JsonNode) {
+        if (node is JsonNode.Composite) {
+            action(node)
+            node.children.forEach(::visit)
+        }
+    }
+    visit(this)
 }
 
 // --------------------------------------------------------------------------------
@@ -340,12 +381,6 @@ private fun buildJsonNode(key: String?, element: JsonElement): JsonNode = when (
     }
 }
 
-
-/**
- * Walks the parsed tree once and assigns a stable, monotonically increasing
- * line number to every row that will ever be rendered. Numbers are kept across
- * collapse/expand toggles so the gutter behaves like code folding.
- */
 private fun JsonNode.assignLineNumbers(): JsonNode {
     var counter = 0
     fun walk(node: JsonNode): JsonNode = when (node) {

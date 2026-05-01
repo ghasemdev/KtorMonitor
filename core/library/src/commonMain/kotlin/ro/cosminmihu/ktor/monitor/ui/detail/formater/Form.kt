@@ -1,30 +1,31 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.formater
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -53,7 +54,6 @@ internal fun FormUrlEncoded(
     colors: FormTreeColors = FormTreeDefaults.colors(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
     initialExpanded: Boolean = true,
-    verticalScroll: Boolean = true,
     onError: (Throwable) -> Unit = {}
 ) {
     var rootNodes by remember(body) { mutableStateOf<List<FormNode>>(emptyList()) }
@@ -73,20 +73,35 @@ internal fun FormUrlEncoded(
     if (error != null || rootNodes.isEmpty()) return
 
     val maxLine = remember(rootNodes) { rootNodes.maxLine() }
+    val collapsed = remember(rootNodes) { mutableStateMapOf<Int, Boolean>() }
+    if (!initialExpanded) {
+        // Default-collapse all parents on first build.
+        remember(rootNodes) {
+            rootNodes.forEachParent { collapsed[it.openingLine] = true }
+        }
+    }
+
+    val rows by remember(rootNodes) {
+        derivedStateOf { flattenForm(rootNodes, collapsed) }
+    }
 
     SelectionContainer {
-        Column(
-            modifier = modifier
-                .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(contentPadding),
-        ) {
-            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
-                rootNodes.forEach { node ->
-                    FormNodeView(
-                        node = node,
+        CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+            LazyColumn(
+                modifier = modifier,
+                contentPadding = contentPadding,
+            ) {
+                itemsIndexed(
+                    items = rows,
+                    key = { _, row -> row.id },
+                    contentType = { _, row -> if (row.kind == FormRowKind.CLOSE) "form-close" else "form-row" },
+                ) { _, row ->
+                    FormRowView(
+                        row = row,
                         colors = colors,
-                        depth = 0,
-                        isInitiallyExpanded = initialExpanded
+                        onToggle = { id ->
+                            collapsed[id] = !(collapsed[id] == true)
+                        },
                     )
                 }
             }
@@ -95,123 +110,176 @@ internal fun FormUrlEncoded(
 }
 
 // --------------------------------------------------------------------------------
-// UI COMPONENTS
+// UI ROW
 // --------------------------------------------------------------------------------
 
 @Composable
-private fun FormNodeView(
-    node: FormNode,
+private fun FormRowView(
+    row: FormRow,
     colors: FormTreeColors,
-    depth: Int,
-    isInitiallyExpanded: Boolean
+    onToggle: (Int) -> Unit,
 ) {
     val indentation = 20.dp
 
-    val children = when (node) {
-        is FormNode.Parent -> node.children
-        is FormNode.Leaf -> emptyList()
-    }
-
-    val hasChildren = children.isNotEmpty()
-    var isExpanded by remember { mutableStateOf(isInitiallyExpanded) }
-    val arrowRotation by animateFloatAsState(targetValue = if (isExpanded) 0f else -90f)
-
-    Column {
-        CodeLine(
-            lineNumber = node.openingLine,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = hasChildren) { isExpanded = !isExpanded },
-        ) {
-            Row(
+    when (row.kind) {
+        FormRowKind.OPEN -> {
+            val arrowRotation by animateFloatAsState(targetValue = if (!row.isCollapsed) 0f else -90f)
+            CodeLine(
+                lineNumber = row.lineNumber,
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = (indentation * depth), top = 2.dp, bottom = 2.dp),
-                verticalAlignment = Alignment.Top
+                    .fillMaxWidth()
+                    .clickable { onToggle(row.id) },
             ) {
-                // Expand Icon
-                Box(modifier = Modifier.size(24.dp)) {
-                    if (hasChildren) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = indentation * row.depth, top = 2.dp, bottom = 2.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    Box(modifier = Modifier.size(24.dp)) {
                         Image(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Expand/Collapse",
+                            contentDescription = null,
                             colorFilter = ColorFilter.tint(colors.arrowColor),
-                            modifier = Modifier.fillMaxSize().rotate(arrowRotation)
+                            modifier = Modifier.fillMaxSize().rotate(arrowRotation),
                         )
                     }
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(SpanStyle(color = colors.keyColor)) { append(row.key) }
+                            withStyle(SpanStyle(color = colors.punctuationColor)) {
+                                append(if (row.isArray) " [" else " {")
+                            }
+                            if (row.isCollapsed) {
+                                withStyle(SpanStyle(color = colors.commentColor)) { append(" ... ") }
+                                withStyle(SpanStyle(color = colors.punctuationColor)) {
+                                    append(if (row.isArray) "]" else "}")
+                                }
+                            }
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
                 }
-
-                // Node Content
-                Text(
-                    text = buildAnnotatedString {
-                        // Key
-                        withStyle(SpanStyle(color = colors.keyColor)) {
-                            append(node.key)
-                        }
-
-                        when (node) {
-                            is FormNode.Parent -> {
-                                // Visual hint for structure
-                                withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                    append(if (node.isArray) " [" else " {")
-                                }
-                                if (!isExpanded) {
-                                    withStyle(SpanStyle(color = colors.commentColor)) {
-                                        append(" ... ")
-                                    }
-                                    withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                        append(if (node.isArray) "]" else "}")
-                                    }
-                                }
-                            }
-
-                            is FormNode.Leaf -> {
-                                withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                    append(" = ")
-                                }
-                                withStyle(SpanStyle(color = colors.valueColor)) {
-                                    append(node.value)
-                                }
-                            }
-                        }
-                    },
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(start = 4.dp)
-                )
             }
         }
 
-        // Children Recursive Render
-        AnimatedVisibility(visible = isExpanded && hasChildren) {
-            Column {
-                children.forEach { child ->
-                    FormNodeView(child, colors, depth + 1, isInitiallyExpanded)
+        FormRowKind.CLOSE -> {
+            CodeLine(
+                lineNumber = row.lineNumber,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = indentation * row.depth + 24.dp + 4.dp),
+                ) {
+                    Text(
+                        text = if (row.isArray) "]" else "}",
+                        color = colors.punctuationColor,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                    )
                 }
+            }
+        }
 
-                // Closing brackets for parents
-                if (node is FormNode.Parent) {
-                    CodeLine(
-                        lineNumber = node.closingLine,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = (indentation * depth) + 24.dp + 4.dp),
-                        ) {
-                            Text(
-                                text = if (node.isArray) "]" else "}",
-                                color = colors.punctuationColor,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
+        FormRowKind.LEAF -> {
+            CodeLine(
+                lineNumber = row.lineNumber,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = indentation * row.depth + 24.dp + 4.dp, top = 1.dp, bottom = 1.dp),
+                ) {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(SpanStyle(color = colors.keyColor)) { append(row.key) }
+                            withStyle(SpanStyle(color = colors.punctuationColor)) { append(" = ") }
+                            withStyle(SpanStyle(color = colors.valueColor)) { append(row.value.orEmpty()) }
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                    )
                 }
             }
         }
     }
+}
+
+// --------------------------------------------------------------------------------
+// FLATTENING
+// --------------------------------------------------------------------------------
+
+private enum class FormRowKind { OPEN, CLOSE, LEAF }
+
+private data class FormRow(
+    val id: Int,
+    val kind: FormRowKind,
+    val depth: Int,
+    val lineNumber: Int,
+    val key: String,
+    val value: String? = null,
+    val isArray: Boolean = false,
+    val isCollapsed: Boolean = false,
+)
+
+private fun flattenForm(
+    roots: List<FormNode>,
+    collapsed: SnapshotStateMap<Int, Boolean>,
+): List<FormRow> {
+    val out = ArrayList<FormRow>()
+    fun visit(node: FormNode, depth: Int) {
+        when (node) {
+            is FormNode.Leaf -> out += FormRow(
+                id = node.openingLine,
+                kind = FormRowKind.LEAF,
+                depth = depth,
+                lineNumber = node.openingLine,
+                key = node.key,
+                value = node.value,
+            )
+            is FormNode.Parent -> {
+                val isCollapsed = collapsed[node.openingLine] == true
+                out += FormRow(
+                    id = node.openingLine,
+                    kind = FormRowKind.OPEN,
+                    depth = depth,
+                    lineNumber = node.openingLine,
+                    key = node.key,
+                    isArray = node.isArray,
+                    isCollapsed = isCollapsed,
+                )
+                if (!isCollapsed) {
+                    node.children.forEach { visit(it, depth + 1) }
+                    out += FormRow(
+                        // Use closingLine as id so it stays unique against opener.
+                        id = -node.closingLine,
+                        kind = FormRowKind.CLOSE,
+                        depth = depth,
+                        lineNumber = node.closingLine,
+                        key = node.key,
+                        isArray = node.isArray,
+                    )
+                }
+            }
+        }
+    }
+    roots.forEach { visit(it, 0) }
+    return out
+}
+
+private fun List<FormNode>.forEachParent(action: (FormNode.Parent) -> Unit) {
+    fun visit(node: FormNode) {
+        if (node is FormNode.Parent) {
+            action(node)
+            node.children.forEach(::visit)
+        }
+    }
+    forEach(::visit)
 }
 
 // --------------------------------------------------------------------------------
@@ -237,11 +305,6 @@ internal sealed class FormNode {
     ) : FormNode()
 }
 
-/**
- * Walks the parsed tree once and assigns a stable, monotonically increasing
- * line number to every renderable row. Numbers are kept across collapse/expand
- * toggles so the gutter behaves like code folding.
- */
 private fun List<FormNode>.assignLineNumbers(): List<FormNode> {
     var counter = 0
     fun walk(node: FormNode): FormNode = when (node) {
@@ -267,32 +330,31 @@ internal data class FormTreeColors(
 internal object FormTreeDefaults {
     @Composable
     fun colors(
-        keyColor: Color = Color(0xFFFF9800),     // Orange
-        valueColor: Color = Color(0xFF4CAF50),   // Green
+        keyColor: Color = Color(0xFFFF9800),
+        valueColor: Color = Color(0xFF4CAF50),
         punctuationColor: Color = Color.Gray,
         arrowColor: Color = Color.Gray,
-        commentColor: Color = Color.LightGray
+        commentColor: Color = Color.LightGray,
     ) = FormTreeColors(
         keyColor = keyColor,
         valueColor = valueColor,
         punctuationColor = punctuationColor,
         arrowColor = arrowColor,
-        commentColor = commentColor
+        commentColor = commentColor,
     )
 }
 
 // --------------------------------------------------------------------------------
-// PARSER LOGIC (Kotlin Idiomatic)
+// PARSER LOGIC
 // --------------------------------------------------------------------------------
 
 internal object FormParser {
     fun parse(body: String): List<FormNode> {
         if (body.isBlank()) return emptyList()
 
-        // 1. Split and Decode plain pairs
         val pairs = body.split("&").mapNotNull { part ->
             val eqIndex = part.indexOf('=')
-            if (eqIndex == -1) return@mapNotNull null // Skip invalid parts
+            if (eqIndex == -1) return@mapNotNull null
 
             val rawKey = part.substring(0, eqIndex)
             val rawValue = part.substring(eqIndex + 1)
@@ -306,23 +368,18 @@ internal object FormParser {
             }
         }
 
-        // 2. Build Tree Hierarchy
         return buildTree(pairs)
     }
 
     private fun buildTree(pairs: List<Pair<String, String>>): List<FormNode> {
-        // Map<Key, Any> where Any is String (Leaf) or MutableMap (Parent)
         val rootMap = mutableMapOf<String, Any>()
 
         for ((fullKey, value) in pairs) {
-            // Split "user[address][city]" -> ["user", "address", "city"]
             val parts = fullKey.split("[", "]").filter { it.isNotEmpty() }
-
             if (parts.isEmpty()) continue
 
             var currentLevel = rootMap
 
-            // Traverse down to the second-to-last key
             for (i in 0 until parts.size - 1) {
                 val part = parts[i]
 
@@ -333,14 +390,10 @@ internal object FormParser {
                 currentLevel = currentLevel[part] as MutableMap<String, Any>
             }
 
-            // Handle the leaf value
             val leafKey = parts.last()
-
-            // Overwrite logic (simple "last one wins" or "array if implicit")
             currentLevel[leafKey] = value
         }
 
-        // 3. Convert Map to Nodes recursively
         return mapToNodes(rootMap)
     }
 
@@ -350,8 +403,6 @@ internal object FormParser {
                 @Suppress("UNCHECKED_CAST")
                 val childrenMap = value as Map<String, Any>
                 val children = mapToNodes(childrenMap)
-
-                // Heuristic: If keys are integers (0, 1, 2...), treat as Array
                 val allKeysAreInts = children.all { it.key.toIntOrNull() != null }
                 FormNode.Parent(key, children, isArray = allKeysAreInts)
             } else {
@@ -361,9 +412,6 @@ internal object FormParser {
     }
 }
 
-/**
- * Percent-decode a URL-encoded string (replacing + with space and %XX sequences).
- */
 private fun String.decodeUrlEncoded(): String {
     val sb = StringBuilder(length)
     var i = 0
@@ -394,7 +442,6 @@ private fun String.decodeUrlEncoded(): String {
     return sb.toString()
 }
 
-/** Largest line number that will appear in the gutter for this tree. */
 private fun List<FormNode>.maxLine(): Int {
     var m = 0
     fun visit(node: FormNode) {

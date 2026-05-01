@@ -1,30 +1,31 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.formater
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -53,7 +54,6 @@ internal fun Css(
     colors: CssTreeColors = CssTreeDefaults.colors(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
     initialExpanded: Boolean = false,
-    verticalScroll: Boolean = true,
     onError: (Throwable) -> Unit = {}
 ) {
     var nodes by remember(css) { mutableStateOf<List<CssNode>>(emptyList()) }
@@ -61,7 +61,9 @@ internal fun Css(
 
     LaunchedEffect(css) {
         try {
-            nodes = CssParser(css).parse().assignLineNumbers()
+            nodes = withContext(Dispatchers.Default) {
+                CssParser(css).parse().assignLineNumbers()
+            }
             error = null
         } catch (e: Exception) {
             error = e.message
@@ -69,23 +71,35 @@ internal fun Css(
         }
     }
 
-    if (error != null) return
+    if (error != null || nodes.isEmpty()) return
 
     val maxLine = remember(nodes) { nodes.maxLine() }
+    val collapsed = remember(nodes) { mutableStateMapOf<Int, Boolean>() }
+    if (!initialExpanded) {
+        remember(nodes) {
+            nodes.forEachRule { collapsed[it.openingLine] = true }
+        }
+    }
+
+    val rows by remember(nodes) {
+        derivedStateOf { flattenCss(nodes, collapsed) }
+    }
 
     SelectionContainer {
-        Column(
-            modifier = modifier
-                .then(if (verticalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(contentPadding),
-        ) {
-            CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
-                nodes.forEach { node ->
-                    CssNodeView(
-                        node = node,
+        CompositionLocalProvider(LocalMaxLineNumber provides maxLine) {
+            LazyColumn(
+                modifier = modifier,
+                contentPadding = contentPadding,
+            ) {
+                itemsIndexed(
+                    items = rows,
+                    key = { _, row -> row.id },
+                    contentType = { _, row -> row.kind.name },
+                ) { _, row ->
+                    CssRowView(
+                        row = row,
                         colors = colors,
-                        depth = 0,
-                        isInitiallyExpanded = initialExpanded
+                        onToggle = { id -> collapsed[id] = !(collapsed[id] == true) },
                     )
                 }
             }
@@ -94,143 +108,176 @@ internal fun Css(
 }
 
 // --------------------------------------------------------------------------------
-// UI COMPONENTS
+// UI ROW
 // --------------------------------------------------------------------------------
 
 @Composable
-private fun CssNodeView(
-    node: CssNode,
+private fun CssRowView(
+    row: CssRow,
     colors: CssTreeColors,
-    depth: Int,
-    isInitiallyExpanded: Boolean
+    onToggle: (Int) -> Unit,
 ) {
     val indentation = 20.dp
 
-    when (node) {
-        is CssNode.Rule -> {
-            var isExpanded by remember { mutableStateOf(isInitiallyExpanded) }
-            val arrowRotation by animateFloatAsState(targetValue = if (isExpanded) 0f else -90f)
-            val hasChildren = node.children.isNotEmpty()
-
-            Column {
-                // Selector Row: "selector {"
-                CodeLine(
-                    lineNumber = node.openingLine,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = hasChildren) { isExpanded = !isExpanded },
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = (indentation * depth), top = 4.dp, bottom = 2.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        // Expand Icon
-                        Box(modifier = Modifier.size(24.dp)) {
-                            if (hasChildren) {
-                                Image(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    colorFilter = ColorFilter.tint(colors.arrowColor),
-                                    modifier = Modifier.fillMaxSize().rotate(arrowRotation)
-                                )
-                            }
-                        }
-
-                        // Selector Text
-                        Text(
-                            text = buildAnnotatedString {
-                                withStyle(SpanStyle(color = colors.selectorColor)) {
-                                    append(node.selector.trim())
-                                }
-                                withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                    append(" {")
-                                }
-                                if (!isExpanded && hasChildren) {
-                                    withStyle(SpanStyle(color = colors.commentColor)) {
-                                        append(" ... }")
-                                    }
-                                }
-                            },
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
-                }
-
-                // Children (Properties or nested rules)
-                AnimatedVisibility(visible = isExpanded && hasChildren) {
-                    Column {
-                        node.children.forEach { child ->
-                            CssNodeView(child, colors, depth + 1, isInitiallyExpanded)
-                        }
-
-                        // Closing Brace "}"
-                        CodeLine(
-                            lineNumber = node.closingLine,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = (indentation * depth) + 24.dp + 4.dp),
-                            ) {
-                                Text(
-                                    text = "}",
-                                    color = colors.punctuationColor,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        is CssNode.Declaration -> {
-            // Property Row: "key: value;"
+    when (row.kind) {
+        CssRowKind.SELECTOR -> {
+            val arrowRotation by animateFloatAsState(targetValue = if (!row.isCollapsed) 0f else -90f)
             CodeLine(
-                lineNumber = node.line,
-                modifier = Modifier.fillMaxWidth(),
+                lineNumber = row.lineNumber,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = row.hasChildren) { if (row.hasChildren) onToggle(row.id) },
             ) {
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(
-                            start = (indentation * depth) + 24.dp + 4.dp,
-                            top = 1.dp,
-                            bottom = 1.dp
-                        )
+                        .padding(start = indentation * row.depth, top = 4.dp, bottom = 2.dp),
+                    verticalAlignment = Alignment.Top,
                 ) {
+                    Box(modifier = Modifier.size(24.dp)) {
+                        if (row.hasChildren) {
+                            Image(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                colorFilter = ColorFilter.tint(colors.arrowColor),
+                                modifier = Modifier.fillMaxSize().rotate(arrowRotation),
+                            )
+                        }
+                    }
                     Text(
                         text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = colors.propertyColor)) {
-                                append(node.property.trim())
+                            withStyle(SpanStyle(color = colors.selectorColor)) {
+                                append(row.text.trim())
                             }
-                            withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                append(": ")
-                            }
-                            withStyle(SpanStyle(color = colors.valueColor)) {
-                                append(node.value.trim())
-                            }
-                            withStyle(SpanStyle(color = colors.punctuationColor)) {
-                                append(";")
+                            withStyle(SpanStyle(color = colors.punctuationColor)) { append(" {") }
+                            if (row.isCollapsed && row.hasChildren) {
+                                withStyle(SpanStyle(color = colors.commentColor)) { append(" ... }") }
                             }
                         },
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(start = 4.dp),
                     )
                 }
             }
         }
 
-        is CssNode.Comment -> {
-            // Optional: Render comments if parsing supports them
+        CssRowKind.DECLARATION -> {
+            CodeLine(
+                lineNumber = row.lineNumber,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = indentation * row.depth + 24.dp + 4.dp, top = 1.dp, bottom = 1.dp),
+                ) {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(SpanStyle(color = colors.propertyColor)) { append(row.text.trim()) }
+                            withStyle(SpanStyle(color = colors.punctuationColor)) { append(": ") }
+                            withStyle(SpanStyle(color = colors.valueColor)) { append(row.value.orEmpty().trim()) }
+                            withStyle(SpanStyle(color = colors.punctuationColor)) { append(";") }
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                    )
+                }
+            }
+        }
+
+        CssRowKind.CLOSE -> {
+            CodeLine(
+                lineNumber = row.lineNumber,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = indentation * row.depth + 24.dp + 4.dp),
+                ) {
+                    Text(
+                        text = "}",
+                        color = colors.punctuationColor,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                    )
+                }
+            }
         }
     }
+}
+
+// --------------------------------------------------------------------------------
+// FLATTENING
+// --------------------------------------------------------------------------------
+
+private enum class CssRowKind { SELECTOR, DECLARATION, CLOSE }
+
+private data class CssRow(
+    val id: Int,
+    val kind: CssRowKind,
+    val depth: Int,
+    val lineNumber: Int,
+    val text: String,
+    val value: String? = null,
+    val hasChildren: Boolean = false,
+    val isCollapsed: Boolean = false,
+)
+
+private fun flattenCss(
+    roots: List<CssNode>,
+    collapsed: SnapshotStateMap<Int, Boolean>,
+): List<CssRow> {
+    val out = ArrayList<CssRow>()
+    fun visit(node: CssNode, depth: Int) {
+        when (node) {
+            is CssNode.Rule -> {
+                val hasChildren = node.children.isNotEmpty()
+                val isCollapsed = hasChildren && collapsed[node.openingLine] == true
+                out += CssRow(
+                    id = node.openingLine,
+                    kind = CssRowKind.SELECTOR,
+                    depth = depth,
+                    lineNumber = node.openingLine,
+                    text = node.selector,
+                    hasChildren = hasChildren,
+                    isCollapsed = isCollapsed,
+                )
+                if (hasChildren && !isCollapsed) {
+                    node.children.forEach { visit(it, depth + 1) }
+                    out += CssRow(
+                        id = -node.closingLine,
+                        kind = CssRowKind.CLOSE,
+                        depth = depth,
+                        lineNumber = node.closingLine,
+                        text = "",
+                    )
+                }
+            }
+            is CssNode.Declaration -> out += CssRow(
+                id = node.line,
+                kind = CssRowKind.DECLARATION,
+                depth = depth,
+                lineNumber = node.line,
+                text = node.property,
+                value = node.value,
+            )
+            is CssNode.Comment -> Unit
+        }
+    }
+    roots.forEach { visit(it, 0) }
+    return out
+}
+
+private fun List<CssNode>.forEachRule(action: (CssNode.Rule) -> Unit) {
+    fun visit(node: CssNode) {
+        if (node is CssNode.Rule) {
+            action(node)
+            node.children.forEach(::visit)
+        }
+    }
+    forEach(::visit)
 }
 
 // --------------------------------------------------------------------------------
@@ -254,12 +301,6 @@ internal sealed class CssNode {
     data class Comment(val text: String) : CssNode()
 }
 
-/**
- * Walks the parsed tree once and assigns a stable, monotonically increasing
- * line number to every row that will ever be rendered (selector lines, closing
- * braces, declarations). Numbers are kept across collapse/expand toggles so the
- * gutter behaves like code folding.
- */
 private fun List<CssNode>.assignLineNumbers(): List<CssNode> {
     var counter = 0
     fun walk(node: CssNode): CssNode = when (node) {
@@ -291,9 +332,9 @@ internal data class CssTreeColors(
 internal object CssTreeDefaults {
     @Composable
     fun colors(
-        selectorColor: Color = Color(0xFFFFC107), // Amber for selectors
-        propertyColor: Color = Color(0xFF03A9F4), // Light Blue for properties
-        valueColor: Color = Color(0xFF8BC34A),    // Light Green for values
+        selectorColor: Color = Color(0xFFFFC107),
+        propertyColor: Color = Color(0xFF03A9F4),
+        valueColor: Color = Color(0xFF8BC34A),
         punctuationColor: Color = Color.Gray,
         commentColor: Color = Color.DarkGray,
         arrowColor: Color = Color.Gray
@@ -327,9 +368,7 @@ private class CssParser(private val input: String) {
 
     private fun parseRule(): CssNode {
         val start = pos
-        // Read until '{' to get selector
         while (pos < len && input[pos] != '{') {
-            // Basic comment skipping could go here
             pos++
         }
 
@@ -343,14 +382,9 @@ private class CssParser(private val input: String) {
                 skipWhitespace()
                 if (pos >= len) break
 
-                // Check if this is a nested rule or a declaration.
-                // A declaration looks like "key: value;"
-                // A nested rule looks like "selector { ... }"
-
                 var lookaheadStart = pos
                 var isNestedRule = false
 
-                // Simple lookahead: scan for ':' or '{'
                 while (lookaheadStart < len && input[lookaheadStart] != ';' && input[lookaheadStart] != '}') {
                     if (input[lookaheadStart] == '{') {
                         isNestedRule = true
@@ -376,12 +410,11 @@ private class CssParser(private val input: String) {
 
     private fun parseDeclaration(): CssNode? {
         val start = pos
-        // Read property key
         while (pos < len && input[pos] != ':' && input[pos] != '}') {
             pos++
         }
 
-        if (match('}')) return null // Empty or malformed
+        if (match('}')) return null
 
         val property = input.substring(start, pos).trim()
         if (property.isEmpty()) return null
@@ -389,13 +422,12 @@ private class CssParser(private val input: String) {
         consume(':')
 
         val valStart = pos
-        // Read value until ';' or '}' (end of block)
         while (pos < len && input[pos] != ';' && input[pos] != '}') {
             pos++
         }
 
         val value = input.substring(valStart, pos).trim()
-        if (match(';')) consume(';') // Optional semicolon
+        if (match(';')) consume(';')
 
         return CssNode.Declaration(property, value)
     }
@@ -405,7 +437,6 @@ private class CssParser(private val input: String) {
             if (input[pos].isWhitespace()) {
                 pos++
             } else if (input.startsWith("/*", pos)) {
-                // Skip comment
                 pos += 2
                 while (pos < len && !input.startsWith("*/", pos)) {
                     pos++
@@ -423,7 +454,6 @@ private class CssParser(private val input: String) {
     }
 }
 
-/** Largest line number that will appear in the gutter for this tree. */
 private fun List<CssNode>.maxLine(): Int {
     var m = 0
     fun visit(node: CssNode) {

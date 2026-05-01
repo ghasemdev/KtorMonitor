@@ -8,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -30,6 +29,7 @@ import ro.cosminmihu.ktor.monitor.ui.detail.formater.FormUrlEncoded
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.JavaScript
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.JsonTree
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.Text
+import ro.cosminmihu.ktor.monitor.ui.detail.formater.TextLines
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.XmlTree
 import ro.cosminmihu.ktor.monitor.ui.detail.hasCopyableContent
 import ro.cosminmihu.ktor.monitor.ui.detail.noBody
@@ -120,16 +120,19 @@ internal fun Body(
                 )
 
             body.raw != null && displayMode == DisplayMode.RAW ->
-                LineNumberGutter(modifier = Modifier.fillMaxHeight()) {
-                    Text(
-                        text = body.raw,
-                        modifier = Modifier.padding(Dimens.Small),
-                        verticalScroll = false,
-                    )
-                }
+                TextLines(
+                    text = body.raw,
+                    modifier = Modifier.fillMaxHeight().codeBlock(),
+                    contentPadding = PaddingValues(Dimens.Small),
+                    showLineNumbers = true,
+                )
 
             !body.bytes.isNullOrEmpty() && displayMode == DisplayMode.BYTES ->
-                Text(text = body.bytes, modifier = Modifier.padding(Dimens.Small))
+                TextLines(
+                    text = body.bytes,
+                    modifier = Modifier.fillMaxHeight().codeBlock(),
+                    contentPadding = PaddingValues(Dimens.Small),
+                )
         }
     }
 }
