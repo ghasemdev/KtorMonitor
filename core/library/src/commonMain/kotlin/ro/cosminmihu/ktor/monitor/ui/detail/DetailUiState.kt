@@ -97,6 +97,7 @@ internal data class DetailUiState(
     enum class ContentFormat {
         CSS,
         FORM_URLENCODED,
+        JAVASCRIPT,
         JSON,
         XML,
     }
@@ -127,6 +128,10 @@ internal val ContentType.contentFormat
 
         ContentType.TEXT_CSS,
             -> DetailUiState.ContentFormat.CSS
+
+        ContentType.APPLICATION_JAVASCRIPT,
+        ContentType.TEXT_JAVASCRIPT,
+            -> DetailUiState.ContentFormat.JAVASCRIPT
 
         ContentType.APPLICATION_FORM_URLENCODED,
             -> DetailUiState.ContentFormat.FORM_URLENCODED
