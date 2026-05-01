@@ -33,6 +33,16 @@ UPDATE call SET protocol = ?, requestTimestamp = ?, responseCode = ?, responseTi
 saveResponseBody:
 UPDATE call SET responseContentLength = ?, responseBody = ?, isResponseBodyTruncated = ? WHERE id = ?;
 
+-- Append a chunk of bytes to the (possibly null) responseBody and bump the running content-length.
+-- Used by SSE / streamed responses where the body grows over time while the connection is still
+-- open. The UI observes the call row reactively, so every append re-renders the body viewer.
+appendResponseBody:
+UPDATE call
+SET responseBody = COALESCE(responseBody, zeroblob(0)) || ?,
+    responseContentLength = COALESCE(responseContentLength, 0) + ?,
+    isResponseBodyTruncated = ?
+WHERE id = ?;
+
 saveError:
 UPDATE call SET error = ? WHERE id = ?;
 

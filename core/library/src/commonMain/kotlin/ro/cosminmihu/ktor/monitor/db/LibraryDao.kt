@@ -78,6 +78,20 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         )
     }
 
+    suspend fun appendResponseBody(
+        id: String,
+        chunk: ByteArray,
+        deltaSize: Long,
+        isResponseBodyTruncated: Boolean,
+    ) {
+        database.callQueries.appendResponseBody(
+            chunk,
+            deltaSize,
+            isResponseBodyTruncated,
+            id,
+        )
+    }
+
     suspend fun saveResponse(
         id: String,
         error: Throwable,

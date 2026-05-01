@@ -161,6 +161,36 @@ public object InternalLibraryBridge {
     }
 
     /**
+     * Append a chunk to the response body of an existing call.
+     *
+     * Used by streamed responses (Server-Sent Events, chunked text streams) so the
+     * UI can observe the body grow incrementally instead of waiting for the
+     * entire stream to terminate.
+     *
+     * @param id Call identifier returned by [saveRequest].
+     * @param chunk Raw bytes to append. Should already be truncated by the caller
+     *   so total stored size never exceeds the configured `maxContentLength`.
+     * @param deltaSize Real size of the chunk on the wire (before truncation),
+     *   used to keep `responseContentLength` accurate.
+     * @param isResponseBodyTruncated Final truncation flag for the call so far.
+     */
+    @InternalKtorMonitorApi
+    public suspend fun appendResponseBody(
+        id: String,
+        chunk: ByteArray,
+        deltaSize: Long,
+        isResponseBodyTruncated: Boolean,
+    ) {
+        val dao by LibraryKoinContext.inject<LibraryDao>()
+        dao.appendResponseBody(
+            id = id,
+            chunk = chunk,
+            deltaSize = deltaSize,
+            isResponseBodyTruncated = isResponseBodyTruncated,
+        )
+    }
+
+    /**
      * Save response error.
      */
     @InternalKtorMonitorApi

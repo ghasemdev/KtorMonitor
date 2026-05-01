@@ -2,9 +2,18 @@ package ro.cosminmihu.ktor.monitor
 
 import kotlinx.coroutines.launch
 import okhttp3.Interceptor
+import okhttp3.MediaType
 import okhttp3.Response
+import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.asResponseBody
+import okio.Buffer
+import okio.BufferedSource
+import okio.ForwardingSource
+import okio.Source
+import okio.buffer
 import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
 import kotlin.math.abs
+import kotlin.math.min
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -141,19 +150,15 @@ public class KtorMonitorInterceptor() : Interceptor {
             .toSortedMap()
 
         // Response body.
-        val responseBodySource = response.body?.source()
-        responseBodySource?.request(Long.MAX_VALUE)
-        val responseBodyBytes = responseBodySource?.buffer?.clone()?.readByteArray()
-        val responseContentLength = responseBodyBytes?.size?.toLong()
+        val responseBody = response.body
+        val responseContentTypeRaw = responseBody.contentType()?.toString()
+        val isWebSocketUpgrade = responseCode == WEBSOCKET_UPGRADE_STATUS
+        val isServerSentEvents = responseContentTypeRaw
+            ?.substringBefore(';')
+            ?.trim()
+            ?.equals("text/event-stream", ignoreCase = true) == true
 
-        val truncatedBody =
-            if (responseBodyBytes != null && config.maxContentLength != ContentLength.Full) {
-                responseBodyBytes.take(config.maxContentLength).toByteArray()
-            } else {
-                responseBodyBytes
-            }
-        val isResponseBodyTruncated = (responseContentLength ?: 0L) > config.maxContentLength
-
+        // Always persist the response head first.
         InternalLibraryBridge.coroutineScope().launch {
             try {
                 InternalLibraryBridge.saveResponse(
@@ -165,6 +170,39 @@ public class KtorMonitorInterceptor() : Interceptor {
                     responseContentType = responseContentType,
                     responseHeaders = responseHeaders,
                 )
+            } catch (_: Throwable) {
+            }
+        }
+
+        // WebSocket upgrade — frames travel through the upgraded socket and are not
+        // visible from a network interceptor. Don't try to read the body or we'd
+        // block the upgrade indefinitely.
+        if (isWebSocketUpgrade) {
+            return response
+        }
+
+        // Server-Sent Events — wrap the body so each chunk read by the consumer is
+        // mirrored into the DB, letting the detail screen update live.
+        if (isServerSentEvents) {
+            return wrapForStreaming(response, responseBody, id, config.maxContentLength)
+        }
+
+        // Default (non-streaming) path: drain the buffered body once.
+        val responseBodySource = responseBody.source()
+        responseBodySource.request(Long.MAX_VALUE)
+        val responseBodyBytes = responseBodySource.buffer.clone().readByteArray()
+        val responseContentLength = responseBodyBytes.size.toLong()
+
+        val truncatedBody =
+            if (config.maxContentLength != ContentLength.Full) {
+                responseBodyBytes.take(config.maxContentLength).toByteArray()
+            } else {
+                responseBodyBytes
+            }
+        val isResponseBodyTruncated = responseContentLength > config.maxContentLength
+
+        InternalLibraryBridge.coroutineScope().launch {
+            try {
                 InternalLibraryBridge.saveResponseBody(
                     id = id,
                     responseContentLength = responseContentLength,
@@ -177,6 +215,86 @@ public class KtorMonitorInterceptor() : Interceptor {
 
         return response
     }
+}
+
+private const val WEBSOCKET_UPGRADE_STATUS = 101
+
+@OptIn(InternalKtorMonitorApi::class)
+private fun wrapForStreaming(
+    response: Response,
+    body: ResponseBody,
+    id: String,
+    maxContentLength: Int,
+): Response {
+    // Initialise the body row so the UI shows an empty (streaming) response immediately.
+    InternalLibraryBridge.coroutineScope().launch {
+        try {
+            InternalLibraryBridge.saveResponseBody(
+                id = id,
+                responseContentLength = 0L,
+                responseBody = ByteArray(0),
+                isResponseBodyTruncated = false,
+            )
+        } catch (_: Throwable) {
+        }
+    }
+
+    val unbounded = maxContentLength == ContentLength.Full
+    val contentType: MediaType? = body.contentType()
+    val originalContentLength = body.contentLength()
+
+    val tee = object : ForwardingSource(body.source()) {
+        private var stored: Long = 0L
+        private var truncated: Boolean = false
+
+        override fun read(sink: Buffer, byteCount: Long): Long {
+            val sizeBefore = sink.size
+            val read = super.read(sink, byteCount)
+            if (read <= 0L) return read
+
+            // Snapshot only the newly read bytes from the sink.
+            val snapshot = Buffer()
+            sink.copyTo(snapshot, sizeBefore, read)
+            val newBytes = snapshot.readByteArray()
+
+            val keep: ByteArray = when {
+                unbounded -> newBytes
+                stored >= maxContentLength -> {
+                    truncated = true
+                    ByteArray(0)
+                }
+                stored + newBytes.size > maxContentLength -> {
+                    truncated = true
+                    val remaining = (maxContentLength - stored).toInt()
+                    newBytes.copyOf(min(remaining, newBytes.size))
+                }
+                else -> newBytes
+            }
+
+            if (keep.isNotEmpty()) {
+                stored += keep.size
+            }
+            val isTruncated = truncated
+
+            InternalLibraryBridge.coroutineScope().launch {
+                try {
+                    InternalLibraryBridge.appendResponseBody(
+                        id = id,
+                        chunk = keep,
+                        deltaSize = read,
+                        isResponseBodyTruncated = isTruncated,
+                    )
+                } catch (_: Throwable) {
+                }
+            }
+
+            return read
+        }
+    }
+
+    val wrappedSource: BufferedSource = (tee as Source).buffer()
+    val wrappedBody: ResponseBody = wrappedSource.asResponseBody(contentType, originalContentLength)
+    return response.newBuilder().body(wrappedBody).build()
 }
 
 @OptIn(ExperimentalTime::class)
