@@ -54,7 +54,7 @@ kotlin {
 }
 ```
 
-## 📦 Setup (Android only) for [Ktor Client](https://ktor.io/)
+## 📦 Setup (Android) for [Ktor Client](https://ktor.io/)
 
 ### <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Gradle_logo.svg" width="100"/>
 

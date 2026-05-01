@@ -26,7 +26,7 @@
     }
     ```
 
-=== "Ktor - Android Only"
+=== "Ktor - Android"
     
     ```kotlin hl_lines="2-3"
     dependencies {
