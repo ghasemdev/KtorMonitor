@@ -9,4 +9,5 @@ package ro.cosminmihu.ktor.monitor.domain.model
 public enum class ClientSource {
     Ktor,
     OkHttp,
+    Http4k,
 }

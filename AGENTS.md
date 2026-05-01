@@ -13,7 +13,7 @@ Operational guide for AI coding agents (and new contributors) working in this re
 Multiplatform UI for inspecting requests and responses.
 
 - **Targets:** Android, iOS (arm64 / simulator arm64), Desktop JVM (Windows / macOS / Linux), JS (browser), Wasm/JS (browser).
-- **Tech stack:** Kotlin **2.3.21**, Compose Multiplatform **1.11.0-beta01**, Ktor **3.4.3**, OkHttp **5.3.2**, SQLDelight **2.3.2** (async driver, `sql.js` on web), Koin **4.2.1**, Coil **3.4.0**, kotlinx.atomicfu, kotlinx.coroutines, kotlinx.datetime, kotlinx.serialization.
+- **Tech stack:** Kotlin **2.3.21**, Compose Multiplatform **1.11.0-beta01**, Ktor **3.4.3**, OkHttp **5.3.2**, http4k **6.15.1.0**, SQLDelight **2.3.2** (async driver, `sql.js` on web), Koin **4.2.1**, Coil **3.4.0**, kotlinx.atomicfu, kotlinx.coroutines, kotlinx.datetime, kotlinx.serialization.
 - **Group / artifacts** (group `ro.cosminmihu.ktor`):
   - `ktor-monitor-core`            — shared core (UI + storage)
   - `ktor-monitor-core-no-op`      — ABI-equivalent no-op
@@ -21,6 +21,8 @@ Multiplatform UI for inspecting requests and responses.
   - `ktor-monitor-logging-no-op`
   - `ktor-monitor-okhttp-interceptor`        — OkHttp interceptor (Android & JVM)
   - `ktor-monitor-okhttp-interceptor-no-op`
+  - `ktor-monitor-http4k-filter`             — http4k Filter (Android & JVM)
+  - `ktor-monitor-http4k-filter-no-op`
 - **Distribution:** Maven Central, signed via `com.vanniktech.maven.publish`, ABI checked via `binary-compatibility-validator`, docs via Dokka + MkDocs Material (`docs/`).
 
 ## 2. Module structure
@@ -33,11 +35,14 @@ Multiplatform UI for inspecting requests and responses.
 | `ktor/library-ktor-no-op`         | KMP library                | No-op mirror of `library-ktor`.                                         |
 | `okhttp/library-okhttp`           | KMP (Android + JVM)        | `KtorMonitorInterceptor` for OkHttp; depends on `core/library`.         |
 | `okhttp/library-okhttp-no-op`     | KMP (Android + JVM)        | No-op mirror of `library-okhttp`.                                       |
+| `http4k/library-http4k`           | KMP (Android + JVM)        | `KtorMonitorFilter` for http4k; depends on `core/library`.              |
+| `http4k/library-http4k-no-op`     | KMP (Android + JVM)        | No-op mirror of `library-http4k`.                                       |
 | `sample/ktor`                     | Compose Multiplatform app  | Demo for Ktor monitor (Android, iOS, JVM, JS, Wasm).                    |
 | `sample/okhttp`                   | Compose Multiplatform app  | Demo for OkHttp monitor (Android + JVM).                                |
+| `sample/http4k`                   | Compose Multiplatform app  | Demo for http4k monitor (Android + JVM).                                |
 | `docs/`                           | MkDocs Material            | Documentation site, including generated Dokka API docs in `docs/api/`.  |
 
-Type-safe project accessors are enabled (`enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")`); reference modules as `projects.core.library`, `projects.ktor.libraryKtor`, etc.
+Type-safe project accessors are enabled (`enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")`); reference modules as `projects.core.library`, `projects.ktor.libraryKtor`, `projects.http4k.libraryHttp4k`, etc.
 
 ### Source-set layout (core)
 
@@ -61,8 +66,8 @@ A wrapper is included; always use `./gradlew`. JVM toolchain is **Java 11** for 
 | Full build                            | `./gradlew build`                                                     |
 | All checks (lint + tests + apiCheck)  | `./gradlew check`                                                     |
 | JVM unit tests (run in CI)            | `./gradlew jvmTest`                                                   |
-| Android sample APKs (debug + release) | `./gradlew :sample:ktor:assembleDebug :sample:okhttp:assembleDebug`   |
-| Desktop sample run (JVM)              | `./gradlew :sample:ktor:run` / `:sample:okhttp:run`                   |
+| Android sample APKs (debug + release) | `./gradlew :sample:ktor:assembleDebug :sample:okhttp:assembleDebug :sample:http4k:assembleDebug` |
+| Desktop sample run (JVM)              | `./gradlew :sample:ktor:run` / `:sample:okhttp:run` / `:sample:http4k:run`                      |
 | Desktop installer (current OS)        | `./gradlew :sample:ktor:packageDmg` (mac) / `packageMsi` / `packageDeb` |
 | Web (JS) dev server                   | `./gradlew :sample:ktor:jsBrowserDevelopmentRun`                      |
 | Wasm dev server                       | `./gradlew :sample:ktor:wasmJsBrowserDevelopmentRun`                  |
@@ -133,6 +138,7 @@ CI workflows live in [`.github/workflows/`](.github/workflows): `build.yml` (PR/
 ## 7. Known gotchas
 
 - **OkHttp interceptor** runs on OkHttp's HTTP dispatcher thread. The DB writes are dispatched onto the library coroutine scope (do **not** call `runBlocking` here). Response bodies are read via `Response.peekBody(maxContentLength)` to avoid loading multi-megabyte payloads.
+- **http4k Filter** runs synchronously on the caller's thread (http4k is a synchronous, functional framework). The DB writes are dispatched onto the library coroutine scope (do **not** call `runBlocking` here). Request/response bodies are read via `Body.payload.duplicate()` to avoid consuming the original `ByteBuffer`; streaming bodies are not supported in v1.
 - **Ktor plugin** wires into `HttpSendPipeline.Monitoring`, `HttpReceivePipeline.State`, `HttpResponsePipeline.Receive`, and an additional `ResponseObserver`. When changing hook order, retest streaming (SSE) and WebSocket flows.
 - **SQLDelight** uses `generateAsync = true`; always call mutation queries from a `suspend` context.
 - **Web targets** require the `sql.js` wasm artifact to be copied via the webpack config in `core/library/webpack.config.d/sqljs-config.js` (and mirrored in `sample/ktor/webpack.config.d/`).

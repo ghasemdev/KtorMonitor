@@ -60,6 +60,7 @@ import ro.cosminmihu.ktor.monitor.ui.resources.ktor_filter
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_ic_launcher
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_ic_warning_off
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_library_name
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_http4k
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_ktor
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_none
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_okhttp
@@ -115,6 +116,7 @@ internal fun ListScreen(
                                 val (label, url) = when (source) {
                                     ClientSource.Ktor -> stringResource(Res.string.ktor_source_ktor) to URL.KTOR
                                     ClientSource.OkHttp -> stringResource(Res.string.ktor_source_okhttp) to URL.OKHTTP
+                                    ClientSource.Http4k -> stringResource(Res.string.ktor_source_http4k) to URL.HTTP4K
                                 }
                                 Text(
                                     text = "${stringResource(Res.string.ktor_source_prefix)} $label",
