@@ -64,6 +64,7 @@ kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-co
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 http4k-core = { module = "org.http4k:http4k-core", version.ref = "http4k" }
+http4k-client-okhttp = { module = "org.http4k:http4k-client-okhttp", version.ref = "http4k" }
 ktor-utils = { module = "io.ktor:ktor-utils", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }

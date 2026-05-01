@@ -25,6 +25,7 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
+            implementation(libs.http4k.client.okhttp)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
