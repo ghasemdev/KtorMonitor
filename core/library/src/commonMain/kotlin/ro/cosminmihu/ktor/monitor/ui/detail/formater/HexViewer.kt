@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -59,7 +60,7 @@ internal fun HexViewer(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    val offsetColor = LocalTextStyle.current.color.copy(alpha = 0.55f)
+    val offsetColor = MaterialTheme.colorScheme.outline
     val hexColor = LocalTextStyle.current.color
     val asciiColor = Color(0xFF4CAF50)
 
