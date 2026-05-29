@@ -9,6 +9,28 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 private const val HTTP_BIN_URL = "https://httpbin.org"
 
+private val MARKDOWN_SAMPLE = """
+# Ktor Monitor Markdown sample
+
+This request body helps test Markdown rendering.
+
+- preview mode for markdown
+- code mode with line numbers
+
+```kotlin
+fun greeting() = "Hello from Markdown"
+```
+""".trimIndent()
+
+private val YAML_SAMPLE = """
+sample:
+  name: okhttp
+  features:
+    - markdown-preview
+    - yaml-code-view
+  enabled: true
+""".trimIndent()
+
 /** W3C SVG logo used as a multipart SVG image attachment. */
 private val SVG_SAMPLE: ByteArray = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0 100 100">
   <title>SVG Logo</title>
@@ -66,6 +88,22 @@ internal suspend fun samples() = withContext(Dispatchers.IO) {
     runCatching { client.newCall(Request.Builder().url("$HTTP_BIN_URL/json").build()).execute() }
     runCatching { client.newCall(Request.Builder().url("$HTTP_BIN_URL/html").build()).execute() }
     runCatching { client.newCall(Request.Builder().url("$HTTP_BIN_URL/xml").build()).execute() }
+    runCatching {
+        client.newCall(
+            Request.Builder()
+                .url("$HTTP_BIN_URL/anything/markdown")
+                .post(MARKDOWN_SAMPLE.toRequestBody("text/markdown".toMediaType()))
+                .build()
+        ).execute()
+    }
+    runCatching {
+        client.newCall(
+            Request.Builder()
+                .url("$HTTP_BIN_URL/anything/yaml")
+                .post(YAML_SAMPLE.toRequestBody("application/yaml".toMediaType()))
+                .build()
+        ).execute()
+    }
 
     // Images
     runCatching { client.newCall(Request.Builder().url("$HTTP_BIN_URL/image/jpeg").build()).execute() }

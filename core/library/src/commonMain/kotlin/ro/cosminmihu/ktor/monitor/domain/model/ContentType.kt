@@ -14,6 +14,7 @@ internal enum class ContentType(
     APPLICATION_JSON("application/json", "JSON", 0xFFFF69B4),
     APPLICATION_HAL_JSON("application/hal+json", "HAL", 0xFFFF69B4),
     APPLICATION_JAVASCRIPT("application/javascript", "JS", 0xFFADD8E6),
+    APPLICATION_MARKDOWN("application/markdown", "MD", 0xFF8A2BE2),
     APPLICATION_OCTET_STREAM("application/octet-stream", "BIN", 0xFFA0522D),
     APPLICATION_RSS("application/rss+xml", "RSS", 0xFFFFD700),
     APPLICATION_SOAP("application/soap+xml", "SOAP", 0xFFFFD700),
@@ -29,6 +30,8 @@ internal enum class ContentType(
     APPLICATION_PROBLEM_JSON("application/problem+json", "PROB", 0xFFFF69B4),
     APPLICATION_PROBLEM_XML("application/problem+xml", "PROB", 0xFFFFD700),
     APPLICATION_VND_API_JSON("application/vnd.api+json", "API", 0xFFFF1493),
+    APPLICATION_YAML("application/yaml", "YAML", 0xFF9370DB),
+    APPLICATION_X_YAML("application/x-yaml", "YAML", 0xFF9370DB),
 
     // Microsoft Office Word
     APPLICATION_MSWORD("application/msword", "DOC", 0xFF1E90FF),
@@ -141,8 +144,12 @@ internal enum class ContentType(
     TEXT_CSV("text/csv", "CSV", 0xFF90EE90),
     TEXT_HTML("text/html", "HTML", 0xFFD3D3D3),
     TEXT_JAVASCRIPT("text/javascript", "JS", 0xFFADD8E6),
+    TEXT_MARKDOWN("text/markdown", "MD", 0xFF8A2BE2),
+    TEXT_X_MARKDOWN("text/x-markdown", "MD", 0xFF8A2BE2),
     TEXT_VCARD("text/vcard", "VCARD", 0xFFFFA07A),
     TEXT_XML("text/xml", "XML", 0xFFFFD700),
+    TEXT_YAML("text/yaml", "YAML", 0xFF9370DB),
+    TEXT_X_YAML("text/x-yaml", "YAML", 0xFF9370DB),
     TEXT_EVENT_STREAM("text/event-stream", "SSE", 0xFF2DD4BF),
 
     // Video Types

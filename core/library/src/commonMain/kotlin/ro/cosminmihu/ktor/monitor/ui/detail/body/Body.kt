@@ -1,10 +1,10 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.body
 
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -27,13 +27,17 @@ import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
 import ro.cosminmihu.ktor.monitor.ui.detail.copyTextFor
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.Css
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.FormUrlEncoded
+import ro.cosminmihu.ktor.monitor.ui.detail.formater.HexViewer
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.JavaScript
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.JsonTree
+import ro.cosminmihu.ktor.monitor.ui.detail.formater.MarkdownPreview
+import ro.cosminmihu.ktor.monitor.ui.detail.formater.MarkdownHighlighter
+import ro.cosminmihu.ktor.monitor.ui.detail.formater.YamlHighlighter
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.Multipart
-import ro.cosminmihu.ktor.monitor.ui.detail.formater.HexViewer
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.TextLines
 import ro.cosminmihu.ktor.monitor.ui.detail.formater.XmlTree
 import ro.cosminmihu.ktor.monitor.ui.detail.hasCopyableContent
+import ro.cosminmihu.ktor.monitor.ui.detail.hasPreview
 import ro.cosminmihu.ktor.monitor.ui.detail.noBody
 import ro.cosminmihu.ktor.monitor.ui.detail.transaction.TransactionSection
 import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
@@ -86,6 +90,16 @@ internal fun Body(
                 )
             }
 
+            body.hasPreview &&
+                    body.contentFormat == DetailUiState.ContentFormat.MARKDOWN &&
+                    displayMode == DisplayMode.PREVIEW &&
+                    body.raw != null ->
+                MarkdownPreview(
+                    markdown = body.raw,
+                    modifier = Modifier.fillMaxHeight().codeBlock(),
+                    contentPadding = PaddingValues(Dimens.Small),
+                )
+
             body.contentFormat == DetailUiState.ContentFormat.CSS && displayMode == DisplayMode.CODE && body.raw != null ->
                 Css(
                     css = body.raw,
@@ -125,6 +139,20 @@ internal fun Body(
             body.contentFormat == DetailUiState.ContentFormat.XML && displayMode == DisplayMode.CODE && body.raw != null ->
                 XmlTree(
                     xml = body.raw,
+                    modifier = Modifier.fillMaxHeight().codeBlock(),
+                    contentPadding = PaddingValues(Dimens.Small),
+                )
+
+            body.contentFormat == DetailUiState.ContentFormat.MARKDOWN && displayMode == DisplayMode.CODE && body.raw != null ->
+                MarkdownHighlighter(
+                    markdown = body.raw,
+                    modifier = Modifier.fillMaxHeight().codeBlock(),
+                    contentPadding = PaddingValues(Dimens.Small),
+                )
+
+            body.contentFormat == DetailUiState.ContentFormat.YAML && displayMode == DisplayMode.CODE && body.raw != null ->
+                YamlHighlighter(
+                    yaml = body.raw,
                     modifier = Modifier.fillMaxHeight().codeBlock(),
                     contentPadding = PaddingValues(Dimens.Small),
                 )

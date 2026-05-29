@@ -27,12 +27,13 @@ import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_body_trimmed
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_binary
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_code
-import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_image
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_preview
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_response_view_raw
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
+import ro.cosminmihu.ktor.monitor.ui.detail.hasPreview
 import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
@@ -45,10 +46,10 @@ internal fun DisplayModeSelector(
     modifier: Modifier = Modifier,
 ) {
     val segmentedButtons = buildList {
-        if (body.image != null) {
+        if (body.hasPreview) {
             add(
                 BodyShowTypeSegment(
-                    text = stringResource(Res.string.ktor_response_view_image),
+                    text = stringResource(Res.string.ktor_response_view_preview),
                     selected = displayMode == DisplayMode.PREVIEW,
                     onClick = { onDisplayMode(DisplayMode.PREVIEW) },
                 )

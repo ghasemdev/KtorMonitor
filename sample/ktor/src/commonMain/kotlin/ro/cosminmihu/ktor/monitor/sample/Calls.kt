@@ -27,6 +27,28 @@ import kotlin.time.Duration.Companion.seconds
 private const val HTTP_BIN_URL = "https://httpbin.org"
 private const val REDIRECT_URL = "https://cosminmihu.ro/"
 
+private val MARKDOWN_SAMPLE = """
+# Ktor Monitor Markdown sample
+
+This request body helps test Markdown rendering.
+
+- preview mode for markdown
+- code mode with line numbers
+
+```kotlin
+fun greeting() = "Hello from Markdown"
+```
+""".trimIndent()
+
+private val YAML_SAMPLE = """
+sample:
+  name: ktor-monitor
+  features:
+    - markdown-preview
+    - yaml-code-view
+  enabled: true
+""".trimIndent()
+
 /** W3C SVG logo used as a multipart SVG image attachment. */
 private val SVG_SAMPLE: ByteArray = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0 100 100">
   <title>SVG Logo</title>
@@ -253,6 +275,20 @@ internal suspend fun samples() {
 
         // CSS
         runCatching { this@with.get("https://www.w3schools.com/plus/plans/main.css?v=1.0.1") }
+
+        // Markdown / YAML request bodies
+        runCatching {
+            this@with.post("$HTTP_BIN_URL/anything/markdown") {
+                contentType(ContentType.parse("text/markdown"))
+                setBody(MARKDOWN_SAMPLE)
+            }
+        }
+        runCatching {
+            this@with.post("$HTTP_BIN_URL/anything/yaml") {
+                contentType(ContentType.parse("application/yaml"))
+                setBody(YAML_SAMPLE)
+            }
+        }
 
         // IGNORED
         runCatching { this@with.get("https://cosminmihu.ro/resume") }

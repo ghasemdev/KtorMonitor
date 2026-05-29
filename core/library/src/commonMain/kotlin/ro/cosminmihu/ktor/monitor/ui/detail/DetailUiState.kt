@@ -99,8 +99,10 @@ internal data class DetailUiState(
         FORM_URLENCODED,
         JAVASCRIPT,
         JSON,
+        MARKDOWN,
         MULTIPART,
         XML,
+        YAML,
     }
 }
 
@@ -112,6 +114,13 @@ internal val DetailUiState.Response.isError
 
 internal val DetailUiState.Body?.noBody
     get() = this == null || bytes.isNullOrEmpty()
+
+internal val DetailUiState.Body.hasPreview
+    get() = when {
+        image != null -> true
+        contentFormat == DetailUiState.ContentFormat.MARKDOWN && !raw.isNullOrBlank() -> true
+        else -> false
+    }
 
 internal val ContentType.contentFormat
     get() = when (contentType.contentType) {
@@ -152,6 +161,17 @@ internal val ContentType.contentFormat
         ContentType.APPLICATION_PROBLEM_JSON,
         ContentType.APPLICATION_VND_API_JSON,
             -> DetailUiState.ContentFormat.JSON
+
+        ContentType.APPLICATION_MARKDOWN,
+        ContentType.TEXT_MARKDOWN,
+        ContentType.TEXT_X_MARKDOWN,
+            -> DetailUiState.ContentFormat.MARKDOWN
+
+        ContentType.APPLICATION_YAML,
+        ContentType.APPLICATION_X_YAML,
+        ContentType.TEXT_YAML,
+        ContentType.TEXT_X_YAML,
+            -> DetailUiState.ContentFormat.YAML
 
         else -> null
     }

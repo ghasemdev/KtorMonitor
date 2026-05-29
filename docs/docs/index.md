@@ -21,6 +21,6 @@ Powerful tool to monitor [Ktor Client](https://ktor.io/), [OkHttp](https://squar
 *   🛠️**Highly Configurable**: Customize retention periods, content length limits, and notification behavior.
 *   🔒**Security First**: Redact sensitive headers (e.g., *Authorization*).
 *   📂**Data Export**: Save request/response details to local files for easier debugging or sharing.
-*   🎨**Rich Previews**: Built-in viewers for *JSON*, *XML*, *HTML*, *CSS*, *Form Data*, *Image* (*JPG*, *PNG*, *SVG*, *GIF*, *WEBP*).
+*   🎨**Rich Previews**: Built-in viewers for *JSON*, *XML*, *HTML*, *CSS*, *YAML*, *MARKDOWN*, *Form Data*, *Image* (*JPG*, *PNG*, *SVG*, *GIF*, *WEBP*).
 *   📡**SSE & WebSockets**: Track one-way streams (*SSE*) and bidirectional traffic (*WebSockets*).
 *   🛡️**Production Safe**: No-Op version to ensure monitoring code is excluded from your production builds.
