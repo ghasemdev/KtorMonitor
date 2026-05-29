@@ -160,12 +160,12 @@ internal fun DetailUiState.Body.hasCopyableContent(displayMode: DisplayMode): Bo
     DisplayMode.CODE,
     DisplayMode.RAW -> !raw.isNullOrEmpty()
     DisplayMode.BYTES -> !bytes.isNullOrEmpty()
-    DisplayMode.IMAGE -> false
+    DisplayMode.PREVIEW -> false
 }
 
 internal fun DetailUiState.Body.copyTextFor(displayMode: DisplayMode): String? = when (displayMode) {
     DisplayMode.CODE,
     DisplayMode.RAW -> raw?.takeIf { it.isNotEmpty() }
     DisplayMode.BYTES -> bytes?.takeIf { it.isNotEmpty() }
-    DisplayMode.IMAGE -> null
+    DisplayMode.PREVIEW -> null
 }

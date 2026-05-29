@@ -71,7 +71,7 @@ internal fun Body(
         )
 
         when {
-            body.image != null && displayMode == DisplayMode.IMAGE -> {
+            body.image != null && displayMode == DisplayMode.PREVIEW -> {
                 val context = LocalPlatformContext.current
                 val imageLoader = remember(context) {
                     ImageLoader.Builder(context)

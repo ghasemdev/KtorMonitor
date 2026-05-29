@@ -49,8 +49,8 @@ internal fun DisplayModeSelector(
             add(
                 BodyShowTypeSegment(
                     text = stringResource(Res.string.ktor_response_view_image),
-                    selected = displayMode == DisplayMode.IMAGE,
-                    onClick = { onDisplayMode(DisplayMode.IMAGE) },
+                    selected = displayMode == DisplayMode.PREVIEW,
+                    onClick = { onDisplayMode(DisplayMode.PREVIEW) },
                 )
             )
         }

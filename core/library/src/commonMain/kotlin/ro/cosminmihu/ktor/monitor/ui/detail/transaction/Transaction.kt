@@ -29,7 +29,7 @@ internal fun Transaction(
     var displayMode by remember(body) {
         mutableStateOf(
             when {
-                body?.image != null -> DisplayMode.IMAGE
+                body?.image != null -> DisplayMode.PREVIEW
                 body?.contentFormat != null -> DisplayMode.CODE
                 body?.raw != null -> DisplayMode.RAW
                 else -> DisplayMode.BYTES
