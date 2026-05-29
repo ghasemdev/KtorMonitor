@@ -37,7 +37,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.http4k.core)
+            implementation(libs.http4k.multipart)
             implementation(projects.http4k.libraryHttp4k)
+            implementation(projects.sample.shared)
 //            implementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.13.0")
 //            implementation(projects.http4k.libraryHttp4kNoOp)
 //            implementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.13.0")
@@ -106,4 +108,3 @@ compose.desktop {
 dependencies {
     coreLibraryDesugaring(libs.desugar)
 }
-

@@ -75,6 +75,7 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(projects.ktor.libraryKtor)
+            implementation(projects.sample.shared)
 //            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.13.0")
 //            implementation(projects.ktor.libraryKtorNoOp)
 //            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.13.0")

@@ -37,6 +37,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.okhttp)
             implementation(projects.okhttp.libraryOkhttp)
+            implementation(projects.sample.shared)
 //            implementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.13.0")
 //            implementation(projects.okhttp.libraryOkhttpNoOp)
 //            implementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.13.0")
@@ -105,4 +106,3 @@ compose.desktop {
 dependencies {
     coreLibraryDesugaring(libs.desugar)
 }
-

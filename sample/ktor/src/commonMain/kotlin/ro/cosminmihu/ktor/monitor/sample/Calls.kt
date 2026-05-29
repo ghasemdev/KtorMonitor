@@ -1,13 +1,10 @@
 package ro.cosminmihu.ktor.monitor.sample
 
-import io.ktor.client.plugins.sse.sse
-import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.delete
 import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -17,207 +14,61 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Parameters
 import io.ktor.http.contentType
-import io.ktor.websocket.Frame
-import io.ktor.websocket.readText
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.seconds
+import ro.cosminmihu.ktor.monitor.sample.shared.HTTP_BIN_URL
+import ro.cosminmihu.ktor.monitor.sample.shared.MARKDOWN_SAMPLE
+import ro.cosminmihu.ktor.monitor.sample.shared.TEXT_FILE_CONTENT_SAMPLE
+import ro.cosminmihu.ktor.monitor.sample.shared.TEXT_SAMPLE
+import ro.cosminmihu.ktor.monitor.sample.shared.SVG_SAMPLE
+import ro.cosminmihu.ktor.monitor.sample.shared.YAML_SAMPLE
 
-private const val HTTP_BIN_URL = "https://httpbin.org"
-private const val REDIRECT_URL = "https://cosminmihu.ro/"
-
-private val MARKDOWN_SAMPLE = """
-# Ktor Monitor Markdown sample
-
-This request body helps test Markdown rendering.
-
-- preview mode for markdown
-- code mode with line numbers
-
-```kotlin
-fun greeting() = "Hello from Markdown"
-```
-""".trimIndent()
-
-private val YAML_SAMPLE = """
-sample:
-  name: ktor-monitor
-  features:
-    - markdown-preview
-    - yaml-code-view
-  enabled: true
-""".trimIndent()
-
-/** W3C SVG logo used as a multipart SVG image attachment. */
-private val SVG_SAMPLE: ByteArray = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0 100 100">
-  <title>SVG Logo</title>
-  <a xlink:href="http://www.w3.org/Graphics/SVG/" target="_parent"
-     xlink:title="W3C SVG Working Group home page">
-    <rect id="background" fill="#FF9900" width="100" height="100" rx="4" ry="4"/>
-    <rect id="top-left" fill="#FFB13B" width="50" height="50" rx="4" ry="4"/>
-    <rect id="bottom-right" x="50" y="50" fill="#DE8500" width="50" height="50" rx="4" ry="4"/>
-    <g id="circles" fill="#FF9900">
-      <circle id="n" cx="50" cy="18.4" r="18.4"/>
-      <circle id="ne" cx="72.4" cy="27.6" r="18.4"/>
-      <circle id="e" cx="81.6" cy="50" r="18.4"/>
-      <circle id="se" cx="72.4" cy="72.4" r="18.4"/>
-      <circle id="s" cx="50" cy="81.6" r="18.4"/>
-      <circle id="sw" cx="27.6" cy="72.4" r="18.4"/>
-      <circle id="w" cx="18.4" cy="50" r="18.4"/>
-      <circle id="nw" cx="27.6" cy="27.6" r="18.4"/>
-    </g>
-    <g id="stars">
-      <path id="black-star" d="M 63.086,18.385 c 0,-7.227 -5.859,-13.086 -13.1,-13.086 c -7.235,0 -13.096,5.859 -13.096,13.086 c -5.1,-5.11 -13.395,-5.11 -18.497,0 c -5.119,5.12 -5.119,13.408 0,18.524 c -7.234,0 -13.103,5.859 -13.103,13.085 c 0,7.23 5.87,13.098 13.103,13.098 c -5.119,5.11 -5.119,13.395 0,18.515 c 5.102,5.104 13.397,5.104 18.497,0 c 0,7.228 5.86,13.083 13.096,13.083 c 7.24,0 13.1,-5.855 13.1,-13.083 c 5.118,5.104 13.416,5.104 18.513,0 c 5.101,-5.12 5.101,-13.41 0,-18.515 c 7.216,0 13.081,-5.869 13.081,-13.098 c 0,-7.227 -5.865,-13.085 -13.081,-13.085 c 5.101,-5.119 5.101,-13.406 0,-18.524 C 76.502,13.275 68.206,13.275 63.086,18.385 z"/>
-      <path id="white-star" fill="#FFFFFF" d="M 55.003,23.405 v 14.488 L 65.26,27.64 c 0,-1.812 0.691,-3.618 2.066,-5.005 c 2.78,-2.771 7.275,-2.771 10.024,0 c 2.771,2.766 2.771,7.255 0,10.027 c -1.377,1.375 -3.195,2.072 -5.015,2.072 L 62.101,44.982 H 76.59 c 1.29,-1.28 3.054,-2.076 5.011,-2.076 c 3.9,0 7.078,3.179 7.078,7.087 c 0,3.906 -3.178,7.088 -7.078,7.088 c -1.957,0 -3.721,-0.798 -5.011,-2.072 H 62.1 l 10.229,10.244 c 1.824,0 3.642,0.694 5.015,2.086 c 2.774,2.759 2.774,7.25 0,10.01 c -2.75,2.774 -7.239,2.774 -10.025,0 c -1.372,-1.372 -2.064,-3.192 -2.064,-5.003 L 55,62.094 v 14.499 c 1.271,1.276 2.084,3.054 2.084,5.013 c 0,3.906 -3.177,7.077 -7.098,7.077 c -3.919,0 -7.094,-3.167 -7.094,-7.077 c 0,-1.959 0.811,-3.732 2.081,-5.013 V 62.094 L 34.738,72.346 c 0,1.812 -0.705,3.627 -2.084,5.003 c -2.769,2.772 -7.251,2.772 -10.024,0 c -2.775,-2.764 -2.775,-7.253 0,-10.012 c 1.377,-1.39 3.214,-2.086 5.012,-2.086 l 10.257,-10.242 H 23.414 c -1.289,1.276 -3.072,2.072 -5.015,2.072 c -3.917,0 -7.096,-3.18 -7.096,-7.088 s 3.177,-7.087 7.096,-7.087 c 1.94,0 3.725,0.796 5.015,2.076 h 14.488 L 27.646,34.736 c -1.797,0 -3.632,-0.697 -5.012,-2.071 c -2.775,-2.772 -2.775,-7.26 0,-10.027 c 2.773,-2.771 7.256,-2.771 10.027,0 c 1.375,1.386 2.083,3.195 2.083,5.005 l 10.235,10.252 V 23.407 c -1.27,-1.287 -2.082,-3.053 -2.082,-5.023 c 0,-3.908 3.175,-7.079 7.096,-7.079 c 3.919,0 7.097,3.168 7.097,7.079 C 57.088,20.356 56.274,22.119 55.003,23.405 z"/>
-    </g>
-    <g id="svg-textbox">
-      <path id="text-backdrop" fill="black" d="M 5.30,50.00 H 94.68 V 90.00 Q 94.68,95.00 89.68,95.00 H 10.30 Q 5.30,95.00 5.30,90.00 Z"/>
-      <g id="svg-text">
-        <path id="S" fill="#FFFFFF" stroke="#000000" stroke-width="0.5035" d="M 18.312,72.927 c -2.103,-2.107 -3.407,-5.028 -3.407,-8.253 c 0,-6.445 5.223,-11.672 11.666,-11.672 c 6.446,0 11.667,5.225 11.667,11.672 h -6.832 c 0,-2.674 -2.168,-4.837 -4.835,-4.837 c -2.663,0 -4.838,2.163 -4.838,4.837 c 0,1.338 0.549,2.536 1.415,3.42 c 0.883,0.874 2.101,1.405 3.423,1.405 v 0.012 c 3.232,0 6.145,1.309 8.243,3.416 c 2.118,2.111 3.424,5.034 3.424,8.248 c 0,6.454 -5.221,11.68 -11.667,11.68 c -6.442,0 -11.666,-5.222 -11.666,-11.68 h 6.828 c 0,2.679 2.175,4.835 4.838,4.835 c 2.667,0 4.835,-2.156 4.835,-4.835 c 0,-1.329 -0.545,-2.527 -1.429,-3.407 c -0.864,-0.88 -2.082,-1.418 -3.406,-1.418 C 23.341,76.35 20.429,75.036 18.312,72.927 z"/>
-        <polygon id="V" fill="#FFFFFF" stroke="#000000" stroke-width="0.5035" points="61.588,53.005 53.344,92.854 46.494,92.854 38.236,53.005 45.082,53.005 49.920,76.342 54.755,53.005"/>
-        <path id="G" fill="#FFFFFF" stroke="#000000" stroke-width="0.5035" d="M 73.255,69.513 h 11.683 v 11.664 c 0,6.452 -5.226,11.678 -11.669,11.678 c -6.441,0 -11.666,-5.226 -11.666,-11.678 V 64.676 h -0.017 C 61.586,58.229 66.827,53 73.253,53 c 6.459,0 11.683,5.225 11.683,11.676 h -6.849 c 0,-2.674 -2.152,-4.837 -4.834,-4.837 c -2.647,0 -4.82,2.163 -4.82,4.837 v 16.501 c 0,2.675 2.173,4.837 4.82,4.837 c 2.682,0 4.834,-2.162 4.834,-4.827 v -0.012 v -4.827 h -4.834 L 73.255,69.513 z"/>
-      </g>
-    </g>
-  </a>
-</svg>""".trimIndent().encodeToByteArray()
 
 internal suspend fun samples() {
     with(httpClient()) {
         // HTTP Methods
-        runCatching { this@with.delete("$HTTP_BIN_URL/delete") }
         runCatching { this@with.get("$HTTP_BIN_URL/get") }
-        runCatching { this@with.patch("$HTTP_BIN_URL/patch") }
-        runCatching { this@with.post("$HTTP_BIN_URL/post") }
-        runCatching { this@with.put("$HTTP_BIN_URL/put") }
-
-        // Auth
-        runCatching { this@with.get("$HTTP_BIN_URL/basic-auth/user/passwd") }
-        runCatching { this@with.get("$HTTP_BIN_URL/bearer") }
-        runCatching { this@with.get("$HTTP_BIN_URL/digest-auth/auth/user/passwd") }
-        runCatching { this@with.get("$HTTP_BIN_URL/digest-auth/auth/user/passwd/MD5") }
-        runCatching { this@with.get("$HTTP_BIN_URL/digest-auth/auth/user/passwd/MD5/stale_after") }
-        runCatching { this@with.get("$HTTP_BIN_URL/hidden-basic-auth/user/passwd") }
+        runCatching { this@with.post("$HTTP_BIN_URL/post") { setBody("") } }
+        runCatching { this@with.put("$HTTP_BIN_URL/put") { setBody("") } }
+        runCatching { this@with.delete("$HTTP_BIN_URL/delete") }
+        runCatching { this@with.patch("$HTTP_BIN_URL/patch") { setBody("") } }
 
         // Status codes
-        runCatching { this@with.delete("$HTTP_BIN_URL/status/200") }
         runCatching { this@with.get("$HTTP_BIN_URL/status/200") }
-        runCatching { this@with.patch("$HTTP_BIN_URL/status/200") }
-        runCatching { this@with.post("$HTTP_BIN_URL/status/200") }
-        runCatching { this@with.put("$HTTP_BIN_URL/status/200") }
+        runCatching { this@with.get("$HTTP_BIN_URL/status/404") }
+        runCatching { this@with.get("$HTTP_BIN_URL/status/500") }
 
         // Request inspection
         runCatching { this@with.get("$HTTP_BIN_URL/headers") }
         runCatching { this@with.get("$HTTP_BIN_URL/ip") }
         runCatching { this@with.get("$HTTP_BIN_URL/user-agent") }
 
-        // Response inspection
-        runCatching { this@with.get("$HTTP_BIN_URL/cache") }
-        runCatching { this@with.get("$HTTP_BIN_URL/cache/60") }
-        runCatching { this@with.get("$HTTP_BIN_URL/etag/abc") }
-        runCatching { this@with.get("$HTTP_BIN_URL/response-headers?freeform=") }
-        runCatching { this@with.post("$HTTP_BIN_URL/response-headers?freeform=") }
-
         // Response formats
-        runCatching { this@with.get("$HTTP_BIN_URL/brotli") }
-        runCatching { this@with.get("$HTTP_BIN_URL/deflate") }
-        runCatching { this@with.get("$HTTP_BIN_URL/deny") }
-        runCatching { this@with.get("$HTTP_BIN_URL/encoding/utf8") }
-        runCatching { this@with.get("$HTTP_BIN_URL/gzip") }
-        runCatching { this@with.get("$HTTP_BIN_URL/html") }
         runCatching { this@with.get("$HTTP_BIN_URL/json") }
-        runCatching { this@with.get("$HTTP_BIN_URL/robots.txt") }
+        runCatching { this@with.get("$HTTP_BIN_URL/html") }
         runCatching { this@with.get("$HTTP_BIN_URL/xml") }
-        runCatching { this@with.get("$HTTP_BIN_URL/links/10/0") }
+        runCatching {
+            this@with.post("$HTTP_BIN_URL/anything/markdown") {
+                contentType(ContentType.parse("text/markdown"))
+                setBody(MARKDOWN_SAMPLE)
+            }
+        }
+        runCatching {
+            this@with.post("$HTTP_BIN_URL/anything/yaml") {
+                contentType(ContentType.parse("application/yaml"))
+                setBody(YAML_SAMPLE)
+            }
+        }
 
         // Images
-        runCatching { this@with.get("$HTTP_BIN_URL/image") }
         runCatching { this@with.get("$HTTP_BIN_URL/image/jpeg") }
         runCatching { this@with.get("$HTTP_BIN_URL/image/png") }
         runCatching { this@with.get("$HTTP_BIN_URL/image/svg") }
-        runCatching { this@with.get("$HTTP_BIN_URL/image/webp") }
 
         // Dynamic data
-        runCatching { this@with.get("$HTTP_BIN_URL/base64/SFRUUEJJTiBpcyBhd2Vzb21l") }
-        runCatching { this@with.get("$HTTP_BIN_URL/bytes/1024") }
-        runCatching { this@with.delete("$HTTP_BIN_URL/delay/3") }
-        runCatching { this@with.get("$HTTP_BIN_URL/delay/3") }
-        runCatching { this@with.patch("$HTTP_BIN_URL/delay/3") }
-        runCatching { this@with.post("$HTTP_BIN_URL/delay/3") }
-        runCatching { this@with.put("$HTTP_BIN_URL/delay/3") }
-        runCatching { this@with.get("$HTTP_BIN_URL/drip") }
-        runCatching { this@with.get("$HTTP_BIN_URL/links/10/0") }
-        runCatching { this@with.get("$HTTP_BIN_URL/range/1024") }
-        runCatching { this@with.get("$HTTP_BIN_URL/stream-bytes/1024") }
-        runCatching { this@with.get("$HTTP_BIN_URL/stream/10") }
         runCatching { this@with.get("$HTTP_BIN_URL/uuid") }
+        runCatching { this@with.get("$HTTP_BIN_URL/bytes/1024") }
+        runCatching { this@with.get("$HTTP_BIN_URL/delay/1") }
 
-        // Cookies
-        runCatching { this@with.get("$HTTP_BIN_URL/cookies") }
-        runCatching { this@with.get("$HTTP_BIN_URL/cookies/delete") }
-        runCatching { this@with.get("$HTTP_BIN_URL/cookies/set") }
-        runCatching { this@with.get("$HTTP_BIN_URL/cookies/set/name/value") }
-
-
-        // Redirects
-        runCatching { this@with.get("$HTTP_BIN_URL/absolute-redirect/3") }
-        runCatching {
-            this@with.delete("$HTTP_BIN_URL/redirect-to") {
-                parameter(
-                    "url",
-                    REDIRECT_URL
-                )
-            }
-        }
-        runCatching {
-            this@with.get("$HTTP_BIN_URL/redirect-to") {
-                parameter(
-                    "url",
-                    REDIRECT_URL
-                )
-            }
-        }
-        runCatching {
-            this@with.patch("$HTTP_BIN_URL/redirect-to") {
-                parameter(
-                    "url",
-                    REDIRECT_URL
-                )
-            }
-        }
-        runCatching {
-            this@with.post("$HTTP_BIN_URL/redirect-to") {
-                parameter(
-                    "url",
-                    REDIRECT_URL
-                )
-            }
-        }
-        runCatching {
-            this@with.put("$HTTP_BIN_URL/redirect-to") {
-                contentType(ContentType.Application.FormUrlEncoded)
-                setBody(FormDataContent(Parameters.build { append("url", REDIRECT_URL) }))
-            }
-        }
-        runCatching { this@with.get("$HTTP_BIN_URL/redirect/3") }
-        runCatching { this@with.get("$HTTP_BIN_URL/relative-redirect/3") }
-
-        // Anything
-        runCatching { this@with.delete("$HTTP_BIN_URL/anything") }
-        runCatching { this@with.get("$HTTP_BIN_URL/anything") }
-        runCatching { this@with.patch("$HTTP_BIN_URL/anything") }
-        runCatching { this@with.post("$HTTP_BIN_URL/anything") }
-        runCatching { this@with.put("$HTTP_BIN_URL/anything") }
-        runCatching { this@with.delete("$HTTP_BIN_URL/anything/test") }
-        runCatching { this@with.get("$HTTP_BIN_URL/anything/test") }
-        runCatching { this@with.patch("$HTTP_BIN_URL/anything/test") }
-        runCatching { this@with.post("$HTTP_BIN_URL/anything/test") }
-        runCatching { this@with.put("$HTTP_BIN_URL/anything/test") }
-
-        // Other Utilities
-        runCatching { this@with.get("$HTTP_BIN_URL/forms/post") }
-
-        // Form URL-encoded
+        // Form data (url-encoded)
         runCatching {
             this@with.post("$HTTP_BIN_URL/post") {
                 contentType(ContentType.Application.FormUrlEncoded)
@@ -226,7 +77,7 @@ internal suspend fun samples() {
                         Parameters.build {
                             append("username", "ktor-monitor")
                             append("email", "demo@example.com")
-                            append("subscribe", "true")
+                            append("notes", TEXT_SAMPLE)
                         }
                     )
                 )
@@ -243,14 +94,14 @@ internal suspend fun samples() {
                             append("email", "demo@example.com")
                             append(
                                 key = "notes",
-                                value = "Hello from Ktor Monitor sample",
+                                value = TEXT_SAMPLE,
                                 headers = Headers.build {
                                     append(HttpHeaders.ContentType, "text/plain; charset=utf-8")
                                 },
                             )
                             append(
                                 key = "file",
-                                value = "Sample file content\nLine 2\nLine 3".encodeToByteArray(),
+                                value = TEXT_FILE_CONTENT_SAMPLE.encodeToByteArray(),
                                 headers = Headers.build {
                                     append(HttpHeaders.ContentType, "text/plain")
                                     append(HttpHeaders.ContentDisposition, "filename=\"sample.txt\"")
@@ -267,67 +118,6 @@ internal suspend fun samples() {
                         }
                     )
                 )
-            }
-        }
-
-        // Javascript
-        runCatching { this@with.get("https://code.jquery.com/jquery-3.7.1.min.js") }
-
-        // CSS
-        runCatching { this@with.get("https://www.w3schools.com/plus/plans/main.css?v=1.0.1") }
-
-        // Markdown / YAML request bodies
-        runCatching {
-            this@with.post("$HTTP_BIN_URL/anything/markdown") {
-                contentType(ContentType.parse("text/markdown"))
-                setBody(MARKDOWN_SAMPLE)
-            }
-        }
-        runCatching {
-            this@with.post("$HTTP_BIN_URL/anything/yaml") {
-                contentType(ContentType.parse("application/yaml"))
-                setBody(YAML_SAMPLE)
-            }
-        }
-
-        // IGNORED
-        runCatching { this@with.get("https://cosminmihu.ro/resume") }
-
-        // Web Socket (https://websocketking.com)
-        launch {
-            webSocket(host = "echo.websocket.org") {
-                // Receive
-                launch {
-                    incoming.consumeAsFlow().collect {
-                        if (it is Frame.Text) {
-                            println("Frame received:")
-                            println(it.readText())
-                            println()
-                        }
-                    }
-                }
-
-                // Send
-                (20 downTo 0).forEach {
-                    delay(1.seconds)
-                    send(Frame.Text("Text Frame: $it"))
-                }
-            }
-        }
-
-        // Server-Sent Events (https://websocket.org/tools/websocket-echo-server)
-        launch {
-            sse(
-                scheme = "https",
-                host = "echo.websocket.org",
-                path = ".sse"
-            ) {
-                while (true) {
-                    incoming.collect { event ->
-                        println("Event received:")
-                        println(event)
-                    }
-                }
             }
         }
     }
