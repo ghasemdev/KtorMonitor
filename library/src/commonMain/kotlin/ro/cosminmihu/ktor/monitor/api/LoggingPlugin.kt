@@ -23,6 +23,24 @@ import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 import ro.cosminmihu.ktor.monitor.domain.ListenByRecentCallsUseCase
 import ro.cosminmihu.ktor.monitor.domain.model.Config
 
+/**
+ * Attribute key to provide a custom request URL to be logged.
+ * This is useful if the URL/query parameters are encrypted and you want to log the decrypted version.
+ */
+public val KtorMonitorRequestUrl: AttributeKey<String> = AttributeKey("KtorMonitorRequestUrl")
+
+/**
+ * Attribute key to provide a custom request body to be logged.
+ * This is useful if the body is encrypted and you want to log the decrypted version.
+ */
+public val KtorMonitorRequestBody: AttributeKey<ByteArray> = AttributeKey("KtorMonitorRequestBody")
+
+/**
+ * Attribute key to provide a custom response body to be logged.
+ * This is useful if the body is encrypted and you want to log the decrypted version.
+ */
+public val KtorMonitorResponseBody: AttributeKey<ByteArray> = AttributeKey("KtorMonitorResponseBody")
+
 private val DisableLogging = AttributeKey<Unit>("KtorMonitorDisableLogging")
 private val CallIdentifier = AttributeKey<String>("KtorMonitorCallIdentifier")
 private const val PluginName = "KtorMonitorLogging"

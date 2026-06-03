@@ -18,7 +18,7 @@ plugins {
 val module = "ktor-monitor"
 val artifactPrefix = "ktor-monitor-logging"
 group = "ir.parsuomash.ktor"
-version = "1.8.1"
+version = "1.8.2"
 
 apiValidation {
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.db.sqldelight")

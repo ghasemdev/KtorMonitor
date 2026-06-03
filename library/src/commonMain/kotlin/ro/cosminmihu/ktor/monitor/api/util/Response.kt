@@ -5,6 +5,7 @@ import io.ktor.client.statement.readRawBytes
 import io.ktor.http.contentType
 import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
+import ro.cosminmihu.ktor.monitor.api.KtorMonitorResponseBody
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 
 internal suspend fun logResponseException(
@@ -44,8 +45,14 @@ internal suspend fun logResponseBody(
     maxContentLength: Int,
     response: HttpResponse,
 ) {
+    val overrideBody = if (response.call.attributes.contains(KtorMonitorResponseBody)) {
+        response.call.attributes[KtorMonitorResponseBody]
+    } else {
+        null
+    }
+
     // Read content.
-    val responseBody = response.readRawBytes()
+    val responseBody = overrideBody ?: response.readRawBytes()
 
     val body = when {
         maxContentLength != ContentLength.Full -> responseBody

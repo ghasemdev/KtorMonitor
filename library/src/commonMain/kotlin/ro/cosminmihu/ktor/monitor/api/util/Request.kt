@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
+import ro.cosminmihu.ktor.monitor.api.KtorMonitorRequestBody
+import ro.cosminmihu.ktor.monitor.api.KtorMonitorRequestUrl
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 
 internal suspend fun logRequestException(
@@ -32,13 +34,50 @@ internal suspend fun logRequest(
     sanitizedHeaders: List<SanitizedHeader>,
 ): OutgoingContent? {
     val content = request.body as OutgoingContent
+    val overrideBody = if (request.attributes.contains(KtorMonitorRequestBody)) {
+        request.attributes[KtorMonitorRequestBody]
+    } else {
+        null
+    }
 
     // Headers.
-    val url = request.url.toString()
+    val url = if (request.attributes.contains(KtorMonitorRequestUrl)) {
+        request.attributes[KtorMonitorRequestUrl]
+    } else {
+        request.url.toString()
+    }
     val method = request.method.value
     val headers = request.headers.sanitizedHeaders(sanitizedHeaders)
-    val contentLength = content.contentLength ?: 0
     val contentType = content.contentType?.toString()
+
+    if (overrideBody != null) {
+        val contentLength = overrideBody.size.toLong()
+        coroutineScope.launch(Dispatchers.Default) {
+            val body = when {
+                maxContentLength != ContentLength.Full -> overrideBody
+                    .take(maxContentLength)
+                    .toByteArray()
+
+                else -> overrideBody
+            }
+
+            // Save request.
+            dao.saveRequest(
+                id = id,
+                method = method,
+                url = url,
+                requestTimestamp = Clock.System.now().toEpochMilliseconds(),
+                requestHeaders = headers,
+                requestContentType = contentType,
+                requestContentLength = contentLength,
+                requestBody = body,
+                isRequestBodyTruncated = contentLength != 0L && contentLength > maxContentLength,
+            )
+        }
+        return content
+    }
+
+    val contentLength = content.contentLength ?: 0
 
     // Body.
     val channel = ByteChannel()

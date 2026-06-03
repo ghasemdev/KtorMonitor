@@ -13,7 +13,7 @@ plugins {
 
 val artifact = "ktor-monitor-logging-no-op"
 group = "ir.parsuomash.ktor"
-version = "1.8.0"
+version = "1.8.2"
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
