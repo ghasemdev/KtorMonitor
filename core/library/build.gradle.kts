@@ -247,19 +247,19 @@ android {
 
 afterEvaluate {
     publishing {
-        publications.withType<MavenPublication>().configureEach {
-            artifactId = when (name) {
-                "kotlinMultiplatform" -> artifactPrefix
-                else -> {
-                    val suffix = name
-                        .replace("Release", "")
-                        .replace("Debug", "-debug")
-                        .replaceFirstChar { it.lowercaseChar() }
-
-                    "$artifactPrefix-${suffix}"
-                }
-            }
-        }
+//        publications.withType<MavenPublication>().configureEach {
+//            artifactId = when (name) {
+//                "kotlinMultiplatform" -> artifactPrefix
+//                else -> {
+//                    val suffix = name
+//                        .replace("Release", "")
+//                        .replace("Debug", "-debug")
+//                        .replaceFirstChar { it.lowercaseChar() }
+//
+//                    "$artifactPrefix-${suffix}"
+//                }
+//            }
+//        }
         repositories {
             maven {
                 url = uri(getProperty("maven.url"))

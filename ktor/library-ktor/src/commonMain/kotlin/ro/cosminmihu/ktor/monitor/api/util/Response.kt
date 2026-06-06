@@ -9,6 +9,7 @@ import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
 import ro.cosminmihu.ktor.monitor.InternalLibraryBridge
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
+import ro.cosminmihu.ktor.monitor.api.KtorMonitorResponseBody
 
 @OptIn(InternalKtorMonitorApi::class)
 internal suspend fun logResponseException(
@@ -69,8 +70,14 @@ internal suspend fun logResponseBody(
         return
     }
 
+    val overrideBody = if (response.call.attributes.contains(KtorMonitorResponseBody)) {
+        response.call.attributes[KtorMonitorResponseBody]
+    } else {
+        null
+    }
+
     // Read content.
-    val responseBody = response.readRawBytes()
+    val responseBody = overrideBody ?: response.readRawBytes()
 
     val body = when {
         maxContentLength != ContentLength.Full -> responseBody
@@ -121,11 +128,13 @@ private suspend fun streamResponseBody(
                     truncated = true
                     ByteArray(0)
                 }
+
                 stored + read > maxContentLength -> {
                     truncated = true
                     val remaining = (maxContentLength - stored).toInt()
                     buffer.copyOf(remaining)
                 }
+
                 else -> buffer.copyOf(read)
             }
 
