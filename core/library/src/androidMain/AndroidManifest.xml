@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+
+        <activity
+            android:name=".ui.KtorMonitorActivity"
+            android:exported="true"
+            android:icon="@mipmap/ktor_ic_launcher"
+            android:label="@string/ktor_activity_name"
+            android:roundIcon="@mipmap/ktor_ic_launcher_round"
+            android:taskAffinity="ro.cosminmihu.ktor.monitor.${applicationId}"
+            android:theme="@style/KtorStartingTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".ui.notification.KtorMonitorClearBroadcastReceiver"
+            android:exported="false" />
+
+        <provider
+            android:name=".core.KtorMonitorInitializer"
+            android:authorities="${applicationId}.ktorMonitorInitializer"
+            android:exported="false" />
+
+        <provider
+            android:name=".file.KtorMonitorFileProvider"
+            android:authorities="${applicationId}.ktorMonitor.share"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/ktor_monitor_file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

@@ -14,6 +14,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 
 dependencyResolutionManagement {
     repositories {
@@ -28,6 +31,15 @@ dependencyResolutionManagement {
     }
 }
 
-include(":library")
-include(":library-no-op")
-include(":sample")
+include(":core:library")
+include(":core:library-no-op")
+include(":ktor:library-ktor")
+include(":ktor:library-ktor-no-op")
+include(":okhttp:library-okhttp")
+include(":okhttp:library-okhttp-no-op")
+include(":http4k:library-http4k")
+include(":http4k:library-http4k-no-op")
+include(":sample:shared")
+include(":sample:ktor")
+include(":sample:okhttp")
+include(":sample:http4k")
