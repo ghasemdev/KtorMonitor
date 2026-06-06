@@ -1,6 +1,7 @@
 package ro.cosminmihu.ktor.monitor
 
 import kotlinx.coroutines.CoroutineScope
+import ro.cosminmihu.ktor.monitor.InternalLibraryBridge.saveRequest
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 import ro.cosminmihu.ktor.monitor.di.LibraryKoinContext
 import ro.cosminmihu.ktor.monitor.di.inject
@@ -45,6 +46,7 @@ public object InternalLibraryBridge {
         retentionPeriod: Duration,
         maxContentLength: Int,
         clientSource: ClientSource,
+        iosGroupId: String?,
     ) {
         LibraryKoinContext.koin.get<ConfigUseCase>().setConfig(
             Config(
@@ -53,6 +55,7 @@ public object InternalLibraryBridge {
                 retentionPeriod = retentionPeriod,
                 maxContentLength = maxContentLength,
                 clientSource = clientSource,
+                iosGroupId = iosGroupId,
             )
         )
     }
