@@ -10,6 +10,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.HttpResponseContainer
 import io.ktor.client.statement.HttpResponsePipeline
 import io.ktor.util.pipeline.PipelineContext
+import io.ktor.util.pipeline.PipelinePhase
 
 internal object ResponseHook :
     ClientHook<suspend ResponseHook.Context.(response: HttpResponse) -> Unit> {
@@ -47,18 +48,22 @@ internal object SendHook :
 }
 
 internal object ReceiveHook :
-    ClientHook<suspend ReceiveHook.Context.(call: HttpClientCall) -> Unit> {
+    ClientHook<suspend ReceiveHook.Context.(call: HttpClientCall, subject: HttpResponseContainer) -> Unit> {
+
+    private val Monitoring = PipelinePhase("Monitoring")
 
     class Context(private val context: PipelineContext<HttpResponseContainer, HttpClientCall>) {
         suspend fun proceed() = context.proceed()
+        suspend fun proceedWith(subject: HttpResponseContainer) = context.proceedWith(subject)
     }
 
     override fun install(
         client: HttpClient,
-        handler: suspend Context.(call: HttpClientCall) -> Unit,
+        handler: suspend Context.(call: HttpClientCall, subject: HttpResponseContainer) -> Unit,
     ) {
-        client.responsePipeline.intercept(HttpResponsePipeline.Receive) {
-            handler(Context(this), context)
+        client.responsePipeline.insertPhaseAfter(HttpResponsePipeline.Receive, Monitoring)
+        client.responsePipeline.intercept(Monitoring) {
+            handler(Context(this), context, subject)
         }
     }
 }

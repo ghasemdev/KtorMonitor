@@ -2,8 +2,6 @@ package ro.cosminmihu.ktor.monitor.api
 
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.plugins.api.createClientPlugin
-import io.ktor.client.plugins.observer.ResponseHandler
-import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.util.AttributeKey
 import kotlinx.coroutines.CoroutineScope
@@ -137,13 +135,21 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
             }
         }
 
-        on(ReceiveHook) { call ->
+        on(ReceiveHook) { call, _ ->
             if (call.attributes.contains(DisableLogging)) {
                 return@on
             }
 
             try {
                 proceed()
+
+                // Log response body.
+                logResponseBody(
+                    dao = dao,
+                    id = call.attributes[CallIdentifier],
+                    maxContentLength = pluginConfig.maxContentLength,
+                    response = call.response,
+                )
             } catch (cause: Throwable) {
                 // Log response exception.
                 logResponseException(
@@ -155,19 +161,5 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
             }
         }
 
-        val responseObserver: ResponseHandler = observer@{ response ->
-            if (response.call.attributes.contains(DisableLogging)) {
-                return@observer
-            }
-
-            // Log response body.
-            logResponseBody(
-                dao = dao,
-                id = response.call.attributes[CallIdentifier],
-                maxContentLength = pluginConfig.maxContentLength,
-                response = response,
-            )
-        }
-
-        ResponseObserver.install(ResponseObserver.prepare { onResponse(responseObserver) }, client)
+        // Removed ResponseObserver as logging is now handled in ReceiveHook to support decryption plugins.
     }
