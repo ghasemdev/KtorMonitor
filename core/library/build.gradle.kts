@@ -1,5 +1,5 @@
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -14,8 +14,12 @@ plugins {
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.binary.compatibility.validator)
     alias(libs.plugins.dokka)
+
     id("maven-publish")
 }
+
+group = "ir.parsuomash.ktor"
+version = "1.13.0"
 
 sqldelight {
     databases {
@@ -74,9 +78,9 @@ apiValidation {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
+//    publishToMavenCentral()
 
-    signAllPublications()
+//    signAllPublications()
 
     val artifact = "ktor-monitor-core"
     coordinates(group.toString(), artifact, version.toString())
@@ -124,11 +128,6 @@ mavenPublishing {
         }
     }
 }
-
-val module = "ktor-monitor"
-val artifactPrefix = "ktor-monitor-logging"
-group = "ir.parsuomash.ktor"
-version = "1.13.0"
 
 kotlin {
     explicitApi()
@@ -247,19 +246,6 @@ android {
 
 afterEvaluate {
     publishing {
-//        publications.withType<MavenPublication>().configureEach {
-//            artifactId = when (name) {
-//                "kotlinMultiplatform" -> artifactPrefix
-//                else -> {
-//                    val suffix = name
-//                        .replace("Release", "")
-//                        .replace("Debug", "-debug")
-//                        .replaceFirstChar { it.lowercaseChar() }
-//
-//                    "$artifactPrefix-${suffix}"
-//                }
-//            }
-//        }
         repositories {
             maven {
                 url = uri(getProperty("maven.url"))

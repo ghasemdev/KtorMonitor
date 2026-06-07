@@ -3,8 +3,6 @@ package ro.cosminmihu.ktor.monitor
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeUIViewController
 import platform.UIKit.UIViewController
-import ro.cosminmihu.ktor.monitor.di.LibraryKoinContext
-import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 
 /**
  * [UIViewController] for [KtorMonitor].
@@ -31,17 +29,10 @@ import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
  *```
  */
 @OptIn(ExperimentalComposeUiApi::class)
-public fun KtorMonitorViewController(
-    sharedDBConfig: SharedDBConfig? = null,
-): UIViewController = ComposeUIViewController(
+public fun KtorMonitorViewController(): UIViewController = ComposeUIViewController(
     configure = {
         parallelRendering = true
     },
 ) {
-    sharedDBConfig?.groupID?.let {
-        LibraryKoinContext.koin
-            .get<ConfigUseCase>()
-            .setIosGroupId(it)
-    }
     KtorMonitor()
 }

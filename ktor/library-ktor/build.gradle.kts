@@ -1,3 +1,4 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -7,12 +8,17 @@ plugins {
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.binary.compatibility.validator)
     alias(libs.plugins.dokka)
+
+    id("maven-publish")
 }
 
-mavenPublishing {
-    publishToMavenCentral()
+group = "ir.parsuomash.ktor"
+version = "1.13.0"
 
-    signAllPublications()
+mavenPublishing {
+//    publishToMavenCentral()
+
+//    signAllPublications()
 
     val artifact = "ktor-monitor-logging"
     coordinates(group.toString(), artifact, version.toString())
@@ -140,3 +146,19 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
+
+afterEvaluate {
+    publishing {
+        repositories {
+            maven {
+                url = uri(getProperty("maven.url"))
+                credentials {
+                    username = getProperty("maven.username")
+                    password = getProperty("maven.password")
+                }
+            }
+        }
+    }
+}
+
+fun getProperty(key: String) = gradleLocalProperties(rootDir, providers).getProperty(key).orEmpty()
