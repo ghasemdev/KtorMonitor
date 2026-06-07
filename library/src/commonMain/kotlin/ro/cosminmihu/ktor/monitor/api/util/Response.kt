@@ -5,7 +5,7 @@ import io.ktor.client.statement.readRawBytes
 import io.ktor.http.contentType
 import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
-import ro.cosminmihu.ktor.monitor.api.KtorMonitorResponseBody
+import ro.cosminmihu.ktor.monitor.attr.KtorMonitorResponseBody
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 
 internal suspend fun logResponseException(

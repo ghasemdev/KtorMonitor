@@ -10,8 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
-import ro.cosminmihu.ktor.monitor.api.KtorMonitorRequestBody
-import ro.cosminmihu.ktor.monitor.api.KtorMonitorRequestUrl
+import ro.cosminmihu.ktor.monitor.attr.KtorMonitorRequestBody
+import ro.cosminmihu.ktor.monitor.attr.KtorMonitorRequestUrl
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 
 internal suspend fun logRequestException(

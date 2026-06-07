@@ -31,3 +31,4 @@ dependencyResolutionManagement {
 include(":library")
 include(":library-no-op")
 include(":sample")
+include(":ktor:library-attr")
