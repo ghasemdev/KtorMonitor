@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.maven.publish)
-    alias(libs.plugins.binary.compatibility.validator)
 
     id("maven-publish")
 }
@@ -15,11 +14,7 @@ group = "ir.parsuomash.ktor"
 version = "1.13.0"
 
 mavenPublishing {
-//    publishToMavenCentral()
-
-//    signAllPublications()
-
-    val artifact = "ktor-monitor-logging"
+    val artifact = "ktor-monitor-attr"
     coordinates(group.toString(), artifact, version.toString())
 
     pom {
@@ -66,14 +61,6 @@ mavenPublishing {
     }
 }
 
-apiValidation {
-    @OptIn(kotlinx.validation.ExperimentalBCVApi::class)
-    klib {
-        enabled = true
-        strictValidation = true
-    }
-}
-
 kotlin {
     explicitApi()
 
@@ -110,16 +97,13 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(projects.core.library)
-            api(projects.ktor.libraryAttr)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.logging)
         }
     }
 }
 
 android {
-    namespace = "ro.cosminmihu.ktor.monitor.ktor"
+    namespace = "ro.cosminmihu.ktor.monitor.attr"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
