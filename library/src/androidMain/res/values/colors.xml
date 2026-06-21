@@ -2,4 +2,5 @@
 <resources>
     <color name="ktor_splash_background">#000000</color>
     <color name="ktor_ic_splash_background">#FFFFFF</color>
+    <color name="ktor_icon_color_background">#FFFFFF</color>
 </resources>
