@@ -9,7 +9,6 @@ plugins {
 dependencies {
     implementation(projects.sample.ktor.shared)
     implementation(projects.core.library)
-    implementation(libs.ktor.client.cio)
     implementation(compose.desktop.currentOs)
     implementation(libs.compose.components.resources)
     implementation(libs.kotlinx.coroutines.swing)

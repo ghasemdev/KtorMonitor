@@ -200,7 +200,7 @@ suspend fun samples() = withContext(Dispatchers.IO) {
             .header("Accept", "text/event-stream")
             .build()
         client.newCall(request).execute().use { response ->
-            val source = response.body?.source() ?: return@use
+            val source = response.body.source()
             var messages = 0
             while (!source.exhausted() && messages < 3) {
                 val line = source.readUtf8Line() ?: break

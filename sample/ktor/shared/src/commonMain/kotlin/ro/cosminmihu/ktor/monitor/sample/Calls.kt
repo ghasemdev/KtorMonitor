@@ -235,22 +235,17 @@ suspend fun samples() {
 
     // Server-Sent Events.
     runCatching {
-        val response = client.get(SSE_URL) {
-            headers {
-                append(HttpHeaders.UserAgent, USER_AGENT)
-                append(HttpHeaders.Accept, "text/event-stream")
+        client.sse(
+            urlString = SSE_URL,
+            request = {
+                header(HttpHeaders.UserAgent, USER_AGENT)
+                header(HttpHeaders.Accept, "text/event-stream")
             }
-        }
-        val channel = response.bodyAsChannel()
-        var messages = 0
-        try {
-            while (!channel.isClosedForRead && messages < 3) {
-                val line = channel.readUTF8Line() ?: break
-                if (line.startsWith("data:")) messages++
+        ) {
+            incoming.take(3).collect { event ->
+                println("EVENT: id=${event.id} type=${event.event}")
+                println("DATA: ${event.data}")
             }
-        } finally {
-            channel.cancel()
-            response.call.cancel()
         }
     }
 
