@@ -286,32 +286,18 @@ fun main() {
 
 ### Wasm / JS (Browser)
 
-Add webpack dependency:
-
-```kotlin
-// build.gradle.kts
-kotlin {
-    sourceSets {
-        webMain.dependencies {
-            implementation(devNpm("copy-webpack-plugin", "9.1.0"))
-        }
-    }
-}
-```
-
-Create `webpack.config.d/sqljs.js`:
+Copy `sample/ktor/webApp/webpack-resources/sqlite.worker.js` (SQLite WASM in-memory worker) to `{project}/webpack-resources/sqlite.worker.js` and create `webpack.config.d/sqlite.js`:
 
 ```javascript
+const path = require('path');
 config.resolve = {
-    fallback: { fs: false, path: false, crypto: false }
+    modules: ['node_modules', path.resolve(__dirname, '../../node_modules')],
+    fallback: { fs: false, path: false, crypto: false, os: false },
+    alias: {
+        ...(config.resolve && config.resolve.alias),
+        'ktor-monitor-sqlite-worker/sqlite.worker.js': path.resolve(__dirname, '../../../../webpack-resources/sqlite.worker.js'),
+    },
 };
-
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-config.plugins.push(
-    new CopyWebpackPlugin({
-        patterns: ['../../node_modules/sql.js/dist/sql-wasm.wasm']
-    })
-);
 ```
 
 Entry point:
@@ -412,13 +398,13 @@ dependencies {
 
 ## Architecture Notes (for contributors / advanced usage)
 
-- **Storage**: SQLDelight async (`generateAsync = true`) — always call mutations from a `suspend` context or via `InternalLibraryBridge.coroutineScope().launch { }`.
+- **Storage**: Room 3 (`androidx.room3`) — DAO writes are `suspend`; call them from a `suspend` context or via `InternalLibraryBridge.coroutineScope().launch { }`.
 - **Threading**: DB writes are fire-and-forget on the library's Koin-provided coroutine scope. Never call `runBlocking` inside an interceptor.
 - **OkHttp body**: read via `Response.peekBody(maxContentLength)` — the original body stream is not consumed.
 - **http4k body**: read via `Body.payload.duplicate()` — the original `ByteBuffer` is preserved.
 - **Ktor hooks**: `HttpSendPipeline.Monitoring`, `HttpReceivePipeline.State`, `HttpResponsePipeline.Receive`, and a `ResponseObserver`.
-- **Web**: requires `sql.js` wasm artifact copied via webpack (see Wasm/JS section above).
-- **iOS**: links against system `sqlite3` (`linkerOpts("-lsqlite3")`).
+- **Web**: requires the SQLite WASM worker aliased via webpack (see Wasm/JS section above).
+- **iOS**: uses the bundled SQLite driver (`androidx.sqlite:sqlite-bundled`).
 
 ---
 

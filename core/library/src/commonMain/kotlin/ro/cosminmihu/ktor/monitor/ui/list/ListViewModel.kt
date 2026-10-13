@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCalls
+import ro.cosminmihu.ktor.monitor.db.SelectCalls
 import ro.cosminmihu.ktor.monitor.domain.CallsExportFormat
 import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 import ro.cosminmihu.ktor.monitor.domain.DeleteCallsUseCase

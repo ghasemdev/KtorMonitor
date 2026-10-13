@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import ro.cosminmihu.ktor.monitor.core.BuildKonfig
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
-import ro.cosminmihu.ktor.monitor.db.sqldelight.Call
+import ro.cosminmihu.ktor.monitor.db.Call
 import ro.cosminmihu.ktor.monitor.domain.model.decodeBody
 import kotlin.time.Clock
 import kotlin.time.Instant

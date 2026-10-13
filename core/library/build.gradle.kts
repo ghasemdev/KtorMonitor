@@ -7,7 +7,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
-    alias(libs.plugins.sqldelight)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
     alias(libs.plugins.koin.compiler)
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.binary.compatibility.validator)
@@ -27,14 +28,8 @@ buildkonfig {
     }
 }
 
-sqldelight {
-    databases {
-        create("LibraryDatabase") {
-            packageName.set("ro.cosminmihu.ktor.monitor.db.sqldelight")
-            generateAsync = true
-        }
-    }
-    linkSqlite = true
+room3 {
+    schemaDirectory("$projectDir/schemas")
 }
 
 compose.resources {
@@ -55,11 +50,6 @@ dokka {
         suppressedFiles.from(
             file("src/commonMain/kotlin/ro/cosminmihu/ktor/monitor/domain/model/NetworkClient.kt")
         )
-
-        perPackageOption {
-            matchingRegex.set("ro.cosminmihu.ktor.monitor.db.sqldelight")
-            suppress.set(true)
-        }
 
         perPackageOption {
             matchingRegex.set("ro.cosminmihu.ktor.monitor.ui.resources")
@@ -168,7 +158,6 @@ kotlin {
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             isStatic = true
-            linkerOpts("-lsqlite3")
         }
     }
 
@@ -182,12 +171,12 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.android.permisssions)
-            implementation(libs.sqldelight.android)
+            implementation(libs.sqlite.framework)
             implementation(libs.koin.android)
             implementation(libs.coil.gif)
         }
         iosMain.dependencies {
-            implementation(libs.sqldelight.native)
+            implementation(libs.sqlite.bundled)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -204,9 +193,8 @@ kotlin {
             implementation(libs.navigation3.ui)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
-            implementation(libs.sqldelight.runtime)
-            implementation(libs.sqldelight.coroutines)
-            implementation(libs.sqldelight.primitive.adapters)
+            api(libs.kotlinx.coroutines.core)
+            implementation(libs.room.runtime)
             implementation(libs.koin.core)
             implementation(libs.koin.annotations)
             implementation(libs.koin.compose)
@@ -220,18 +208,24 @@ kotlin {
             implementation(libs.ksoup)
             implementation(libs.ktor.utils)
         }
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
+        webTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
-            implementation(libs.sqldelight.jvm)
+            implementation(libs.sqlite.bundled)
             implementation(libs.slf4j.simple)
         }
 
         webMain.dependencies {
-            implementation(libs.sqldelight.web)
-            implementation(npm("sql.js", libs.versions.sqljs.get()))
-            implementation(npm("@cashapp/sqldelight-sqljs-worker", libs.versions.sqldelight.get()))
-            implementation(devNpm("copy-webpack-plugin", libs.versions.webpack.get()))
+            implementation(libs.sqlite.web)
+            implementation(npm("@sqlite.org/sqlite-wasm", libs.versions.sqlite.wasm.get()))
         }
     }
 
@@ -240,3 +234,18 @@ kotlin {
     }
 }
 
+dependencies {
+    listOf(
+        "kspAndroid",
+        "kspJvm",
+        "kspIosArm64",
+        "kspIosSimulatorArm64",
+        "kspJs",
+        "kspWasmJs",
+    ).forEach { add(it, libs.room.compiler) }
+}
+
+// The web tests only exercise the database and do not use Compose UI testing.
+tasks.matching { it.name.startsWith("checkComposeUiTestConfigurationFor") }.configureEach {
+    enabled = false
+}

@@ -108,8 +108,7 @@ kotlin {
             implementation(compose.ui)
         }
         webMain.dependencies {
-            implementation(npm("sql.js", libs.versions.sqljs.get()))
-            implementation(devNpm("copy-webpack-plugin", libs.versions.webpack.get()))
+            implementation(npm("@sqlite.org/sqlite-wasm", libs.versions.sqlite.wasm.get()))
         }
     }
 

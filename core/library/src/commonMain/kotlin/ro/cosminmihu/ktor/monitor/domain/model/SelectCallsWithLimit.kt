@@ -1,7 +1,7 @@
 package ro.cosminmihu.ktor.monitor.domain.model
 
-import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCalls
-import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCallsWithLimit
+import ro.cosminmihu.ktor.monitor.db.SelectCalls
+import ro.cosminmihu.ktor.monitor.db.SelectCallsWithLimit
 import kotlin.time.Duration.Companion.milliseconds
 
 internal val SelectCallsWithLimit.isInProgress

@@ -98,36 +98,28 @@ fun main() = application {
 
 ### Wasm / Js
 
-* Web targets require a few additional webpack steps.
-
-```kotlin hl_lines="4"
-kotlin {
-    sourceSets {
-        webMain.dependencies {
-            implementation(devNpm("copy-webpack-plugin", "9.1.0"))
-        }
-    }
-}
-```
+* Web targets store the data with SQLite WASM and need a small Web Worker (`WebWorkerSQLiteDriver` does not ship one).
+  Copy [`sqlite.worker.js`](https://github.com/CosminMihuMDC/KtorMonitor/blob/main/sample/ktor/webApp/webpack-resources/sqlite.worker.js)
+  into your web project (e.g. `{project}/webpack-resources/sqlite.worker.js`) and alias it in webpack.
+  The data is kept in memory, so no special HTTP headers are required.
 
 ```javascript
-// {project}/webpack.config.d/sqljs.js
+// {project}/webpack.config.d/sqlite.js
+const path = require('path');
+
 config.resolve = {
+    modules: ['node_modules', path.resolve(__dirname, '../../node_modules')],
     fallback: {
         fs: false,
         path: false,
         crypto: false,
-    }
+        os: false,
+    },
+    alias: {
+        ...(config.resolve && config.resolve.alias),
+        'ktor-monitor-sqlite-worker/sqlite.worker.js': path.resolve(__dirname, '../../../../webpack-resources/sqlite.worker.js'),
+    },
 };
-
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-config.plugins.push(
-    new CopyWebpackPlugin({
-        patterns: [
-            '../../node_modules/sql.js/dist/sql-wasm.wasm'
-        ]
-    })
-);
 ```
 
 ```kotlin

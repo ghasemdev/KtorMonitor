@@ -1,7 +1,5 @@
 package ro.cosminmihu.ktor.monitor.domain
 
-import app.cash.sqldelight.Query
-import app.cash.sqldelight.async.coroutines.awaitAsList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
@@ -9,7 +7,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
-import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCallsWithLimit
 import ro.cosminmihu.ktor.monitor.domain.model.encodedPathAndQuery
 import ro.cosminmihu.ktor.monitor.domain.model.isError
 import ro.cosminmihu.ktor.monitor.domain.model.isInProgress
@@ -28,7 +25,6 @@ internal class ListenByRecentCallsUseCase(
     operator fun invoke() {
         coroutineScope.launch {
             dao.getCalls(LAST_CALLS)
-                .map(Query<SelectCallsWithLimit>::awaitAsList)
                 .map {
                     it.map {
                         buildString {

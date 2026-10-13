@@ -1,6 +1,6 @@
 package ro.cosminmihu.ktor.monitor.domain.model
 
-import ro.cosminmihu.ktor.monitor.db.sqldelight.Call
+import ro.cosminmihu.ktor.monitor.db.Call
 
 /**
  * Builds a multi-line shell command string (curl / wget style) for the given [Call].

@@ -2,8 +2,8 @@ package ro.cosminmihu.ktor.monitor.domain.model
 
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import ro.cosminmihu.ktor.monitor.db.sqldelight.Call
-import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCalls
+import ro.cosminmihu.ktor.monitor.db.Call
+import ro.cosminmihu.ktor.monitor.db.SelectCalls
 import kotlin.time.Duration.Companion.milliseconds
 
 internal val Call.isInProgress

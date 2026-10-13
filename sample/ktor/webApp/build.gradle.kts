@@ -27,11 +27,10 @@ kotlin {
     }
 
     sourceSets {
-        webMain.dependencies {
+        commonMain.dependencies {
             implementation(projects.sample.ktor.shared)
             implementation(libs.compose.runtime)
             implementation(libs.compose.ui)
-            implementation(devNpm("copy-webpack-plugin", libs.versions.webpack.get()))
         }
     }
 }

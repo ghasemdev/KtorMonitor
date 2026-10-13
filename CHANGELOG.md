@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [TBA]
 ### Added
 * Share as Markdown
+* Storage migrated from SQLDelight to Room 3 (KMP). Previously stored calls are dropped on upgrade.
+* Web (JS/Wasm): the `sql.js`/`copy-webpack-plugin` setup is replaced by an SQLite WASM worker alias; see the integration docs.
 
 ## [1.16.0] - 2026-08-30
 ### Added

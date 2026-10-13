@@ -64,7 +64,7 @@ KtorMonitor is a **Kotlin Multiplatform** library that intercepts and visualizes
 
 | Module path                        | Purpose                                                          |
 |------------------------------------|------------------------------------------------------------------|
-| `core/library`                     | Shared core: DB (SQLDelight), Compose UI, Koin DI               |
+| `core/library`                     | Shared core: DB (Room 3), Compose UI, Koin DI               |
 | `core/library-no-op`               | API-compatible empty implementation for production builds        |
 | `ktor/library-ktor`                | Ktor client `KtorMonitorLogging` plugin                          |
 | `ktor/library-ktor-no-op`          | No-op mirror of `library-ktor`                                   |
@@ -143,12 +143,13 @@ For **iOS**, open `sample/ktor/iosApp/iosApp.xcodeproj` in Xcode and run from th
 Do **not** introduce a dependency that is not already in [`gradle/libs.versions.toml`](gradle/libs.versions.toml).  
 Add it there first with a versioned alias, then reference `libs.<alias>` in the relevant `build.gradle.kts`.
 
-### Database / SQLDelight
+### Database / Room
 
-The schema lives in [`Call.sq`](core/library/src/commonMain/sqldelight/ro/cosminmihu/ktor/monitor/db/sqldelight/Call.sq).
+The schema lives in the Room entity [`Call.kt`](core/library/src/commonMain/kotlin/ro/cosminmihu/ktor/monitor/db/Call.kt) and `LibraryDatabase`.
 
-- The project uses `generateAsync = true`; always call mutation queries from a `suspend` context.
-- Add an `INDEX` whenever you use `ORDER BY` / `WHERE` on a non-primary-key column.
+- DAO mutations are `suspend`; call them from a `suspend` context.
+- Bump the database version and commit the regenerated `core/library/schemas/` JSON on schema changes.
+- Add an `@Index` whenever you use `ORDER BY` / `WHERE` on a non-primary-key column.
 
 ### Coroutines
 

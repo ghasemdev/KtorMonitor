@@ -263,24 +263,19 @@ fun main() {
 
 ### Wasm / JS (browser)
 
-```kotlin
-// build.gradle.kts — add webpack helper
-kotlin {
-    sourceSets {
-        webMain.dependencies {
-            implementation(devNpm("copy-webpack-plugin", "9.1.0"))
-        }
-    }
-}
-```
+Copy `sqlite.worker.js` from the KtorMonitor sample (`sample/ktor/webApp/webpack-resources/`) to `{project}/webpack-resources/`.
 
 ```javascript
-// {project}/webpack.config.d/sqljs.js
-config.resolve = { fallback: { fs: false, path: false, crypto: false } };
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-config.plugins.push(new CopyWebpackPlugin({
-    patterns: ['../../node_modules/sql.js/dist/sql-wasm.wasm']
-}));
+// {project}/webpack.config.d/sqlite.js
+const path = require('path');
+config.resolve = {
+    modules: ['node_modules', path.resolve(__dirname, '../../node_modules')],
+    fallback: { fs: false, path: false, crypto: false, os: false },
+    alias: {
+        ...(config.resolve && config.resolve.alias),
+        'ktor-monitor-sqlite-worker/sqlite.worker.js': path.resolve(__dirname, '../../../../webpack-resources/sqlite.worker.js'),
+    },
+};
 ```
 
 ```kotlin

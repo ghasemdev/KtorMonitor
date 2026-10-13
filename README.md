@@ -273,36 +273,28 @@ fun main() = application {
 <details>
 <summary><b>Wasm / Js</b></summary>
 
-* Web targets require a few additional webpack steps.
-
-```kotlin
-kotlin {
-    sourceSets {
-        webMain.dependencies {
-            implementation(devNpm("copy-webpack-plugin", "9.1.0"))
-        }
-    }
-}
-```
+* Web targets store the data with SQLite WASM and need a small Web Worker (`WebWorkerSQLiteDriver` does not ship one).
+  Copy [`sqlite.worker.js`](https://github.com/CosminMihuMDC/KtorMonitor/blob/main/sample/ktor/webApp/webpack-resources/sqlite.worker.js)
+  into your web project (e.g. `{project}/webpack-resources/sqlite.worker.js`) and alias it in webpack.
+  The data is kept in memory, so no special HTTP headers are required.
 
 ```javascript
-// {project}/webpack.config.d/sqljs.js
+// {project}/webpack.config.d/sqlite.js
+const path = require('path');
+
 config.resolve = {
+    modules: ['node_modules', path.resolve(__dirname, '../../node_modules')],
     fallback: {
         fs: false,
         path: false,
         crypto: false,
-    }
+        os: false,
+    },
+    alias: {
+        ...(config.resolve && config.resolve.alias),
+        'ktor-monitor-sqlite-worker/sqlite.worker.js': path.resolve(__dirname, '../../../../webpack-resources/sqlite.worker.js'),
+    },
 };
-
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-config.plugins.push(
-    new CopyWebpackPlugin({
-        patterns: [
-            '../../node_modules/sql.js/dist/sql-wasm.wasm'
-        ]
-    })
-);
 ```
 
 ```kotlin
@@ -324,7 +316,7 @@ Found a bug or have a feature request? [File an issue](https://github.com/Cosmin
 [![Ktor](https://img.shields.io/badge/3.5.2-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
 [![OkHttp](https://img.shields.io/badge/5.5.0-white?logo=square&logoColor=white&color=003B57)](https://square.github.io/okhttp/)
 [![http4k](https://img.shields.io/badge/6.59.0.0-white?logo=httpie&logoColor=white&color=087CFA)](https://www.http4k.org/)
-[![SQLDelight](https://img.shields.io/badge/2.3.2-white?logo=sqlite&logoColor=white&color=003B57)](https://sqldelight.github.io/sqldelight)
+[![Room](https://img.shields.io/badge/3.0.3-white?logo=sqlite&logoColor=white&color=003B57)](https://developer.android.com/jetpack/androidx/releases/room3)
 
 Community discussions on Slack — join us in the [#ktormonitor](https://kotlinlang.slack.com/archives/C0AB9GA32H0) channel.
 <br>

@@ -13,7 +13,6 @@ import ro.cosminmihu.ktor.monitor.core.ClipboardManager
 import ro.cosminmihu.ktor.monitor.core.ShareManager
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 import ro.cosminmihu.ktor.monitor.db.createDatabase
-import ro.cosminmihu.ktor.monitor.db.createDatabaseDriver
 import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 import ro.cosminmihu.ktor.monitor.domain.DeleteAllCallsUseCase
 import ro.cosminmihu.ktor.monitor.domain.DeleteCallsUseCase
@@ -41,7 +40,6 @@ internal fun libraryModule() = listOf(
 )
 
 internal val databaseModule = module {
-    factory { create(::createDatabaseDriver) }
     single { create(::createDatabase) }
     factory<LibraryDao>()
 }
