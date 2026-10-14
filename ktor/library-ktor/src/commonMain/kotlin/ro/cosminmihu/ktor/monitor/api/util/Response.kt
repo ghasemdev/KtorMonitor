@@ -1,9 +1,9 @@
 package ro.cosminmihu.ktor.monitor.api.util
 
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.contentType
+import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.readAvailable
 import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
@@ -61,6 +61,9 @@ internal suspend fun logResponseBody(
     // observer for the lifetime of the socket.
     if (response.isWebSocketUpgrade()) return
 
+    // SSE sessions are recorded event by event from the parsed session (see `SseSession.kt`).
+    if (response.call.isSseCall()) return
+
     // Server-Sent Events: stream the body chunk-by-chunk and append to the DB so the
     // detail screen updates in real time as new events arrive, instead of waiting for
     // the producer to close the connection.
@@ -89,13 +92,15 @@ internal suspend fun logResponseBody(
     )
 }
 
-@OptIn(InternalKtorMonitorApi::class)
+@OptIn(InternalKtorMonitorApi::class, InternalAPI::class)
 private suspend fun streamResponseBody(
     id: String,
     maxContentLength: Int,
     response: HttpResponse,
 ) {
-    val channel = response.bodyAsChannel()
+    // `bodyAsChannel()` re-runs the response pipeline, where the SSE plugin rejects the call
+    // because it expects an SSESession; read the raw observer copy of the body instead.
+    val channel = response.rawContent
     val buffer = ByteArray(SSE_BUFFER_SIZE)
     val unbounded = maxContentLength == ContentLength.Full
     var stored = 0L

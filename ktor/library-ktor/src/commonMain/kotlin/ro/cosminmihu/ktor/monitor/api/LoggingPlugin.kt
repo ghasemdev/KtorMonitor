@@ -4,19 +4,25 @@ import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.observer.ResponseHandler
 import io.ktor.client.plugins.observer.ResponseObserver
+import io.ktor.client.plugins.sse.ClientSSESession
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.statement.HttpResponseContainer
 import io.ktor.util.AttributeKey
+import io.ktor.client.plugins.sse.SSESession
 import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
 import ro.cosminmihu.ktor.monitor.InternalLibraryBridge
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
 import ro.cosminmihu.ktor.monitor.api.util.ReceiveHook
 import ro.cosminmihu.ktor.monitor.api.util.ResponseHook
 import ro.cosminmihu.ktor.monitor.api.util.SendHook
+import ro.cosminmihu.ktor.monitor.api.util.TransformHook
+import ro.cosminmihu.ktor.monitor.api.util.isSseCall
 import ro.cosminmihu.ktor.monitor.api.util.logRequest
 import ro.cosminmihu.ktor.monitor.api.util.logRequestException
 import ro.cosminmihu.ktor.monitor.api.util.logResponse
 import ro.cosminmihu.ktor.monitor.api.util.logResponseBody
 import ro.cosminmihu.ktor.monitor.api.util.logResponseException
+import ro.cosminmihu.ktor.monitor.api.util.monitored
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 
 private val DisableLogging = AttributeKey<Unit>("KtorMonitorDisableLogging")
@@ -124,6 +130,29 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
                     cause = cause
                 )
                 throw cause
+            }
+        }
+
+        // Record SSE events from the parsed session; the raw body is not available for SSE calls.
+        on(TransformHook) { call, container ->
+            if (call.attributes.contains(DisableLogging) || !call.isSseCall()) return@on
+
+            val id = call.attributes[CallIdentifier]
+            val maxContentLength = pluginConfig.maxContentLength
+            when (val session = container.response) {
+                is ClientSSESession -> proceedWith(
+                    HttpResponseContainer(
+                        container.expectedType,
+                        ClientSSESession(session.call, session.monitored(id, maxContentLength)),
+                    )
+                )
+
+                is SSESession -> proceedWith(
+                    HttpResponseContainer(
+                        container.expectedType,
+                        session.monitored(id, maxContentLength),
+                    )
+                )
             }
         }
 

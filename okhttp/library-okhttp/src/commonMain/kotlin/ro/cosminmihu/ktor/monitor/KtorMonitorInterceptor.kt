@@ -1,5 +1,6 @@
 package ro.cosminmihu.ktor.monitor
 
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import okhttp3.Interceptor
 import okhttp3.MediaType
@@ -218,6 +219,9 @@ public class KtorMonitorInterceptor(
 }
 
 private const val WEBSOCKET_UPGRADE_STATUS = 101
+private const val MAX_STREAM_LINE_LENGTH = 64L * 1024
+
+private class StreamChunk(val bytes: ByteArray, val size: Long, val isTruncated: Boolean)
 
 @OptIn(InternalKtorMonitorApi::class)
 private fun wrapForStreaming(
@@ -226,7 +230,9 @@ private fun wrapForStreaming(
     id: String,
     maxContentLength: Int,
 ): Response {
-    // Initialise the body row so the UI shows an empty (streaming) response immediately.
+    // Chunks are written by a single coroutine so the stored body keeps the order in which the
+    // stream was read, and the initial empty body can never overwrite a later chunk.
+    val chunks = Channel<StreamChunk>(Channel.UNLIMITED)
     InternalLibraryBridge.coroutineScope().launch {
         try {
             InternalLibraryBridge.saveResponseBody(
@@ -237,19 +243,36 @@ private fun wrapForStreaming(
             )
         } catch (_: Throwable) {
         }
+        for (chunk in chunks) {
+            try {
+                InternalLibraryBridge.appendResponseBody(
+                    id = id,
+                    chunk = chunk.bytes,
+                    deltaSize = chunk.size,
+                    isResponseBodyTruncated = chunk.isTruncated,
+                )
+            } catch (_: Throwable) {
+            }
+        }
     }
 
     val unbounded = maxContentLength == ContentLength.Full
     val contentType: MediaType? = body.contentType()
     val originalContentLength = body.contentLength()
 
-    val tee = object : ForwardingSource(body.source()) {
+    val upstream = body.source()
+    val tee = object : ForwardingSource(upstream) {
         private var stored: Long = 0L
         private var truncated: Boolean = false
 
         override fun read(sink: Buffer, byteCount: Long): Long {
+            // Hand data to the consumer one line at a time, so only what the consumer actually
+            // received is recorded instead of everything the socket had buffered.
+            val lineEnd = upstream.indexOf('\n'.code.toByte(), 0L, MAX_STREAM_LINE_LENGTH)
+            val available = if (lineEnd >= 0L) lineEnd + 1 else upstream.buffer.size
             val sizeBefore = sink.size
-            val read = super.read(sink, byteCount)
+            val read = super.read(sink, if (available > 0L) min(byteCount, available) else byteCount)
+            if (read < 0L) chunks.close()
             if (read <= 0L) return read
 
             // Snapshot only the newly read bytes from the sink.
@@ -276,19 +299,14 @@ private fun wrapForStreaming(
             }
             val isTruncated = truncated
 
-            InternalLibraryBridge.coroutineScope().launch {
-                try {
-                    InternalLibraryBridge.appendResponseBody(
-                        id = id,
-                        chunk = keep,
-                        deltaSize = read,
-                        isResponseBodyTruncated = isTruncated,
-                    )
-                } catch (_: Throwable) {
-                }
-            }
+            chunks.trySend(StreamChunk(keep, read, isTruncated))
 
             return read
+        }
+
+        override fun close() {
+            chunks.close()
+            super.close()
         }
     }
 

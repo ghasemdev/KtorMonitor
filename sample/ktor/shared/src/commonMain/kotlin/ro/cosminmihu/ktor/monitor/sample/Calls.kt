@@ -235,6 +235,8 @@ suspend fun samples() {
     runCatching {
         client.sse(
             urlString = SSE_URL,
+            showCommentEvents = true,
+            showRetryEvents = true,
             request = {
                 header(HttpHeaders.UserAgent, USER_AGENT)
                 header(HttpHeaders.Accept, "text/event-stream")

@@ -1,5 +1,6 @@
 package ro.cosminmihu.ktor.monitor
 
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import org.http4k.core.ContentType
 import org.http4k.core.Filter
@@ -7,6 +8,7 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Response
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import java.io.FilterInputStream
+import java.io.IOException
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.random.Random
@@ -205,13 +207,17 @@ public class KtorMonitorFilter(
     }
 }
 
+private class StreamChunk(val bytes: ByteArray, val size: Long, val isTruncated: Boolean)
+
 @OptIn(InternalKtorMonitorApi::class)
 private fun wrapForStreaming(
     response: Response,
     id: String,
     maxContentLength: Int,
 ): Response {
-    // Initialise the body row so the UI shows an empty (streaming) response immediately.
+    // Chunks are written by a single coroutine so the stored body keeps the order in which the
+    // stream was read, and the initial empty body can never overwrite a later chunk.
+    val chunks = Channel<StreamChunk>(Channel.UNLIMITED)
     InternalLibraryBridge.coroutineScope().launch {
         try {
             InternalLibraryBridge.saveResponseBody(
@@ -221,6 +227,17 @@ private fun wrapForStreaming(
                 isResponseBodyTruncated = false,
             )
         } catch (_: Throwable) {
+        }
+        for (chunk in chunks) {
+            try {
+                InternalLibraryBridge.appendResponseBody(
+                    id = id,
+                    chunk = chunk.bytes,
+                    deltaSize = chunk.size,
+                    isResponseBodyTruncated = chunk.isTruncated,
+                )
+            } catch (_: Throwable) {
+            }
         }
     }
 
@@ -233,17 +250,38 @@ private fun wrapForStreaming(
 
         override fun read(): Int {
             val byte = super.read()
-            if (byte < 0) return byte
+            if (byte < 0) {
+                chunks.close()
+                return byte
+            }
             append(byteArrayOf(byte.toByte()), 1L)
             return byte
         }
 
+        // Hand data to the consumer one line at a time, so only what the consumer actually
+        // received is recorded instead of everything that was buffered.
         override fun read(b: ByteArray, off: Int, len: Int): Int {
-            val read = super.read(b, off, len)
-            if (read <= 0) return read
+            if (len == 0) return 0
+            var read = 0
+            try {
+                while (read < len) {
+                    val byte = super.read()
+                    if (byte < 0) break
+                    b[off + read++] = byte.toByte()
+                    if (byte == '\n'.code) break
+                }
+            } catch (cause: IOException) {
+                if (read == 0) throw cause
+            }
+            if (read == 0) {
+                chunks.close()
+                return -1
+            }
             append(b.copyOfRange(off, off + read), read.toLong())
             return read
         }
+
+        override fun available(): Int = 0
 
         private fun append(newBytes: ByteArray, read: Long) {
             val keep: ByteArray = when {
@@ -265,17 +303,12 @@ private fun wrapForStreaming(
             }
             val isTruncated = truncated
 
-            InternalLibraryBridge.coroutineScope().launch {
-                try {
-                    InternalLibraryBridge.appendResponseBody(
-                        id = id,
-                        chunk = keep,
-                        deltaSize = read,
-                        isResponseBodyTruncated = isTruncated,
-                    )
-                } catch (_: Throwable) {
-                }
-            }
+            chunks.trySend(StreamChunk(keep, read, isTruncated))
+        }
+
+        override fun close() {
+            chunks.close()
+            super.close()
         }
     }
 
