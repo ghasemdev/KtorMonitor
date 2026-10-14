@@ -4,9 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.InjectedParam
@@ -19,6 +20,7 @@ import ro.cosminmihu.ktor.monitor.domain.ExportCallRequestAsCurlUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallRequestAsWgetUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallUrlUseCase
 import ro.cosminmihu.ktor.monitor.domain.GetCallUseCase
+import ro.cosminmihu.ktor.monitor.domain.GetStreamEventsUseCase
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 import ro.cosminmihu.ktor.monitor.domain.model.asString
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
@@ -50,8 +52,9 @@ private const val SHARE_FILE_NAME = "ktormonitor.http"
 private const val SHARE_FILE_NAME_MARKDOWN = "ktormonitor.md"
 
 internal class DetailViewModel(
-    @InjectedParam id: String,
+    @InjectedParam private val id: String,
     getCallUseCase: GetCallUseCase,
+    getStreamEventsUseCase: GetStreamEventsUseCase,
     private val exportCallUrlUseCase: ExportCallUrlUseCase,
     private val exportCallRequestAsCurlUseCase: ExportCallRequestAsCurlUseCase,
     private val exportCallRequestAsWgetUseCase: ExportCallRequestAsWgetUseCase,
@@ -62,9 +65,9 @@ internal class DetailViewModel(
 ) : ViewModel() {
 
     private val call = getCallUseCase(id)
-    val uiState = call
-        .map { call ->
-            call ?: return@map DetailUiState()
+    val streamEvents = getStreamEventsUseCase(id)
+    val uiState = combine(call, streamEvents) { call, events ->
+            call ?: return@combine DetailUiState()
 
             val responseHeaders = call.responseHeaders ?: mapOf()
 
@@ -132,6 +135,7 @@ internal class DetailViewModel(
                             },
                             supportsStream = responseHeaders.supportsStreamTransport(),
                         ),
+                        stream = call.toStream(events),
                     )
                 )
             )
@@ -151,7 +155,7 @@ internal class DetailViewModel(
                 DetailUiState.ClipboardCopyType.Url -> exportCallUrlUseCase(call)
                 DetailUiState.ClipboardCopyType.Curl -> exportCallRequestAsCurlUseCase(call)
                 DetailUiState.ClipboardCopyType.Wget -> exportCallRequestAsWgetUseCase(call)
-                DetailUiState.ClipboardCopyType.Text -> exportCallAsTextUseCase(call)
+                DetailUiState.ClipboardCopyType.Text -> exportCallAsTextUseCase(call, streamEvents.first())
             }
 
             clipboardManager.setText(copy)
@@ -163,8 +167,8 @@ internal class DetailViewModel(
             val call = this@DetailViewModel.call.firstOrNull() ?: return@launch
 
             val share = when (type) {
-                DetailUiState.FileShareType.Text -> exportCallAsTextUseCase(call)
-                DetailUiState.FileShareType.Markdown -> exportCallAsMarkdownUseCase(call)
+                DetailUiState.FileShareType.Text -> exportCallAsTextUseCase(call, streamEvents.first())
+                DetailUiState.FileShareType.Markdown -> exportCallAsMarkdownUseCase(call, streamEvents.first())
             }
 
             val fileName = when (type) {

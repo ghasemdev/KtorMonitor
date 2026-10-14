@@ -16,6 +16,11 @@ import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
 import ro.cosminmihu.ktor.monitor.ui.detail.body.Body
 import ro.cosminmihu.ktor.monitor.ui.detail.hasPreview
 import ro.cosminmihu.ktor.monitor.ui.detail.headers.Headers
+import ro.cosminmihu.ktor.monitor.ui.detail.stream.StreamView
+import ro.cosminmihu.ktor.monitor.ui.detail.stream.asTranscript
+import org.jetbrains.compose.resources.stringResource
+import ro.cosminmihu.ktor.monitor.ui.resources.Res
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_body
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @Composable
@@ -26,6 +31,7 @@ internal fun Transaction(
     body: DetailUiState.Body?,
     error: String,
     modifier: Modifier = Modifier,
+    stream: DetailUiState.Stream? = null,
 ) {
     var displayMode by remember(body) {
         mutableStateOf(
@@ -55,11 +61,21 @@ internal fun Transaction(
         Headers(
             headers = headers
         )
-        Body(
-            body = body,
-            displayMode = displayMode,
-            onDisplayMode = { displayMode = it }
-        )
+        if (stream != null) {
+            TransactionSection(
+                title = stringResource(Res.string.ktor_body),
+                copyText = { stream.asTranscript() },
+                modifier = Modifier.weight(1f),
+            ) {
+                StreamView(stream = stream)
+            }
+        } else {
+            Body(
+                body = body,
+                displayMode = displayMode,
+                onDisplayMode = { displayMode = it }
+            )
+        }
     }
 }
 

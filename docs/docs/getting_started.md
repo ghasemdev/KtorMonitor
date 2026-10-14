@@ -87,7 +87,7 @@
 
     ```kotlin hl_lines="3-9"
     OkHttpClient.Builder()
-        .addNetworkInterceptor(
+        .addInterceptor(
             KtorMonitorInterceptor {
                 sanitizeHeader { header -> header == "Authorization" }
                 filter { request -> !request.url.host.contains("cosminmihu.ro") }
@@ -104,6 +104,22 @@
     - ```showNotification``` - Keep track of latest requests and responses into notification. Default is **true**. Android and iOS only. Notifications permission needs to be granted.
     - ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
     - ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
+
+    !!! note
+        Install it with `addInterceptor`, not `addNetworkInterceptor`. OkHttp does not run network interceptors for WebSocket calls, so a WebSocket handshake would not be logged. To also log WebSocket frames, open the socket with `client.newMonitoredWebSocket(request, listener)` instead of `client.newWebSocket(...)`. With `addInterceptor`, redirects are logged as a single call.
+
+    !!! info "Why `newMonitoredWebSocket`?"
+        An OkHttp interceptor only sees the WebSocket handshake (the `101` response). After the upgrade, frames no longer pass through `Interceptor.intercept`; OkHttp delivers received frames through `WebSocketListener` and sent frames through `WebSocket.send/close`. `newMonitoredWebSocket(request, listener)` wraps both the listener and the returned `WebSocket`, so it can:
+
+        - record sent and received messages and the close/failure events;
+        - link them to the `101` call already logged by the interceptor;
+        - set the connection status (open, closed, failed) and the close code.
+
+        Without it, only the `101` call is shown, with no messages. Ktor does not need this, because the plugin hooks directly into the WebSocket session.
+
+        ```kotlin
+        val webSocket = client.newMonitoredWebSocket(request, listener)
+        ```
 
 === "http4k Filter"
 

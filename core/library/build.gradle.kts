@@ -68,6 +68,8 @@ apiValidation {
     publicPackages.add("ro.cosminmihu.ktor.monitor")
     ignoredClasses.add("ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi")
     ignoredClasses.add("ro.cosminmihu.ktor.monitor.InternalLibraryBridge")
+    ignoredClasses.add("ro.cosminmihu.ktor.monitor.StreamRecorder")
+    ignoredClasses.add("ro.cosminmihu.ktor.monitor.StreamRecorder\$Companion")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.db")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.domain")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.ui")

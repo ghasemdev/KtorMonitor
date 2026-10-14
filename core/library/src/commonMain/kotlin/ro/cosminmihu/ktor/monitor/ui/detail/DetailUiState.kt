@@ -51,7 +51,42 @@ internal data class DetailUiState(
         val error: String,
         val headers: Map<String, List<String>>,
         val body: Body,
+        val stream: Stream? = null,
     )
+
+    /** WebSocket connection or SSE stream of a call. */
+    @Stable
+    data class Stream(
+        val kind: StreamKind,
+        val status: StreamStatus,
+        val closeCode: String,
+        val closeReason: String,
+        val error: String,
+        val messages: List<StreamMessage>,
+    )
+
+    @Stable
+    data class StreamMessage(
+        val id: Long,
+        val isSent: Boolean,
+        val type: StreamMessageType,
+        // SSE event name or WebSocket close code.
+        val name: String?,
+        val eventId: String?,
+        val text: String?,
+        val prettyJson: String?,
+        // First bytes as hex, for binary frames.
+        val hexPreview: String?,
+        val size: String,
+        val time: String,
+        val isTruncated: Boolean,
+    )
+
+    enum class StreamKind { WebSocket, Sse }
+
+    enum class StreamStatus { Open, Closed, Failed }
+
+    enum class StreamMessageType { Text, Binary, Ping, Pong, Close, Sse }
 
     @Stable
     data class Body(

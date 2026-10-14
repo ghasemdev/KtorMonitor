@@ -3,13 +3,14 @@ package ro.cosminmihu.ktor.monitor.domain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ro.cosminmihu.ktor.monitor.db.Call
+import ro.cosminmihu.ktor.monitor.db.StreamEvent
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
 import ro.cosminmihu.ktor.monitor.domain.model.decodeBody
 
 internal class ExportCallAsMarkdownUseCase {
 
-    suspend operator fun invoke(call: Call): String = withContext(Dispatchers.Default) {
+    suspend operator fun invoke(call: Call, events: List<StreamEvent> = emptyList()): String = withContext(Dispatchers.Default) {
         val requestBody = call.requestBody?.decodeBody(call.requestHeaders)
         val responseBody = call.responseBody?.decodeBody(call.responseHeaders)
 
@@ -42,6 +43,14 @@ internal class ExportCallAsMarkdownUseCase {
                 responseBody
                     ?.takeIf { it.isNotBlank() }
                     ?.let { appendBodyBlock(it, call.responseContentType, call.isResponseBodyTruncated == true) }
+                if (events.isNotEmpty()) {
+                    appendLine("### Messages")
+                    appendLine()
+                    appendLine("```")
+                    appendLine(events.asTranscript())
+                    appendLine("```")
+                    appendLine()
+                }
             }
         }
     }

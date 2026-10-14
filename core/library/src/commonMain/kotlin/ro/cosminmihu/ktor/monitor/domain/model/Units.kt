@@ -12,10 +12,8 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.math.log
 import kotlin.math.pow
 import kotlin.math.round
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-@OptIn(ExperimentalTime::class)
 internal fun Long.formatTime() = Instant.fromEpochMilliseconds(this)
     .toLocalDateTime(TimeZone.currentSystemDefault())
     .format(
@@ -25,7 +23,15 @@ internal fun Long.formatTime() = Instant.fromEpochMilliseconds(this)
         }
     )
 
-@OptIn(ExperimentalTime::class)
+internal fun Long.formatTimeMillis() = Instant.fromEpochMilliseconds(this)
+    .toLocalDateTime(TimeZone.currentSystemDefault())
+    .format(
+        LocalDateTime.Format {
+            hour(); char(':'); minute(); char(':'); second()
+            char('.'); secondFraction(minLength = 3, maxLength = 3)
+        }
+    )
+
 internal fun Long.formatDateTimeTime() = Instant.fromEpochMilliseconds(this)
     .format(
         DateTimeComponents.Format {

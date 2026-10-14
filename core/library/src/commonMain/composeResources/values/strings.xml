@@ -79,4 +79,22 @@
     <string name="ktor_response_view_raw">TXT</string>
     <string name="ktor_response_view_binary">HEX</string>
     <string name="ktor_response_view_stream">STREAM</string>
+
+    <string name="ktor_stream_messages">Messages</string>
+    <string name="ktor_stream_events">Events</string>
+    <string name="ktor_stream_count">%1$d total</string>
+    <string name="ktor_stream_status_open">Open</string>
+    <string name="ktor_stream_status_closed">Closed</string>
+    <string name="ktor_stream_status_failed">Failed</string>
+    <string name="ktor_stream_status_closed_with">Closed · %1$s</string>
+    <string name="ktor_stream_sent">Sent</string>
+    <string name="ktor_stream_received">Received</string>
+    <string name="ktor_stream_all">All</string>
+    <string name="ktor_stream_control">Control frames</string>
+    <string name="ktor_stream_format_json">Format JSON</string>
+    <string name="ktor_stream_empty">No messages yet</string>
+    <string name="ktor_stream_truncated">Truncated</string>
+    <string name="ktor_stream_copy_message">Copy message</string>
+    <string name="ktor_stream_scroll_to_end">Scroll to latest</string>
+    <string name="ktor_stream_binary">Binary · %1$s</string>
 </resources>

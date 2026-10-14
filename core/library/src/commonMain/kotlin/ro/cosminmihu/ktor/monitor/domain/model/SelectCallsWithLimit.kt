@@ -2,6 +2,7 @@ package ro.cosminmihu.ktor.monitor.domain.model
 
 import ro.cosminmihu.ktor.monitor.db.SelectCalls
 import ro.cosminmihu.ktor.monitor.db.SelectCallsWithLimit
+import ro.cosminmihu.ktor.monitor.db.StreamKind
 import kotlin.time.Duration.Companion.milliseconds
 
 internal val SelectCallsWithLimit.isInProgress
@@ -33,7 +34,7 @@ internal val SelectCalls.isSecure
     get() = ParsedUrl.parse(url).isSecure
 
 internal val SelectCalls.isWebsocket
-    get() = ParsedUrl.parse(url).isWebsocket
+    get() = streamKind == StreamKind.WEB_SOCKET || ParsedUrl.parse(url).isWebsocket
 
 internal val SelectCalls.host
     get() = ParsedUrl.parse(url).host

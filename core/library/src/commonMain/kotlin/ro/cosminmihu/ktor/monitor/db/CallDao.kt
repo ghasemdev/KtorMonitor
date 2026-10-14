@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.Flow
 private const val CALL_COLUMNS =
     "id, method, url, protocol, requestTimestamp, requestHeaders, requestContentType, requestContentLength, " +
         "requestBody, isRequestBodyTruncated, responseCode, responseTimestamp, responseContentType, " +
-        "responseHeaders, responseContentLength, responseBody, isResponseBodyTruncated, error"
+        "responseHeaders, responseContentLength, responseBody, isResponseBodyTruncated, error, " +
+        "streamKind, streamStatus, streamCloseCode, streamCloseReason, streamError, streamClosedAt"
 
 @Dao
 internal interface CallDao {
@@ -72,18 +73,34 @@ internal interface CallDao {
         isResponseBodyTruncated: Boolean,
     )
 
+    @Query("UPDATE call SET streamKind = :kind, streamStatus = :status WHERE id = :id")
+    suspend fun openStream(id: String, kind: String, status: String)
+
+    @Query(
+        "UPDATE call SET streamStatus = :status, streamCloseCode = :closeCode, " +
+            "streamCloseReason = :closeReason, streamError = :error, streamClosedAt = :closedAt WHERE id = :id"
+    )
+    suspend fun closeStream(
+        id: String,
+        status: String,
+        closeCode: Int?,
+        closeReason: String?,
+        error: String?,
+        closedAt: Long,
+    )
+
     @Query("UPDATE call SET error = :error WHERE id = :id")
     suspend fun saveError(id: String, error: String)
 
     @Query(
         "SELECT id, method, url, requestTimestamp, responseCode, responseTimestamp, responseContentType, " +
-            "responseContentLength, error FROM call ORDER BY requestTimestamp DESC"
+            "responseContentLength, error, streamKind FROM call ORDER BY requestTimestamp DESC"
     )
     fun selectCalls(): Flow<List<SelectCalls>>
 
     @Query(
         "SELECT id, method, url, requestTimestamp, responseCode, responseTimestamp, responseContentType, " +
-            "responseContentLength, error FROM call ORDER BY requestTimestamp DESC LIMIT :limit"
+            "responseContentLength, error, streamKind FROM call ORDER BY requestTimestamp DESC LIMIT :limit"
     )
     fun selectCallsWithLimit(limit: Long): Flow<List<SelectCallsWithLimit>>
 

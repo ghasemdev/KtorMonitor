@@ -1,6 +1,5 @@
 package ro.cosminmihu.ktor.monitor
 
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import org.http4k.core.ContentType
 import org.http4k.core.Filter
@@ -10,7 +9,6 @@ import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import java.io.FilterInputStream
 import java.io.IOException
 import kotlin.math.abs
-import kotlin.math.min
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -207,54 +205,30 @@ public class KtorMonitorFilter(
     }
 }
 
-private class StreamChunk(val bytes: ByteArray, val size: Long, val isTruncated: Boolean)
-
 @OptIn(InternalKtorMonitorApi::class)
 private fun wrapForStreaming(
     response: Response,
     id: String,
     maxContentLength: Int,
 ): Response {
-    // Chunks are written by a single coroutine so the stored body keeps the order in which the
-    // stream was read, and the initial empty body can never overwrite a later chunk.
-    val chunks = Channel<StreamChunk>(Channel.UNLIMITED)
-    InternalLibraryBridge.coroutineScope().launch {
-        try {
-            InternalLibraryBridge.saveResponseBody(
-                id = id,
-                responseContentLength = 0L,
-                responseBody = ByteArray(0),
-                isResponseBodyTruncated = false,
-            )
-        } catch (_: Throwable) {
-        }
-        for (chunk in chunks) {
-            try {
-                InternalLibraryBridge.appendResponseBody(
-                    id = id,
-                    chunk = chunk.bytes,
-                    deltaSize = chunk.size,
-                    isResponseBodyTruncated = chunk.isTruncated,
-                )
-            } catch (_: Throwable) {
-            }
-        }
-    }
+    val recorder = StreamRecorder(isWebSocket = false)
+    recorder.bind(id, maxContentLength)
 
-    val unbounded = maxContentLength == ContentLength.Full
     val originalLength = response.body.length
 
     val tee = object : FilterInputStream(response.body.stream) {
-        private var stored: Long = 0L
-        private var truncated: Boolean = false
-
         override fun read(): Int {
-            val byte = super.read()
+            val byte = try {
+                super.read()
+            } catch (cause: IOException) {
+                recorder.finish(error = "${cause::class.simpleName}: ${cause.message.orEmpty()}")
+                throw cause
+            }
             if (byte < 0) {
-                chunks.close()
+                recorder.finish()
                 return byte
             }
-            append(byteArrayOf(byte.toByte()), 1L)
+            recorder.appendSseBytes(byteArrayOf(byte.toByte()))
             return byte
         }
 
@@ -271,43 +245,23 @@ private fun wrapForStreaming(
                     if (byte == '\n'.code) break
                 }
             } catch (cause: IOException) {
-                if (read == 0) throw cause
+                if (read == 0) {
+                    recorder.finish(error = "${cause::class.simpleName}: ${cause.message.orEmpty()}")
+                    throw cause
+                }
             }
             if (read == 0) {
-                chunks.close()
+                recorder.finish()
                 return -1
             }
-            append(b.copyOfRange(off, off + read), read.toLong())
+            recorder.appendSseBytes(b.copyOfRange(off, off + read))
             return read
         }
 
         override fun available(): Int = 0
 
-        private fun append(newBytes: ByteArray, read: Long) {
-            val keep: ByteArray = when {
-                unbounded -> newBytes
-                stored >= maxContentLength -> {
-                    truncated = true
-                    ByteArray(0)
-                }
-                stored + newBytes.size > maxContentLength -> {
-                    truncated = true
-                    val remaining = (maxContentLength - stored).toInt()
-                    newBytes.copyOf(min(remaining, newBytes.size))
-                }
-                else -> newBytes
-            }
-
-            if (keep.isNotEmpty()) {
-                stored += keep.size
-            }
-            val isTruncated = truncated
-
-            chunks.trySend(StreamChunk(keep, read, isTruncated))
-        }
-
         override fun close() {
-            chunks.close()
+            recorder.finish()
             super.close()
         }
     }

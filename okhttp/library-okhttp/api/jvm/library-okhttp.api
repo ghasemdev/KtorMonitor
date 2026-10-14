@@ -21,3 +21,7 @@ public final class ro/cosminmihu/ktor/monitor/KtorMonitorInterceptorConfig {
 	public final fun setShowNotification (Z)V
 }
 
+public final class ro/cosminmihu/ktor/monitor/MonitoredWebSocketKt {
+	public static final fun newMonitoredWebSocket (Lokhttp3/OkHttpClient;Lokhttp3/Request;Lokhttp3/WebSocketListener;)Lokhttp3/WebSocket;
+}
+

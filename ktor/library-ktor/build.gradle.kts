@@ -127,6 +127,7 @@ kotlin {
             api(projects.core.library)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.websockets)
         }
     }
 }

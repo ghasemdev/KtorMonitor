@@ -9,12 +9,14 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponseContainer
 import io.ktor.util.AttributeKey
 import io.ktor.client.plugins.sse.SSESession
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
 import ro.cosminmihu.ktor.monitor.InternalLibraryBridge
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
 import ro.cosminmihu.ktor.monitor.api.util.ReceiveHook
 import ro.cosminmihu.ktor.monitor.api.util.ResponseHook
 import ro.cosminmihu.ktor.monitor.api.util.SendHook
+import ro.cosminmihu.ktor.monitor.api.util.StateHook
 import ro.cosminmihu.ktor.monitor.api.util.TransformHook
 import ro.cosminmihu.ktor.monitor.api.util.isSseCall
 import ro.cosminmihu.ktor.monitor.api.util.logRequest
@@ -23,6 +25,7 @@ import ro.cosminmihu.ktor.monitor.api.util.logResponse
 import ro.cosminmihu.ktor.monitor.api.util.logResponseBody
 import ro.cosminmihu.ktor.monitor.api.util.logResponseException
 import ro.cosminmihu.ktor.monitor.api.util.monitored
+import ro.cosminmihu.ktor.monitor.api.util.monitoredFrames
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 
 private val DisableLogging = AttributeKey<Unit>("KtorMonitorDisableLogging")
@@ -154,6 +157,23 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
                     )
                 )
             }
+        }
+
+        // Record WebSocket frames. Runs after the WebSockets plugin has produced its session,
+        // regardless of plugin installation order.
+        on(StateHook) { call, container ->
+            if (call.attributes.contains(DisableLogging)) return@on
+
+            val session = container.response as? DefaultClientWebSocketSession ?: return@on
+            proceedWith(
+                HttpResponseContainer(
+                    container.expectedType,
+                    session.monitoredFrames(
+                        id = call.attributes[CallIdentifier],
+                        maxContentLength = pluginConfig.maxContentLength,
+                    ),
+                )
+            )
         }
 
         val responseObserver: ResponseHandler = observer@{ response ->

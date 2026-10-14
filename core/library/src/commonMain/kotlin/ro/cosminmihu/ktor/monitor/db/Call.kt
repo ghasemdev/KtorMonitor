@@ -28,6 +28,13 @@ internal data class Call(
     val responseBody: ByteArray? = null,
     @ColumnInfo(defaultValue = "0") val isResponseBodyTruncated: Boolean? = false,
     val error: String? = null,
+    // WS / SSE: see StreamKind and StreamStatus.
+    val streamKind: String? = null,
+    val streamStatus: String? = null,
+    val streamCloseCode: Int? = null,
+    val streamCloseReason: String? = null,
+    val streamError: String? = null,
+    val streamClosedAt: Long? = null,
 )
 
 internal data class SelectCalls(
@@ -40,6 +47,7 @@ internal data class SelectCalls(
     val responseContentType: String?,
     val responseContentLength: Long?,
     val error: String?,
+    val streamKind: String? = null,
 )
 
 internal data class SelectCallsWithLimit(
@@ -52,4 +60,5 @@ internal data class SelectCallsWithLimit(
     val responseContentType: String?,
     val responseContentLength: Long?,
     val error: String?,
+    val streamKind: String? = null,
 )

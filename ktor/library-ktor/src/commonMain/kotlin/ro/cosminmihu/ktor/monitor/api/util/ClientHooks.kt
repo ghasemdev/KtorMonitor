@@ -80,3 +80,20 @@ internal object TransformHook :
         }
     }
 }
+
+internal object StateHook :
+    ClientHook<suspend StateHook.Context.(call: HttpClientCall, container: HttpResponseContainer) -> Unit> {
+
+    class Context(private val context: PipelineContext<HttpResponseContainer, HttpClientCall>) {
+        suspend fun proceedWith(container: HttpResponseContainer) = context.proceedWith(container)
+    }
+
+    override fun install(
+        client: HttpClient,
+        handler: suspend Context.(call: HttpClientCall, container: HttpResponseContainer) -> Unit,
+    ) {
+        client.responsePipeline.intercept(HttpResponsePipeline.State) { container ->
+            handler(Context(this), context, container)
+        }
+    }
+}

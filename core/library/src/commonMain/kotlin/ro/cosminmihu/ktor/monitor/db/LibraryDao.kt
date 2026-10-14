@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 internal class LibraryDao(database: LibraryDatabase) {
 
     private val callDao = database.callDao()
+    private val streamEventDao = database.streamEventDao()
 
     suspend fun saveRequest(
         id: String,
@@ -117,4 +118,38 @@ internal class LibraryDao(database: LibraryDatabase) {
     suspend fun deleteCallsBefore(threshold: Long) = withContext(ioDispatcher()) {
         callDao.deleteCallsBefore(threshold)
     }
+
+    suspend fun openStream(id: String, kind: String) = withContext(ioDispatcher()) {
+        callDao.openStream(id = id, kind = kind, status = StreamStatus.OPEN)
+    }
+
+    suspend fun closeStream(
+        id: String,
+        closeCode: Int?,
+        closeReason: String?,
+        error: String?,
+        closedAt: Long,
+    ) = withContext(ioDispatcher()) {
+        callDao.closeStream(
+            id = id,
+            status = if (error != null) StreamStatus.FAILED else StreamStatus.CLOSED,
+            closeCode = closeCode,
+            closeReason = closeReason,
+            error = error,
+            closedAt = closedAt,
+        )
+    }
+
+    suspend fun saveStreamEvent(event: StreamEvent) = withContext(ioDispatcher()) {
+        streamEventDao.insert(event)
+    }
+
+    fun getStreamEvents(callId: String): Flow<List<StreamEvent>> =
+        streamEventDao.selectEvents(callId)
+
+    suspend fun getStreamEvents(callIds: Collection<String>): List<StreamEvent> =
+        withContext(ioDispatcher()) {
+            if (callIds.isEmpty()) return@withContext emptyList()
+            streamEventDao.selectEventsByCallIds(callIds)
+        }
 }

@@ -110,7 +110,7 @@ For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.andro
 
 ```kotlin
 OkHttpClient.Builder()
-    .addNetworkInterceptor(
+    .addInterceptor(
         KtorMonitorInterceptor {
             sanitizeHeader { header -> header == "Authorization" }
             filter { request -> !request.url.host.contains("cosminmihu.ro") }
@@ -127,6 +127,8 @@ OkHttpClient.Builder()
 - ```showNotification``` - Keep track of latest requests and responses into notification. Default is **true**. Android and iOS only. Notifications permission needs to be granted.
 - ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
 - ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
+
+> **Note:** Install it with `addInterceptor`, not `addNetworkInterceptor`. OkHttp does not run network interceptors for WebSocket calls, so a WebSocket handshake would not be logged. To also log WebSocket frames, open the socket with `client.newMonitoredWebSocket(request, listener)` instead of `client.newWebSocket(...)`. With `addInterceptor`, redirects are logged as a single call.
 
 ## 📦 Setup (Android & JVM) for [http4k](https://www.http4k.org/)
 

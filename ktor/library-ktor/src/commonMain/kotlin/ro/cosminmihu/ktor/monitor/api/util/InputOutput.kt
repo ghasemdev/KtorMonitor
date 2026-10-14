@@ -11,7 +11,7 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.core.readText
-import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.readBuffer
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writer
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -19,7 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 
 internal suspend inline fun ByteReadChannel.tryReadText(charset: Charset): String? = try {
-    readRemaining().readText(charset = charset)
+    readBuffer().readText(charset = charset)
 } catch (cause: Throwable) {
     null
 }

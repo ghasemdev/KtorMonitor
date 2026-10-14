@@ -143,7 +143,7 @@ val client = HttpClient {
 
 ### OkHttp Interceptor
 
-> Always use `addNetworkInterceptor` — it sees actual network traffic including redirects.
+> Use `addInterceptor`, not `addNetworkInterceptor`: OkHttp does not run network interceptors for WebSocket calls, so a WebSocket handshake would not be logged. Redirects are logged as a single call. To also log WebSocket frames, open the socket with `client.newMonitoredWebSocket(request, listener)` instead of `client.newWebSocket(...)`.
 
 ```kotlin
 import ro.cosminmihu.ktor.monitor.KtorMonitorInterceptor
@@ -151,7 +151,7 @@ import ro.cosminmihu.ktor.monitor.RetentionPeriod
 import ro.cosminmihu.ktor.monitor.ContentLength
 
 val client = OkHttpClient.Builder()
-    .addNetworkInterceptor(
+    .addInterceptor(
         KtorMonitorInterceptor {
             sanitizeHeader { header -> header == "Authorization" }
             filter { request -> !request.url.host.contains("example.com") }
@@ -334,7 +334,7 @@ Set `maxContentLength = ContentLength.Full` to capture the entire body.
 Grant `android.permission.POST_NOTIFICATIONS` at runtime and ensure `showNotification = true`.
 
 ### OkHttp — some requests are missing
-Use `addNetworkInterceptor`, not `addInterceptor`. The network interceptor sees all traffic.
+WebSocket calls are only visible to application interceptors. Use `addInterceptor`, not `addNetworkInterceptor`.
 
 ### http4k — streaming responses are not captured
 Only materialized bodies are supported. Streaming bodies are skipped.
