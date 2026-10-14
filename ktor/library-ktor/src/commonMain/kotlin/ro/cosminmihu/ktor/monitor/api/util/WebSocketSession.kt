@@ -68,6 +68,9 @@ private fun StreamRecorder.recordFrame(sent: Boolean, frame: Frame) {
 
         is Frame.Ping -> record(isSent = sent, type = StreamRecorder.TYPE_PING)
         is Frame.Pong -> record(isSent = sent, type = StreamRecorder.TYPE_PONG)
+        else -> {
+            // Ktor's common Frame is expect sealed; some targets may expose extra variants.
+        }
     }
 }
 
