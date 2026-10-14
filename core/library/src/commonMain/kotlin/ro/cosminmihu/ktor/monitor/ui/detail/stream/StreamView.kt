@@ -1,5 +1,6 @@
 package ro.cosminmihu.ktor.monitor.ui.detail.stream
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,10 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +30,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -102,38 +109,15 @@ internal fun StreamView(stream: DetailUiState.Stream, modifier: Modifier = Modif
     Column(modifier = modifier.fillMaxSize()) {
         StreamHeader(stream)
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Dimens.ExtraSmall, Alignment.End),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            if (isWs) {
-                FilterChip(
-                    selected = direction == Direction.ALL,
-                    onClick = { direction = Direction.ALL },
-                    label = { Text(stringResource(Res.string.ktor_stream_all)) },
-                )
-                FilterChip(
-                    selected = direction == Direction.SENT,
-                    onClick = { direction = Direction.SENT },
-                    label = { Text("↑ " + stringResource(Res.string.ktor_stream_sent)) },
-                )
-                FilterChip(
-                    selected = direction == Direction.RECEIVED,
-                    onClick = { direction = Direction.RECEIVED },
-                    label = { Text("↓ " + stringResource(Res.string.ktor_stream_received)) },
-                )
-                FilterChip(
-                    selected = showControl,
-                    onClick = { showControl = !showControl },
-                    label = { Text(stringResource(Res.string.ktor_stream_control)) },
-                )
-            }
-            FilterChip(
-                selected = formatJson,
-                onClick = { formatJson = !formatJson },
-                label = { Text(stringResource(Res.string.ktor_stream_format_json)) },
-            )
-        }
+        StreamControls(
+            isWs = isWs,
+            direction = direction,
+            onDirection = { direction = it },
+            showControl = showControl,
+            onShowControl = { showControl = it },
+            formatJson = formatJson,
+            onFormatJson = { formatJson = it },
+        )
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             if (visible.isEmpty()) {
@@ -169,6 +153,64 @@ internal fun StreamView(stream: DetailUiState.Stream, modifier: Modifier = Modif
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun StreamControls(
+    isWs: Boolean,
+    direction: Direction,
+    onDirection: (Direction) -> Unit,
+    showControl: Boolean,
+    onShowControl: (Boolean) -> Unit,
+    formatJson: Boolean,
+    onFormatJson: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val directions = listOf(
+        Direction.ALL to stringResource(Res.string.ktor_stream_all),
+        Direction.SENT to "↑ " + stringResource(Res.string.ktor_stream_sent),
+        Direction.RECEIVED to "↓ " + stringResource(Res.string.ktor_stream_received),
+    )
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(Dimens.Small, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = Dimens.Small),
+    ) {
+        if (isWs) {
+            Row(horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
+                directions.forEachIndexed { index, (value, label) ->
+                    ToggleButton(
+                        checked = direction == value,
+                        onCheckedChange = { if (it) onDirection(value) },
+                        shapes = when (index) {
+                            0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                            directions.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                            else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                        },
+                        modifier = Modifier.semantics { role = Role.RadioButton },
+                    ) {
+                        Text(text = label, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            ToggleButton(
+                checked = showControl,
+                onCheckedChange = onShowControl,
+            ) {
+                Text(text = stringResource(Res.string.ktor_stream_control), fontWeight = FontWeight.Bold)
+            }
+        }
+        ToggleButton(
+            checked = formatJson,
+            onCheckedChange = onFormatJson,
+        ) {
+            Text(text = stringResource(Res.string.ktor_stream_format_json), fontWeight = FontWeight.Bold)
         }
     }
 }
