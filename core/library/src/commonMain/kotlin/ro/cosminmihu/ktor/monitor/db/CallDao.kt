@@ -17,7 +17,12 @@ internal interface CallDao {
         "INSERT INTO call (id, method, url, requestTimestamp, requestHeaders, requestContentType, " +
             "requestContentLength, requestBody, isRequestBodyTruncated) " +
             "VALUES (:id, :method, :url, :requestTimestamp, :requestHeaders, :requestContentType, " +
-            ":requestContentLength, :requestBody, :isRequestBodyTruncated)"
+            ":requestContentLength, :requestBody, :isRequestBodyTruncated) " +
+            "ON CONFLICT(id) DO UPDATE SET method = excluded.method, url = excluded.url, " +
+            "requestTimestamp = excluded.requestTimestamp, requestHeaders = excluded.requestHeaders, " +
+            "requestContentType = excluded.requestContentType, " +
+            "requestContentLength = excluded.requestContentLength, requestBody = excluded.requestBody, " +
+            "isRequestBodyTruncated = excluded.isRequestBodyTruncated"
     )
     suspend fun saveRequest(
         id: String,
@@ -31,15 +36,23 @@ internal interface CallDao {
         isRequestBodyTruncated: Boolean,
     )
 
+    // Creates an empty row when a response/error is written before its request. `saveRequest` later
+    // fills the request columns in, so the order of the writes does not matter.
     @Query(
-        "UPDATE call SET protocol = :protocol, requestTimestamp = :requestTimestamp, " +
+        "INSERT OR IGNORE INTO call (id, method, url, requestTimestamp, requestHeaders, " +
+            "requestContentLength, isRequestBodyTruncated) " +
+            "VALUES (:id, '', '', :requestTimestamp, '{}', 0, 0)"
+    )
+    suspend fun ensureCall(id: String, requestTimestamp: Long)
+
+    @Query(
+        "UPDATE call SET protocol = :protocol, " +
             "responseCode = :responseCode, responseTimestamp = :responseTimestamp, " +
             "responseContentType = :responseContentType, responseHeaders = :responseHeaders WHERE id = :id"
     )
     suspend fun saveResponse(
         id: String,
         protocol: String?,
-        requestTimestamp: Long,
         responseCode: Long,
         responseTimestamp: Long,
         responseContentType: String?,

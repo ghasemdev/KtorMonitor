@@ -3,6 +3,9 @@ package ro.cosminmihu.ktor.monitor.db
 import io.ktor.utils.io.ioDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
+
+private fun now(): Long = Clock.System.now().toEpochMilliseconds()
 
 internal class LibraryDao(database: LibraryDatabase) {
 
@@ -37,6 +40,7 @@ internal class LibraryDao(database: LibraryDatabase) {
         id: String,
         error: Throwable,
     ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, now())
         callDao.saveError(id = id, error = error.stackTraceToString())
     }
 
@@ -49,10 +53,10 @@ internal class LibraryDao(database: LibraryDatabase) {
         responseContentType: String?,
         responseHeaders: Map<String, List<String>>?,
     ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, requestTimestamp)
         callDao.saveResponse(
             id = id,
             protocol = protocol,
-            requestTimestamp = requestTimestamp,
             responseCode = responseCode.toLong(),
             responseTimestamp = responseTimestamp,
             responseContentType = responseContentType,
@@ -66,6 +70,7 @@ internal class LibraryDao(database: LibraryDatabase) {
         responseBody: ByteArray?,
         isResponseBodyTruncated: Boolean,
     ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, now())
         callDao.saveResponseBody(
             id = id,
             responseContentLength = responseContentLength,
@@ -80,6 +85,7 @@ internal class LibraryDao(database: LibraryDatabase) {
         deltaSize: Long,
         isResponseBodyTruncated: Boolean,
     ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, now())
         callDao.appendResponseBody(
             id = id,
             chunk = chunk,
@@ -92,6 +98,7 @@ internal class LibraryDao(database: LibraryDatabase) {
         id: String,
         error: Throwable,
     ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, now())
         callDao.saveError(id = id, error = error.stackTraceToString())
     }
 

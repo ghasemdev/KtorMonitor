@@ -12,7 +12,6 @@ import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
 import ro.cosminmihu.ktor.monitor.InternalLibraryBridge
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 @OptIn(InternalKtorMonitorApi::class)
 internal suspend fun logRequestException(
@@ -25,7 +24,7 @@ internal suspend fun logRequestException(
     )
 }
 
-@OptIn(ExperimentalTime::class, InternalKtorMonitorApi::class)
+@OptIn(InternalKtorMonitorApi::class)
 internal suspend fun logRequest(
     id: String,
     maxContentLength: Int,
@@ -34,6 +33,8 @@ internal suspend fun logRequest(
     sanitizedHeaders: List<SanitizedHeader>,
 ): OutgoingContent? {
     val content = request.body as? OutgoingContent
+    // Taken before the body is read, so the duration includes the upload.
+    val requestTimestamp = Clock.System.now().toEpochMilliseconds()
 
     // Headers.
     val url = request.url.toString()
@@ -45,7 +46,7 @@ internal suspend fun logRequest(
             id = id,
             method = method,
             url = url,
-            requestTimestamp = Clock.System.now().toEpochMilliseconds(),
+            requestTimestamp = requestTimestamp,
             requestHeaders = headers,
             requestContentType = request.headers["Content-Type"],
             requestContentLength = 0L,
@@ -77,7 +78,7 @@ internal suspend fun logRequest(
             id = id,
             method = method,
             url = url,
-            requestTimestamp = Clock.System.now().toEpochMilliseconds(),
+            requestTimestamp = requestTimestamp,
             requestHeaders = headers,
             requestContentType = contentType,
             requestContentLength = contentLength,

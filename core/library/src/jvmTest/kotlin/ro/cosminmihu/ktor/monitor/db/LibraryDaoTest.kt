@@ -94,4 +94,32 @@ class LibraryDaoTest {
         dao.saveRequest("1", IllegalStateException("boom"))
         assertTrue(dao.getCall("1").first()!!.error!!.contains("boom"))
     }
+
+    @Test
+    fun responseWrittenBeforeRequestIsKept() = runTest {
+        dao.saveResponse("1", "HTTP/1.1", 5L, 200, 9L, "text/plain", null)
+        dao.saveResponseBody("1", 1L, byteArrayOf(7), false)
+        saveRequest("1", timestamp = 2L)
+
+        val call = dao.getCall("1").first()!!
+        assertEquals("GET", call.method)
+        assertEquals(2L, call.requestTimestamp)
+        assertEquals(200L, call.responseCode)
+        assertContentEquals(byteArrayOf(7), call.responseBody)
+        assertEquals(1, dao.getCalls().first().size)
+    }
+
+    @Test
+    fun responseDoesNotOverwriteRequestTimestamp() = runTest {
+        saveRequest("1", timestamp = 2L)
+        dao.saveResponse("1", "HTTP/1.1", 5L, 200, 9L, null, null)
+        assertEquals(2L, dao.getCall("1").first()!!.requestTimestamp)
+    }
+
+    @Test
+    fun errorWrittenBeforeRequestIsKept() = runTest {
+        dao.saveRequest("1", IllegalStateException("boom"))
+        saveRequest("1")
+        assertTrue(dao.getCall("1").first()!!.error!!.contains("boom"))
+    }
 }

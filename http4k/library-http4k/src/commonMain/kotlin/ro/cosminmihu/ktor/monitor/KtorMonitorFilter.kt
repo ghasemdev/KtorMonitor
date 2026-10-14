@@ -8,10 +8,9 @@ import org.http4k.core.Response
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import java.io.FilterInputStream
 import java.io.IOException
-import kotlin.math.abs
-import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.uuid.Uuid
 
 /**
  * An [http4k](https://www.http4k.org/) [Filter] that provides the capability to log HTTP calls.
@@ -269,13 +268,5 @@ private fun wrapForStreaming(
     return response.body(tee, originalLength)
 }
 
-@OptIn(ExperimentalTime::class)
 private val callIdentifier: String
-    get() {
-        val timestamp = Clock.System.now().toEpochMilliseconds().toString()
-        val randomLong = Random.nextLong().toString()
-        val raw = "$timestamp-$randomLong"
-        val hash = abs(raw.hashCode()).toString(16)
-        return "$raw-$hash"
-    }
-
+    get() = Uuid.random().toString()

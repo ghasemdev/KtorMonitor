@@ -13,11 +13,10 @@ import okio.Source
 import okio.buffer
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import okio.IOException
-import kotlin.math.abs
 import kotlin.math.min
-import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.uuid.Uuid
 
 /**
  * An [OkHttp](https://square.github.io/okhttp/) [Interceptor] that provides the capability to log HTTP calls.
@@ -284,12 +283,5 @@ private fun wrapForStreaming(
     return response.newBuilder().body(wrappedBody).build()
 }
 
-@OptIn(ExperimentalTime::class)
 private val callIdentifier: String
-    get() {
-        val timestamp = Clock.System.now().toEpochMilliseconds().toString()
-        val randomLong = Random.nextLong().toString()
-        val raw = "$timestamp-$randomLong"
-        val hash = abs(raw.hashCode()).toString(16)
-        return "$raw-$hash"
-    }
+    get() = Uuid.random().toString()
