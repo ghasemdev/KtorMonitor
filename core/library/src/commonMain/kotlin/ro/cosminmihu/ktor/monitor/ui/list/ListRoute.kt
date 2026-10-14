@@ -1,6 +1,7 @@
 package ro.cosminmihu.ktor.monitor.ui.list
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -10,9 +11,14 @@ import org.koin.compose.viewmodel.koinViewModel
 internal fun ListRoute(
     modifier: Modifier = Modifier,
     onClick: (String) -> Unit,
+    onSelectionCountChange: (Int?) -> Unit = {},
 ) {
     val viewModel: ListViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.isSelectionMode, uiState.selectedCount) {
+        onSelectionCountChange(if (uiState.isSelectionMode) uiState.selectedCount else null)
+    }
 
     ListScreen(
         modifier = modifier,

@@ -5,6 +5,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -19,6 +23,7 @@ import ro.cosminmihu.ktor.monitor.ui.nav.rememberListDetailSceneStrategy
 @Composable
 internal fun MainContent(modifier: Modifier = Modifier) {
     val backStack = rememberNavBackStack(backStackConfig, Nav.List)
+    var selectionCount by remember { mutableStateOf<Int?>(null) }
     val listDetailStrategy = rememberListDetailSceneStrategy()
 
     Surface(modifier = modifier) {
@@ -33,6 +38,7 @@ internal fun MainContent(modifier: Modifier = Modifier) {
                         detailPlaceholder = {
                             DetailRoute(
                                 id = null,
+                                selectionCount = selectionCount,
                                 onBack = {},
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -40,6 +46,7 @@ internal fun MainContent(modifier: Modifier = Modifier) {
                     )
                 ) {
                     ListRoute(
+                        onSelectionCountChange = { selectionCount = it },
                         onClick = { id ->
                             backStack.removeAll { it is Nav.Detail }
                             backStack.add(Nav.Detail(id))
@@ -51,6 +58,7 @@ internal fun MainContent(modifier: Modifier = Modifier) {
                 ) { destination ->
                     DetailRoute(
                         id = destination.id,
+                        selectionCount = selectionCount,
                         onBack = { backStack.removeLastOrNull() }
                     )
                 }

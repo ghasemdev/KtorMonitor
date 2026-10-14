@@ -48,6 +48,7 @@
     <string name="ktor_selection_selected">%1$d selected of %2$d total</string>
 
     <string name="ktor_list_empty">No items.</string>
+    <string name="ktor_selection_count">%1$d selected</string>
     <string name="ktor_no_selection">Noting selected.</string>
 
     <string name="ktor_secure">Secure</string>

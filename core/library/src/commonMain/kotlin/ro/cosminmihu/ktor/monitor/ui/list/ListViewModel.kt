@@ -47,6 +47,19 @@ internal class ListViewModel(
     private val filter = _filter.debounce(0.2.seconds)
     private val calls = getCallsUseCase()
 
+    init {
+        viewModelScope.launch {
+            calls.collect { list ->
+                if (list.isEmpty()) {
+                    clearSelection()
+                } else {
+                    val ids = list.map { it.id }.toSet()
+                    _selectedCallIds.update { it.intersect(ids) }
+                }
+            }
+        }
+    }
+
     val uiState = combine(
         this@ListViewModel.filter,
         calls,
@@ -193,7 +206,7 @@ internal class ListViewModel(
             if (selectedIds.isEmpty()) return@launch
 
             deleteCallsUseCase(selectedIds)
-            clearSelectedCalls()
+            clearSelection()
         }
     }
 
