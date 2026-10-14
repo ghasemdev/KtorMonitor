@@ -27,6 +27,7 @@ Try the live web demo: [DEMO](https://cosminmihu.ro/static/apps/ktormonitor/web/
 *   🛠️**Highly Configurable**: Customize retention periods, content length limits, and notification behavior.
 *   🔒**Security First**: Redact sensitive headers (e.g., *Authorization*).
 *   📂**Data Export**: Save request/response details to local files for easier debugging or sharing.
+*   📤**Bulk Share**: Export multiple calls in JSON, Text, Markdown, cURL/Wget, or URLs for easy sharing and replay.
 *   🎨**Rich Previews**: Built-in viewers for *JSON*, *XML*, *HTML*, *CSS*, *YAML*, *MARKDOWN*, *Form Data*, *Image* (*JPG*, *PNG*, *SVG*, *GIF*, *WEBP*).
 *   📡**SSE & WebSockets**: Track one-way streams (*SSE*) and bidirectional traffic (*WebSockets*).
 *   🛡️**Production Safe**: No-Op version to ensure monitoring code is excluded from your production builds.
@@ -312,12 +313,12 @@ Found a bug or have a feature request? [File an issue](https://github.com/Cosmin
 
 ## 🙌 Acknowledgments
 
-[![Kotlin](https://img.shields.io/badge/2.4.10-white?logo=kotlin&logoColor=white&color=7F52FF)](http://kotlinlang.org)
-[![Compose Multiplatform](https://img.shields.io/badge/1.12.0-white?logo=jetpackcompose&logoColor=white&color=4284F3)](https://www.jetbrains.com/lp/compose-multiplatform)
-[![Android](https://img.shields.io/badge/Android%2017-white?logo=android&logoColor=white&color=34A853)](https://developer.android.com/about/versions/17)
-[![Ktor](https://img.shields.io/badge/3.5.2-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
+[![Kotlin](https://img.shields.io/badge/2.4.21-white?logo=kotlin&logoColor=white&color=7F52FF)](http://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/1.12.1-white?logo=jetpackcompose&logoColor=white&color=4284F3)](https://www.jetbrains.com/lp/compose-multiplatform)
+[![Android](https://img.shields.io/badge/Android%2017-white?logo=android&logoColor=white&color=34A853)](https://developer.android.com/about/versions)
+[![Ktor](https://img.shields.io/badge/3.6.0-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
 [![OkHttp](https://img.shields.io/badge/5.5.0-white?logo=square&logoColor=white&color=003B57)](https://square.github.io/okhttp/)
-[![http4k](https://img.shields.io/badge/6.59.0.0-white?logo=httpie&logoColor=white&color=087CFA)](https://www.http4k.org/)
+[![http4k](https://img.shields.io/badge/6.61.0.0-white?logo=httpie&logoColor=white&color=087CFA)](https://www.http4k.org/)
 [![Room](https://img.shields.io/badge/3.0.3-white?logo=sqlite&logoColor=white&color=003B57)](https://developer.android.com/jetpack/androidx/releases/room3)
 
 Community discussions on Slack — join us in the [#ktormonitor](https://kotlinlang.slack.com/archives/C0AB9GA32H0) channel.

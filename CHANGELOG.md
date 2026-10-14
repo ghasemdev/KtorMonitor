@@ -3,11 +3,22 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [TBA]
+## [Unreleased]
 ### Added
-* Share as Markdown
-* Storage migrated from SQLDelight to Room 3 (KMP). Previously stored calls are dropped on upgrade.
-* Web (JS/Wasm): the `sql.js`/`copy-webpack-plugin` setup is replaced by an SQLite WASM worker alias; see the integration docs.
+* WebSocket and SSE stream recording and viewer.
+* Markdown share functionality.
+* Support for streaming responses and updated HTTP URL handling.
+
+### Changed
+* Migrated the database from SQLDelight to Room 3 (KMP), updating related data access methods and removing SQLDelight dependencies.
+* Updated Gradle and library versions to the latest stable releases.
+* Renamed `ClientSource` to `NetworkClient` and updated all references.
+* Added the OkHttp client dependency for JVM and removed the CIO client dependency.
+* Updated the web storage layer to use SQLite WASM worker for JS/Wasm targets.
+
+### Fixed
+* Fixed SSE monitoring for Ktor, OkHttp, and http4k.
+* Improved stream handling for real-time request/response monitoring.
 
 ## [1.16.0] - 2026-08-30
 ### Added

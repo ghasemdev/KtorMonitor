@@ -25,6 +25,7 @@ Try the live web demo: [DEMO](https://cosminmihu.ro/static/apps/ktormonitor/web/
 *   🛠️**Highly Configurable**: Customize retention periods, content length limits, and notification behavior.
 *   🔒**Security First**: Redact sensitive headers (e.g., *Authorization*).
 *   📂**Data Export**: Save request/response details to local files for easier debugging or sharing.
+*   📤**Bulk Share**: Export multiple calls in JSON, Text, Markdown, cURL/Wget, or URLs for easy sharing and replay.
 *   🎨**Rich Previews**: Built-in viewers for *JSON*, *XML*, *HTML*, *CSS*, *YAML*, *MARKDOWN*, *Form Data*, *Image* (*JPG*, *PNG*, *SVG*, *GIF*, *WEBP*).
 *   📡**SSE & WebSockets**: Track one-way streams (*SSE*) and bidirectional traffic (*WebSockets*).
 *   🛡️**Production Safe**: No-Op version to ensure monitoring code is excluded from your production builds.
