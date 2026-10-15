@@ -1,6 +1,6 @@
 ---
 name: ktormonitor
-version: 1.16.0
+version: 1.17.0
 description: >
   KtorMonitor is a Kotlin Multiplatform library for real-time HTTP traffic monitoring.
   It supports Ktor Client, OkHttp, and http4k on Android, iOS, Desktop JVM, Wasm, and JS.
@@ -54,7 +54,7 @@ When a developer asks to:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.16.0")
+            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.17.0")
         }
     }
 }
@@ -66,7 +66,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.16.0")
+            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.17.0")
         }
     }
 }
@@ -77,8 +77,8 @@ kotlin {
 ```kotlin
 // build.gradle.kts (app module)
 dependencies {
-    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.16.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.16.0")
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.17.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.17.0")
 }
 ```
 
@@ -86,8 +86,8 @@ dependencies {
 
 ```kotlin
 dependencies {
-    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.16.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.16.0")
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.17.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.17.0")
 }
 ```
 
@@ -95,8 +95,8 @@ dependencies {
 
 ```kotlin
 dependencies {
-    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.16.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.16.0")
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.17.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.17.0")
 }
 ```
 
@@ -144,6 +144,8 @@ val client = HttpClient {
 ### OkHttp Interceptor
 
 > Use `addInterceptor`, not `addNetworkInterceptor`: OkHttp does not run network interceptors for WebSocket calls, so a WebSocket handshake would not be logged. Redirects are logged as a single call. To also log WebSocket frames, open the socket with `client.newMonitoredWebSocket(request, listener)` instead of `client.newWebSocket(...)`.
+>
+> For plain HTTP calls, `addInterceptor` is the correct choice. `addNetworkInterceptor` is only for network-layer instrumentation and will skip websocket traffic, which is often the exact traffic you want to inspect when debugging mobile APIs.
 
 ```kotlin
 import ro.cosminmihu.ktor.monitor.KtorMonitorInterceptor
@@ -161,6 +163,18 @@ val client = OkHttpClient.Builder()
         }
     )
     .build()
+```
+
+```kotlin
+// WebSocket example: log handshake + frames
+val socket = client.newMonitoredWebSocket(
+    request = Request.Builder().url("wss://example.com/socket").build(),
+    listener = object : WebSocketListener() {
+        override fun onOpen(webSocket: WebSocket, response: Response) {}
+        override fun onMessage(webSocket: WebSocket, text: String) {}
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {}
+    }
+)
 ```
 
 ### http4k Filter
