@@ -11,9 +11,10 @@ internal class ExportCallRequestAsWgetUseCase {
         buildShellCommand(
             call = call,
             tool = "wget",
-            method = { """--method="$it"""" },
-            header = { """--header="$it"""" },
-            data = { """--body-data="$it"""" },
+            method = { "--method=$it" },
+            header = { "--header=$it" },
+            data = { "--body-data=$it" },
+            binaryData = { "--body-file=$it" },
         )
     }
 }

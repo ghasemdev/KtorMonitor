@@ -56,12 +56,8 @@ internal fun Long.sizeAsText(): String {
 }
 
 
-internal fun String.shellEscape(): String = this
-    .replace("\\", "\\\\")
-    .replace("\"", "\\\"")
-    .replace("\n", "\\n")
-    .replace("$", "\\$")
-
+/** POSIX single-quote: nothing is interpreted by the shell (no `$`, backticks, `!`). */
+internal fun String.shellQuote(): String = "'" + replace("'", "'\\''") + "'"
 
 internal fun ByteArray.toBytesString(): String =
     joinToString(" ") { byte -> byte.toString() }

@@ -11,9 +11,10 @@ internal class ExportCallRequestAsCurlUseCase {
         buildShellCommand(
             call = call,
             tool = "curl",
-            method = { """-X "$it"""" },
-            header = { """-H "$it"""" },
-            data = { """--data-binary "$it"""" },
+            method = { "-X $it" },
+            header = { "-H $it" },
+            data = { "--data-binary $it" },
+            binaryData = { "--data-binary @$it" },
         )
     }
 }
