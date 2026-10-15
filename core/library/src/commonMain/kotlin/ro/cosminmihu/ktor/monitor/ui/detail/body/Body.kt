@@ -45,6 +45,8 @@ import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_body
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
+private const val MAX_FORMATTED_BODY_LENGTH = 1_000_000
+
 @Composable
 internal fun Body(
     body: DetailUiState.Body?,
@@ -89,6 +91,16 @@ internal fun Body(
                     modifier = Modifier.horizontalScroll(rememberScrollState())
                 )
             }
+
+            // Structured viewers parse the whole body; past this size show plain lines instead.
+            body.raw != null && body.raw.length > MAX_FORMATTED_BODY_LENGTH &&
+                    (displayMode == DisplayMode.CODE || displayMode == DisplayMode.PREVIEW) ->
+                TextLines(
+                    text = body.raw,
+                    modifier = Modifier.fillMaxHeight().codeBlock(),
+                    contentPadding = PaddingValues(Dimens.Small),
+                    showLineNumbers = true,
+                )
 
             body.hasPreview &&
                     body.contentFormat == DetailUiState.ContentFormat.MARKDOWN &&
