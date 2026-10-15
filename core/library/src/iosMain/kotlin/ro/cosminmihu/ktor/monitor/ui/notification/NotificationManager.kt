@@ -17,9 +17,16 @@ internal actual class NotificationManager {
         setDelegate(NotificationDelegate(appNotificationDelegate = delegate()))
     }
 
+    // A fixed identifier stops new notifications from showing after the previous one was tapped,
+    // so every post gets a unique identifier.
+    private var sequence = 0L
+    private var lastIdentifier: String? = null
+
     actual suspend fun clear() {
-        notificationCenter.removePendingNotificationRequestsWithIdentifiers(listOf(NOTIFICATION_ID.toString()))
-        notificationCenter.removeDeliveredNotificationsWithIdentifiers(listOf(NOTIFICATION_ID.toString()))
+        val identifiers = listOfNotNull(lastIdentifier, NOTIFICATION_ID.toString())
+        notificationCenter.removePendingNotificationRequestsWithIdentifiers(identifiers)
+        notificationCenter.removeDeliveredNotificationsWithIdentifiers(identifiers)
+        lastIdentifier = null
     }
 
     actual suspend fun notify(messages: List<String>) {
@@ -32,6 +39,9 @@ internal actual class NotificationManager {
             return
         }
 
+        val previous = lastIdentifier
+        val identifier = "$NOTIFICATION_ID-${sequence++}"
+        lastIdentifier = identifier
         val body = messages.joinToString("\n") { it }
         val content = UNMutableNotificationContent().apply {
             setTitle(NOTIFICATION_TITLE)
@@ -43,11 +53,14 @@ internal actual class NotificationManager {
         val trigger = UNTimeIntervalNotificationTrigger
             .triggerWithTimeInterval(0.1, repeats = false)
         val request = UNNotificationRequest
-            .requestWithIdentifier(NOTIFICATION_ID.toString(), content, trigger)
+            .requestWithIdentifier(identifier, content, trigger)
 
         notificationCenter.addNotificationRequest(request) { error ->
-            error?.let {
-                println("Error showing notification: $it")
+            if (error != null) {
+                println("Error showing notification: $error")
+            } else if (previous != null) {
+                // Remove the superseded notification only after the new one is scheduled.
+                notificationCenter.removeDeliveredNotificationsWithIdentifiers(listOf(previous))
             }
         }
     }
