@@ -5,13 +5,14 @@ import kotlinx.coroutines.withContext
 import ro.cosminmihu.ktor.monitor.db.Call
 import ro.cosminmihu.ktor.monitor.db.StreamEvent
 import ro.cosminmihu.ktor.monitor.domain.model.decodeBody
+import ro.cosminmihu.ktor.monitor.domain.model.prettyPrintBody
 
 internal class ExportCallAsTextUseCase {
 
     suspend operator fun invoke(call: Call, events: List<StreamEvent> = emptyList()): String = withContext(Dispatchers.Default) {
         val protocol = call.protocol ?: "HTTP/1.1"
-        val requestBody = call.requestBody?.decodeBody(call.requestHeaders)
-        val responseBody = call.responseBody?.decodeBody(call.responseHeaders)
+        val requestBody = call.requestBody?.decodeBody(call.requestHeaders)?.prettyPrintBody(call.requestContentType)
+        val responseBody = call.responseBody?.decodeBody(call.responseHeaders)?.prettyPrintBody(call.responseContentType)
 
         buildString {
             // Request line + headers

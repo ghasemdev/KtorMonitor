@@ -1,19 +1,15 @@
 package ro.cosminmihu.ktor.monitor.ui.detail
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import ro.cosminmihu.ktor.monitor.db.Call
 import ro.cosminmihu.ktor.monitor.db.StreamEvent
 import ro.cosminmihu.ktor.monitor.db.StreamEventType
 import ro.cosminmihu.ktor.monitor.db.StreamKind
 import ro.cosminmihu.ktor.monitor.db.StreamStatus
 import ro.cosminmihu.ktor.monitor.domain.model.formatTimeMillis
+import ro.cosminmihu.ktor.monitor.domain.model.prettyPrintJsonOrNull
 import ro.cosminmihu.ktor.monitor.domain.model.sizeAsText
 
 private const val HEX_PREVIEW_BYTES = 64
-private const val MAX_PRETTY_JSON_CHARS = 200_000
-
-private val prettyJson = Json { prettyPrint = true }
 
 internal fun Call.toStream(events: List<StreamEvent>): DetailUiState.Stream? {
     val kind = when (streamKind) {
@@ -53,23 +49,12 @@ internal fun StreamEvent.toMessage(): DetailUiState.StreamMessage {
         name = name,
         eventId = eventId,
         text = text,
-        prettyJson = text?.let(::prettyPrintJson),
+        prettyJson = text?.prettyPrintJsonOrNull(),
         hexPreview = if (isBinary) payload?.hexPreview() else null,
         size = size.sizeAsText(),
         time = timestamp.formatTimeMillis(),
         isTruncated = isTruncated,
     )
-}
-
-private fun prettyPrintJson(text: String): String? {
-    val trimmed = text.trim()
-    if (trimmed.length > MAX_PRETTY_JSON_CHARS) return null
-    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
-    return try {
-        prettyJson.encodeToString(JsonElement.serializer(), Json.parseToJsonElement(trimmed))
-    } catch (_: Exception) {
-        null
-    }
 }
 
 private fun ByteArray.hexPreview(): String {

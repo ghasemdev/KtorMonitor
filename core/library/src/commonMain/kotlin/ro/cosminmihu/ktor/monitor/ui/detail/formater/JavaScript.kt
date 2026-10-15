@@ -488,7 +488,7 @@ private val JS_OPERATORS = setOf(
  * source so that braces / semicolons start a new indented line. Strings,
  * template literals, regex and comments are passed through verbatim.
  */
-private fun beautifyJavaScript(input: String): String {
+internal fun beautifyJavaScript(input: String): String {
     if (input.isEmpty()) return input
     val sb = StringBuilder(input.length + 64)
     var indent = 0

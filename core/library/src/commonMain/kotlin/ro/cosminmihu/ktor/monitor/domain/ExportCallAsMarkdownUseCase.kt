@@ -7,12 +7,13 @@ import ro.cosminmihu.ktor.monitor.db.StreamEvent
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
 import ro.cosminmihu.ktor.monitor.domain.model.decodeBody
+import ro.cosminmihu.ktor.monitor.domain.model.prettyPrintBody
 
 internal class ExportCallAsMarkdownUseCase {
 
     suspend operator fun invoke(call: Call, events: List<StreamEvent> = emptyList()): String = withContext(Dispatchers.Default) {
-        val requestBody = call.requestBody?.decodeBody(call.requestHeaders)
-        val responseBody = call.responseBody?.decodeBody(call.responseHeaders)
+        val requestBody = call.requestBody?.decodeBody(call.requestHeaders)?.prettyPrintBody(call.requestContentType)
+        val responseBody = call.responseBody?.decodeBody(call.responseHeaders)?.prettyPrintBody(call.responseContentType)
 
         buildString {
             appendLine("## ${call.method} ${call.url}")
