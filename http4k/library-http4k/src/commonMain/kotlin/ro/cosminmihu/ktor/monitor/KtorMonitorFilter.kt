@@ -6,6 +6,7 @@ import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Response
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
+import java.io.BufferedInputStream
 import java.io.FilterInputStream
 import java.io.IOException
 import kotlin.time.Clock
@@ -202,7 +203,7 @@ private fun wrapForStreaming(
 
     val originalLength = response.body.length
 
-    val tee = object : FilterInputStream(response.body.stream) {
+    val tee = object : FilterInputStream(BufferedInputStream(response.body.stream)) {
         override fun read(): Int {
             val byte = try {
                 super.read()
@@ -240,7 +241,7 @@ private fun wrapForStreaming(
                 recorder.finish()
                 return -1
             }
-            recorder.appendSseBytes(b.copyOfRange(off, off + read))
+            recorder.appendSseBytes(b, off, read)
             return read
         }
 

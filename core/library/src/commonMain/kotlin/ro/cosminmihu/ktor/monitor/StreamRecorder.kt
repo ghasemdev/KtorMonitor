@@ -158,14 +158,15 @@ public class StreamRecorder(isWebSocket: Boolean) {
     }
 
     /**
-     * Feeds raw `text/event-stream` bytes; every complete event is recorded. Bytes may be split
+     * Feeds raw `text/event-stream` bytes from [offset] to [offset] + [length]; every complete event is recorded. Bytes may be split
      * anywhere, including inside a UTF-8 sequence.
      */
-    public fun appendSseBytes(bytes: ByteArray) {
-        var from = 0
-        while (from < bytes.size) {
-            val newline = bytes.indexOf('\n'.code.toByte(), from)
-            val chunkEnd = if (newline < 0) bytes.size else newline
+    public fun appendSseBytes(bytes: ByteArray, offset: Int = 0, length: Int = bytes.size - offset) {
+        val end = offset + length
+        var from = offset
+        while (from < end) {
+            val newline = bytes.indexOf('\n'.code.toByte(), from, end)
+            val chunkEnd = if (newline < 0) end else newline
             if (!isSkippingSseLine) {
                 if (sseBufferSize + (chunkEnd - from) > MAX_SSE_LINE_BYTES) {
                     // A line without a terminator that long is not valid SSE; drop it.
@@ -238,8 +239,8 @@ public class StreamRecorder(isWebSocket: Boolean) {
     }
 }
 
-private fun ByteArray.indexOf(byte: Byte, from: Int): Int {
-    for (index in from until size) if (this[index] == byte) return index
+private fun ByteArray.indexOf(byte: Byte, from: Int, until: Int): Int {
+    for (index in from until until) if (this[index] == byte) return index
     return -1
 }
 

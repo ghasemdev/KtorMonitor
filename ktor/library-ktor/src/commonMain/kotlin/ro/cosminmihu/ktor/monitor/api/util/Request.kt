@@ -80,6 +80,6 @@ internal suspend fun logRequest(
         )
     }
 
-    return content.observe(channel)
+    return content.observe(channel, coroutineScope)
 }
 
