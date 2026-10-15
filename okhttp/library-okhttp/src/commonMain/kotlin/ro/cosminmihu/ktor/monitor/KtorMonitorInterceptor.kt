@@ -9,7 +9,9 @@ import okhttp3.ResponseBody.Companion.asResponseBody
 import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
+import okio.Sink
 import okio.Source
+import okio.Timeout
 import okio.buffer
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import okio.IOException
@@ -100,16 +102,19 @@ public class KtorMonitorInterceptor(
             }
             .toSortedMap()
 
-        // Request body.
-        val requestBody = try {
-            val buffer = okio.Buffer()
-            request.body?.writeTo(buffer)
-            val bytes = buffer.readByteArray()
-            if (config.maxContentLength != ContentLength.Full) {
-                bytes.take(config.maxContentLength).toByteArray()
-            } else bytes
-        } catch (_: Throwable) {
+        // Request body. One-shot and duplex bodies can be written only once, so writing them
+        // here would make the real call fail.
+        val body = request.body
+        val requestBody = if (body == null || body.isOneShot() || body.isDuplex()) {
             null
+        } else {
+            try {
+                val sink = BoundedSink(config.maxContentLength)
+                sink.buffer().use { body.writeTo(it) }
+                sink.bytes()
+            } catch (_: Throwable) {
+                null
+            }
         }
 
         InternalLibraryBridge.coroutineScope().launch {
@@ -202,19 +207,14 @@ public class KtorMonitorInterceptor(
             return wrapForStreaming(response, responseBody, id, config.maxContentLength)
         }
 
-        // Default (non-streaming) path: drain the buffered body once.
-        val responseBodySource = responseBody.source()
-        responseBodySource.request(Long.MAX_VALUE)
-        val responseBodyBytes = responseBodySource.buffer.clone().readByteArray()
-        val responseContentLength = responseBodyBytes.size.toLong()
-
-        val truncatedBody =
-            if (config.maxContentLength != ContentLength.Full) {
-                responseBodyBytes.take(config.maxContentLength).toByteArray()
-            } else {
-                responseBodyBytes
-            }
-        val isResponseBodyTruncated = responseContentLength > config.maxContentLength
+        // Default (non-streaming) path: peek at most `maxContentLength` bytes, so large
+        // downloads are not loaded into memory and the caller still gets the full body.
+        val declaredLength = responseBody.contentLength()
+        val truncatedBody = response.peekBody(config.maxContentLength.toLong()).bytes()
+        val responseContentLength = if (declaredLength >= 0L) declaredLength else truncatedBody.size.toLong()
+        val isResponseBodyTruncated = responseContentLength > config.maxContentLength || (
+            declaredLength < 0L && truncatedBody.size >= config.maxContentLength
+        )
 
         InternalLibraryBridge.coroutineScope().launch {
             try {
@@ -230,6 +230,23 @@ public class KtorMonitorInterceptor(
 
         return response
     }
+}
+
+/** Keeps the first [max] bytes written to it and discards the rest. */
+private class BoundedSink(private val max: Int) : Sink {
+    private val kept = Buffer()
+
+    override fun write(source: Buffer, byteCount: Long) {
+        val keep = min(byteCount, max - kept.size)
+        if (keep > 0L) kept.write(source, keep)
+        source.skip(source.size)
+    }
+
+    override fun flush() = Unit
+    override fun timeout(): Timeout = Timeout.NONE
+    override fun close() = Unit
+
+    fun bytes(): ByteArray = kept.readByteArray()
 }
 
 private const val WEBSOCKET_UPGRADE_STATUS = 101

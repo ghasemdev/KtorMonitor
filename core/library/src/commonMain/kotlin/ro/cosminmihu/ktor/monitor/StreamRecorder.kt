@@ -1,5 +1,6 @@
 package ro.cosminmihu.ktor.monitor
 
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
@@ -15,6 +16,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 
 private const val MAX_EVENTS = 5_000
+private const val MAX_SSE_LINE_BYTES = 64 * 1024
 
 /**
  * Records the frames of a WebSocket or the events of a Server-Sent Events stream for one call.
@@ -33,7 +35,10 @@ public class StreamRecorder(isWebSocket: Boolean) {
     private val kind = if (isWebSocket) StreamKind.WEB_SOCKET else StreamKind.SSE
     private val target = CompletableDeferred<Target?>()
     private val items = Channel<Item>(Channel.UNLIMITED)
+    private val recorded = atomic(0)
     private var sseBuffer = ByteArray(0)
+    private var sseBufferSize = 0
+    private var isSkippingSseLine = false
     private val sseEvent = SseEventBuilder()
 
     private class Target(val id: String, val maxContentLength: Int)
@@ -136,6 +141,8 @@ public class StreamRecorder(isWebSocket: Boolean) {
         eventId: String? = null,
         retryMs: Long? = null,
     ) {
+        // The writer stores at most MAX_EVENTS events, so queueing more only wastes memory.
+        if (recorded.incrementAndGet() > MAX_EVENTS) return
         items.trySend(
             Item.Event(
                 isSent = isSent,
@@ -155,29 +162,49 @@ public class StreamRecorder(isWebSocket: Boolean) {
      * anywhere, including inside a UTF-8 sequence.
      */
     public fun appendSseBytes(bytes: ByteArray) {
-        sseBuffer += bytes
-        var start = 0
-        while (true) {
-            val end = sseBuffer.indexOf('\n'.code.toByte(), start)
-            if (end < 0) break
-            var lineEnd = end
-            if (lineEnd > start && sseBuffer[lineEnd - 1] == '\r'.code.toByte()) lineEnd--
-            val line = sseBuffer.decodeToString(start, lineEnd)
-            sseEvent.addRawSize(end - start + 1L)
-            start = end + 1
-            sseEvent.line(line)?.let { event ->
-                record(
-                    isSent = false,
-                    type = StreamEventType.SSE,
-                    payload = event.data?.encodeToByteArray(),
-                    size = event.size,
-                    name = event.name,
-                    eventId = event.id,
-                    retryMs = event.retry,
-                )
+        var from = 0
+        while (from < bytes.size) {
+            val newline = bytes.indexOf('\n'.code.toByte(), from)
+            val chunkEnd = if (newline < 0) bytes.size else newline
+            if (!isSkippingSseLine) {
+                if (sseBufferSize + (chunkEnd - from) > MAX_SSE_LINE_BYTES) {
+                    // A line without a terminator that long is not valid SSE; drop it.
+                    sseBufferSize = 0
+                    isSkippingSseLine = true
+                } else {
+                    if (sseBufferSize + (chunkEnd - from) > sseBuffer.size) {
+                        sseBuffer = sseBuffer.copyOf(
+                            maxOf(sseBuffer.size * 2, sseBufferSize + (chunkEnd - from), 256)
+                        )
+                    }
+                    bytes.copyInto(sseBuffer, sseBufferSize, from, chunkEnd)
+                    sseBufferSize += chunkEnd - from
+                }
             }
+            if (newline < 0) break
+            if (isSkippingSseLine) {
+                isSkippingSseLine = false
+                sseBufferSize = 0
+            } else {
+                var lineEnd = sseBufferSize
+                if (lineEnd > 0 && sseBuffer[lineEnd - 1] == '\r'.code.toByte()) lineEnd--
+                val line = sseBuffer.decodeToString(0, lineEnd)
+                sseEvent.addRawSize(sseBufferSize + 1L)
+                sseBufferSize = 0
+                sseEvent.line(line)?.let { event ->
+                    record(
+                        isSent = false,
+                        type = StreamEventType.SSE,
+                        payload = event.data?.encodeToByteArray(),
+                        size = event.size,
+                        name = event.name,
+                        eventId = event.id,
+                        retryMs = event.retry,
+                    )
+                }
+            }
+            from = newline + 1
         }
-        sseBuffer = sseBuffer.copyOfRange(start, sseBuffer.size)
     }
 
     /**

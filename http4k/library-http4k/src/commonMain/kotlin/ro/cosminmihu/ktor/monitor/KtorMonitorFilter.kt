@@ -9,7 +9,6 @@ import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import java.io.FilterInputStream
 import java.io.IOException
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 import kotlin.uuid.Uuid
 
 /**
@@ -51,7 +50,7 @@ public class KtorMonitorFilter(
         }
     }
 
-    @OptIn(InternalKtorMonitorApi::class, ExperimentalTime::class)
+    @OptIn(InternalKtorMonitorApi::class)
     override fun invoke(next: HttpHandler): HttpHandler = { request ->
         // Check if plugin is active.
         if (!config.isActive || !config.retentionPeriod.isPositive()) {
@@ -72,17 +71,16 @@ public class KtorMonitorFilter(
                 val requestContentType = request.header("Content-Type")
 
                 // Request body bytes — duplicate ByteBuffer to avoid consuming the original.
+                var requestBodySize: Long? = null
                 val requestBodyBytes = try {
                     val buf = request.body.payload.duplicate()
-                    val bytes = ByteArray(buf.remaining()).also { buf.get(it) }
-                    if (config.maxContentLength != ContentLength.Full) {
-                        bytes.take(config.maxContentLength).toByteArray()
-                    } else bytes
+                    requestBodySize = buf.remaining().toLong()
+                    ByteArray(minOf(buf.remaining(), config.maxContentLength)).also { buf.get(it) }
                 } catch (_: Throwable) {
                     null
                 }
                 val requestContentLength = request.body.length
-                    ?: requestBodyBytes?.size?.toLong()
+                    ?: requestBodySize
                     ?: 0L
 
                 // Request headers.
@@ -168,21 +166,17 @@ public class KtorMonitorFilter(
                     wrapForStreaming(response, id, config.maxContentLength)
                 } else {
                     // Response body — duplicate ByteBuffer so the caller still receives a full body.
-                    val responseBodyBytes = try {
+                    var responseBodySize: Long? = null
+                    val truncatedBody = try {
                         val buf = response.body.payload.duplicate()
-                        ByteArray(buf.remaining()).also { buf.get(it) }
+                        responseBodySize = buf.remaining().toLong()
+                        ByteArray(minOf(buf.remaining(), config.maxContentLength)).also { buf.get(it) }
                     } catch (_: Throwable) {
                         null
                     }
-                    val responseContentLength = responseBodyBytes?.size?.toLong()
+                    val responseContentLength = responseBodySize
                         ?: response.body.length
                         ?: 0L
-
-                    val truncatedBody = if (config.maxContentLength != ContentLength.Full) {
-                        responseBodyBytes?.take(config.maxContentLength)?.toByteArray()
-                    } else {
-                        responseBodyBytes
-                    }
                     val isResponseBodyTruncated = responseContentLength > config.maxContentLength
 
                     InternalLibraryBridge.coroutineScope().launch {

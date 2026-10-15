@@ -1,7 +1,7 @@
 package ro.cosminmihu.ktor.monitor.api.util
 
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readRawBytes
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.contentType
 import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.readAvailable
@@ -72,23 +72,15 @@ internal suspend fun logResponseBody(
         return
     }
 
-    // Read content.
-    val responseBody = response.readRawBytes()
-
-    val body = when {
-        maxContentLength != ContentLength.Full -> responseBody
-            .take(maxContentLength)
-            .toByteArray()
-
-        else -> responseBody
-    }
+    // Read content, keeping only what is stored.
+    val bounded = response.bodyAsChannel().readBounded(maxContentLength)
 
     // Save response body.
     InternalLibraryBridge.saveResponseBody(
         id = id,
-        responseContentLength = responseBody.size.toLong(),
-        responseBody = body,
-        isResponseBodyTruncated = responseBody.size > maxContentLength,
+        responseContentLength = bounded.totalSize,
+        responseBody = bounded.bytes,
+        isResponseBodyTruncated = bounded.totalSize > maxContentLength,
     )
 }
 

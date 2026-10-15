@@ -3,11 +3,9 @@ package ro.cosminmihu.ktor.monitor.api.util
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.http.content.OutgoingContent
 import io.ktor.utils.io.ByteChannel
-import io.ktor.utils.io.toByteArray
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
 import ro.cosminmihu.ktor.monitor.InternalLibraryBridge
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
@@ -63,15 +61,10 @@ internal suspend fun logRequest(
     val channel = ByteChannel()
     coroutineScope.launch(Dispatchers.Default) {
 
-        // Read content.
-        val requestBody = channel.toByteArray()
-        val body = when {
-            maxContentLength != ContentLength.Full -> requestBody
-                .take(maxContentLength)
-                .toByteArray()
-
-            else -> requestBody
-        }
+        // Read content, keeping only what is stored.
+        val bounded = channel.readBounded(maxContentLength)
+        val body = bounded.bytes
+        val size = if (contentLength != 0L) contentLength else bounded.totalSize
 
         // Save request.
         InternalLibraryBridge.saveRequest(
@@ -81,9 +74,9 @@ internal suspend fun logRequest(
             requestTimestamp = requestTimestamp,
             requestHeaders = headers,
             requestContentType = contentType,
-            requestContentLength = contentLength,
+            requestContentLength = size,
             requestBody = body,
-            isRequestBodyTruncated = contentLength != 0L && contentLength > maxContentLength,
+            isRequestBodyTruncated = size > maxContentLength,
         )
     }
 
