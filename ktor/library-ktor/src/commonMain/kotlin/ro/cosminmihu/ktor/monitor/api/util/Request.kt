@@ -1,3 +1,5 @@
+@file:OptIn(InternalKtorMonitorApi::class)
+
 package ro.cosminmihu.ktor.monitor.api.util
 
 import io.ktor.client.request.HttpRequestBuilder
@@ -11,7 +13,6 @@ import ro.cosminmihu.ktor.monitor.InternalLibraryBridge
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
 import kotlin.time.Clock
 
-@OptIn(InternalKtorMonitorApi::class)
 internal suspend fun logRequestException(
     id: String,
     cause: Throwable,
@@ -22,7 +23,6 @@ internal suspend fun logRequestException(
     )
 }
 
-@OptIn(InternalKtorMonitorApi::class)
 internal suspend fun logRequest(
     id: String,
     maxContentLength: Int,
@@ -82,4 +82,3 @@ internal suspend fun logRequest(
 
     return content.observe(channel, coroutineScope)
 }
-

@@ -9,6 +9,7 @@ import ro.cosminmihu.ktor.monitor.ContentLength
 import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
 import ro.cosminmihu.ktor.monitor.InternalLibraryBridge
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
+import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(InternalKtorMonitorApi::class)
 internal suspend fun logResponseException(
@@ -143,3 +144,13 @@ private suspend fun streamResponseBody(
     }
 }
 
+
+/** Runs monitor-internal work so its failures never reach the host app; cancellation is preserved. */
+internal suspend inline fun ignoreMonitorFailure(block: suspend () -> Unit) {
+    try {
+        block()
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (_: Throwable) {
+    }
+}

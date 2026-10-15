@@ -18,6 +18,7 @@ import ro.cosminmihu.ktor.monitor.api.util.ResponseHook
 import ro.cosminmihu.ktor.monitor.api.util.SendHook
 import ro.cosminmihu.ktor.monitor.api.util.StateHook
 import ro.cosminmihu.ktor.monitor.api.util.TransformHook
+import ro.cosminmihu.ktor.monitor.api.util.ignoreMonitorFailure
 import ro.cosminmihu.ktor.monitor.api.util.isSseCall
 import ro.cosminmihu.ktor.monitor.api.util.logRequest
 import ro.cosminmihu.ktor.monitor.api.util.logRequestException
@@ -90,10 +91,12 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
             try {
                 proceedWith(loggedRequest ?: request.body)
             } catch (cause: Throwable) {
-                logRequestException(
-                    id = request.attributes[CallIdentifier],
-                    cause = cause
-                )
+                ignoreMonitorFailure {
+                    logRequestException(
+                        id = request.attributes[CallIdentifier],
+                        cause = cause
+                    )
+                }
                 throw cause
             }
         }
@@ -101,20 +104,25 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
         on(ResponseHook) { response ->
             if (response.call.attributes.contains(DisableLogging)) return@on
 
-            try {
-                // Log response.
+            // Log response. A monitor failure must never fail the application's call.
+            ignoreMonitorFailure {
                 logResponse(
                     id = response.call.attributes[CallIdentifier],
                     response = response,
                     sanitizedHeaders = sanitizedHeaders
                 )
+            }
+
+            try {
                 proceed()
             } catch (cause: Throwable) {
                 // Log response exception.
-                logResponseException(
-                    id = response.call.attributes[CallIdentifier],
-                    cause = cause
-                )
+                ignoreMonitorFailure {
+                    logResponseException(
+                        id = response.call.attributes[CallIdentifier],
+                        cause = cause
+                    )
+                }
                 throw cause
             }
         }
@@ -128,10 +136,12 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
                 proceed()
             } catch (cause: Throwable) {
                 // Log response exception.
-                logResponseException(
-                    id = call.attributes[CallIdentifier],
-                    cause = cause
-                )
+                ignoreMonitorFailure {
+                    logResponseException(
+                        id = call.attributes[CallIdentifier],
+                        cause = cause
+                    )
+                }
                 throw cause
             }
         }
@@ -182,11 +192,13 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
             }
 
             // Log response body.
-            logResponseBody(
-                id = response.call.attributes[CallIdentifier],
-                maxContentLength = pluginConfig.maxContentLength,
-                response = response,
-            )
+            ignoreMonitorFailure {
+                logResponseBody(
+                    id = response.call.attributes[CallIdentifier],
+                    maxContentLength = pluginConfig.maxContentLength,
+                    response = response,
+                )
+            }
         }
 
         ResponseObserver.install(ResponseObserver.prepare { onResponse(responseObserver) }, client)
