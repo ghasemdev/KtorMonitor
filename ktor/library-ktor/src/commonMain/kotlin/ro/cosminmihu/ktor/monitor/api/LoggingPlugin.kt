@@ -71,7 +71,7 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
             }
 
             // Generate id.
-            request.attributes.put(CallIdentifier, callIdentifier)
+            request.attributes.put(CallIdentifier, InternalLibraryBridge.newCallId())
 
             // Log request.
             val loggedRequest = try {

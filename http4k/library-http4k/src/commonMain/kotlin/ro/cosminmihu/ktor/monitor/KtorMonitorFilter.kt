@@ -9,7 +9,6 @@ import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import java.io.FilterInputStream
 import java.io.IOException
 import kotlin.time.Clock
-import kotlin.uuid.Uuid
 
 /**
  * An [http4k](https://www.http4k.org/) [Filter] that provides the capability to log HTTP calls.
@@ -62,7 +61,7 @@ public class KtorMonitorFilter(
                 next(request)
             } else {
                 // Generate call id.
-                val id = callIdentifier
+                val id = InternalLibraryBridge.newCallId()
 
                 // Log request.
                 val requestTimestamp = Clock.System.now().toEpochMilliseconds()
@@ -84,13 +83,10 @@ public class KtorMonitorFilter(
                     ?: 0L
 
                 // Request headers.
-                val requestHeaders = request.headers
-                    .groupBy({ it.first }) { it.second ?: "" }
-                    .mapValues { (key, values) ->
-                        val sanitized = config.sanitizedHeaders.firstOrNull { it.predicate(key) }
-                        if (sanitized != null) listOf(sanitized.placeholder) else values
-                    }
-                    .toSortedMap()
+                val requestHeaders = InternalLibraryBridge.sanitizeHeaders(
+                    request.headers.groupBy({ it.first }) { it.second ?: "" },
+                    { name -> config.sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder },
+                )
 
                 InternalLibraryBridge.coroutineScope().launch {
                     try {
@@ -130,13 +126,10 @@ public class KtorMonitorFilter(
                 val responseContentType = response.header("Content-Type")
 
                 // Response headers.
-                val responseHeaders = response.headers
-                    .groupBy({ it.first }) { it.second ?: "" }
-                    .mapValues { (key, values) ->
-                        val sanitized = config.sanitizedHeaders.firstOrNull { it.predicate(key) }
-                        if (sanitized != null) listOf(sanitized.placeholder) else values
-                    }
-                    .toSortedMap()
+                val responseHeaders = InternalLibraryBridge.sanitizeHeaders(
+                    response.headers.groupBy({ it.first }) { it.second ?: "" },
+                    { name -> config.sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder },
+                )
 
                 InternalLibraryBridge.coroutineScope().launch {
                     try {
@@ -261,6 +254,3 @@ private fun wrapForStreaming(
 
     return response.body(tee, originalLength)
 }
-
-private val callIdentifier: String
-    get() = Uuid.random().toString()

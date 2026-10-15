@@ -5,11 +5,16 @@ import kotlinx.serialization.json.Json
 
 internal object HeadersConverter {
 
+    private val json = Json { ignoreUnknownKeys = true }
+
     @ColumnTypeConverter
-    fun fromJson(value: String): Map<String, List<String>> =
-        Json.decodeFromString(value)
+    fun fromJson(value: String): Map<String, List<String>> = try {
+        json.decodeFromString(value)
+    } catch (_: Exception) {
+        emptyMap()
+    }
 
     @ColumnTypeConverter
     fun toJson(value: Map<String, List<String>>): String =
-        Json.encodeToString(value)
+        json.encodeToString(value)
 }

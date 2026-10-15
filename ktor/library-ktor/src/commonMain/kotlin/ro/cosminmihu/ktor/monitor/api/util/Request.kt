@@ -37,7 +37,7 @@ internal suspend fun logRequest(
     // Headers.
     val url = request.url.toString()
     val method = request.method.value
-    val headers = request.headers.sanitizedHeaders(sanitizedHeaders)
+    val headers = InternalLibraryBridge.sanitizeHeaders(request.headers.entries().associate { it.key to it.value }, { name -> sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder })
     if (content == null) {
         // Some requests still carry domain objects at this pipeline stage.
         InternalLibraryBridge.saveRequest(

@@ -27,7 +27,7 @@ internal suspend fun logResponse(
     response: HttpResponse,
     sanitizedHeaders: List<SanitizedHeader>,
 ) {
-    val headers = response.headers.sanitizedHeaders(sanitizedHeaders)
+    val headers = InternalLibraryBridge.sanitizeHeaders(response.headers.entries().associate { it.key to it.value }, { name -> sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder })
 
     // Save response.
     InternalLibraryBridge.saveResponse(

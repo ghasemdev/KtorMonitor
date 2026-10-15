@@ -18,7 +18,6 @@ import okio.IOException
 import kotlin.math.min
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
-import kotlin.uuid.Uuid
 
 /**
  * An [OkHttp](https://square.github.io/okhttp/) [Interceptor] that provides the capability to log HTTP calls.
@@ -85,7 +84,7 @@ public class KtorMonitorInterceptor(
         if (!shouldLog) return chain.proceed(request).also { webSocketTag?.recorder?.discard() }
 
         // Generate call id.
-        val id = callIdentifier
+        val id = InternalLibraryBridge.newCallId()
 
         // Log request.
         val requestTimestamp = Clock.System.now().toEpochMilliseconds()
@@ -95,12 +94,7 @@ public class KtorMonitorInterceptor(
         val requestContentLength = request.body?.contentLength() ?: 0L
 
         // Headers.
-        val requestHeaders = request.headers.toMultimap()
-            .mapValues { (key, values) ->
-                val sanitized = config.sanitizedHeaders.firstOrNull { it.predicate(key) }
-                if (sanitized != null) listOf(sanitized.placeholder) else values
-            }
-            .toSortedMap()
+        val requestHeaders = InternalLibraryBridge.sanitizeHeaders(request.headers.toMultimap(), { name -> config.sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder })
 
         // Request body. One-shot and duplex bodies can be written only once, so writing them
         // here would make the real call fail.
@@ -156,12 +150,7 @@ public class KtorMonitorInterceptor(
         val responseContentType = response.body.contentType()?.toString()
 
         // Response headers.
-        val responseHeaders = response.headers.toMultimap()
-            .mapValues { (key, values) ->
-                val sanitized = config.sanitizedHeaders.firstOrNull { it.predicate(key) }
-                if (sanitized != null) listOf(sanitized.placeholder) else values
-            }
-            .toSortedMap()
+        val responseHeaders = InternalLibraryBridge.sanitizeHeaders(response.headers.toMultimap(), { name -> config.sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder })
 
         // Response body.
         val responseBody = response.body
@@ -299,6 +288,3 @@ private fun wrapForStreaming(
     val wrappedBody: ResponseBody = wrappedSource.asResponseBody(contentType, originalContentLength)
     return response.newBuilder().body(wrappedBody).build()
 }
-
-private val callIdentifier: String
-    get() = Uuid.random().toString()
