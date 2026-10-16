@@ -9,19 +9,10 @@ import io.ktor.util.copyToBoth
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.charsets.Charset
-import io.ktor.utils.io.core.readText
-import io.ktor.utils.io.readBuffer
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-
-internal suspend inline fun ByteReadChannel.tryReadText(charset: Charset): String? = try {
-    readBuffer().readText(charset = charset)
-} catch (cause: Throwable) {
-    null
-}
 
 internal suspend fun OutgoingContent.observe(log: ByteWriteChannel, scope: CoroutineScope): OutgoingContent = when (this) {
     is OutgoingContent.ByteArrayContent -> {

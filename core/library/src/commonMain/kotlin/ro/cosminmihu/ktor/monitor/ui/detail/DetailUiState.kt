@@ -1,7 +1,8 @@
 package ro.cosminmihu.ktor.monitor.ui.detail
 
-import androidx.compose.runtime.Stable
+import kotlinx.collections.immutable.ImmutableList
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
+import ro.cosminmihu.ktor.monitor.domain.model.Headers
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
 
 internal data class DetailUiState(
@@ -32,40 +33,36 @@ internal data class DetailUiState(
         val isHttpError: Boolean,
     )
 
-    @Stable
     data class Request(
         val method: String,
         val host: String,
         val pathAndQuery: String,
         val requestTime: String,
-        val headers: Map<String, List<String>>,
+        val headers: Headers,
         val body: Body,
     )
 
-    @Stable
     data class Response(
         val responseCode: String,
         val contentType: ContentType,
         val duration: String,
         val size: String,
         val error: String,
-        val headers: Map<String, List<String>>,
+        val headers: Headers,
         val body: Body,
         val stream: Stream? = null,
     )
 
     /** WebSocket connection or SSE stream of a call. */
-    @Stable
     data class Stream(
         val kind: StreamKind,
         val status: StreamStatus,
         val closeCode: String,
         val closeReason: String,
         val error: String,
-        val messages: List<StreamMessage>,
+        val messages: ImmutableList<StreamMessage>,
     )
 
-    @Stable
     data class StreamMessage(
         val id: Long,
         val isSent: Boolean,
@@ -88,7 +85,6 @@ internal data class DetailUiState(
 
     enum class StreamMessageType { Text, Binary, Ping, Pong, Close, Sse }
 
-    @Stable
     data class Body(
         val bytes: String?,
         val raw: String?,

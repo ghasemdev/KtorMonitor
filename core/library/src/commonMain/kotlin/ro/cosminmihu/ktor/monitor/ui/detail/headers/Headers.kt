@@ -10,6 +10,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import org.jetbrains.compose.resources.stringResource
+import ro.cosminmihu.ktor.monitor.domain.model.Headers
+import ro.cosminmihu.ktor.monitor.domain.model.toImmutableHeaders
 import ro.cosminmihu.ktor.monitor.ui.detail.transaction.TransactionSection
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_headers
@@ -20,7 +22,7 @@ import ro.cosminmihu.ktor.monitor.ui.preview.UI_MODE_NIGHT_YES
 import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 
 @Composable
-internal fun Headers(headers: Map<String, List<String>>) {
+internal fun Headers(headers: Headers) {
     TransactionSection(
         title = stringResource(Res.string.ktor_headers),
         copyText = when {
@@ -72,7 +74,7 @@ private fun HeadersPreview(
                 "Content-Length" to listOf("1234"),
                 "Accept" to listOf("text/html", "application/xhtml+xml"),
                 "User-Agent" to listOf(userAgent),
-            ),
+            ).toImmutableHeaders(),
         )
     }
 }
@@ -82,6 +84,6 @@ private fun HeadersPreview(
 @Composable
 private fun HeadersEmptyPreview() {
     LibraryTheme {
-        Headers(headers = emptyMap())
+        Headers(headers = emptyMap<String, List<String>>().toImmutableHeaders())
     }
 }

@@ -1,5 +1,6 @@
 package ro.cosminmihu.ktor.monitor.ui.detail
 
+import kotlinx.collections.immutable.toImmutableList
 import ro.cosminmihu.ktor.monitor.db.Call
 import ro.cosminmihu.ktor.monitor.db.StreamEvent
 import ro.cosminmihu.ktor.monitor.db.StreamEventType
@@ -27,7 +28,7 @@ internal fun Call.toStream(events: List<StreamEvent>): DetailUiState.Stream? {
         closeCode = streamCloseCode?.toString().orEmpty(),
         closeReason = streamCloseReason.orEmpty(),
         error = streamError.orEmpty(),
-        messages = events.map { it.toMessage() },
+        messages = events.map { it.toMessage() }.toImmutableList(),
     )
 }
 
@@ -62,16 +63,4 @@ private fun ByteArray.hexPreview(): String {
         (byte.toInt() and 0xFF).toString(16).padStart(2, '0')
     }
     return if (size > HEX_PREVIEW_BYTES) "$head …" else head
-}
-
-/** Plain-text transcript of the stream, used by copy and export. */
-internal fun DetailUiState.Stream.asText(): String = messages.joinToString(separator = "\n") { message ->
-    val arrow = if (message.isSent) "→" else "←"
-    val body = when {
-        message.text != null -> message.text
-        message.hexPreview != null -> "BINARY ${message.size}: ${message.hexPreview}"
-        else -> ""
-    }
-    val label = listOfNotNull(message.type.name.uppercase(), message.name).joinToString(" ")
-    "[${message.time}] $arrow $label: $body".trimEnd()
 }

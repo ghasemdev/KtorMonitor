@@ -50,7 +50,6 @@ import ro.cosminmihu.ktor.monitor.ui.icons.Icons
 import ro.cosminmihu.ktor.monitor.ui.icons.filled.ContentCopy
 import ro.cosminmihu.ktor.monitor.ui.icons.filled.KeyboardArrowDown
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
-import ro.cosminmihu.ktor.monitor.ui.resources.ktor_copy
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_stream_all
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_stream_control
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_stream_copy_message

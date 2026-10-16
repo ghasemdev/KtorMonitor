@@ -2,7 +2,6 @@ package ro.cosminmihu.ktor.monitor.db
 
 import android.content.Context
 import androidx.room3.Room
-import androidx.room3.RoomDatabaseConstructor
 import androidx.sqlite.driver.AndroidSQLiteDriver
 import ro.cosminmihu.ktor.monitor.di.LibraryKoinContext
 

@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.Loading
+import ro.cosminmihu.ktor.monitor.domain.model.Headers
 import ro.cosminmihu.ktor.monitor.ui.detail.DetailUiState
+import ro.cosminmihu.ktor.monitor.domain.model.toImmutableHeaders
 import ro.cosminmihu.ktor.monitor.ui.detail.DisplayMode
 import ro.cosminmihu.ktor.monitor.ui.detail.body.Body
 import ro.cosminmihu.ktor.monitor.ui.detail.hasPreview
@@ -27,7 +29,7 @@ import ro.cosminmihu.ktor.monitor.ui.theme.LibraryTheme
 internal fun Transaction(
     isLoading: Boolean,
     isError: Boolean,
-    headers: Map<String, List<String>>,
+    headers: Headers,
     body: DetailUiState.Body?,
     error: String,
     modifier: Modifier = Modifier,
@@ -89,7 +91,7 @@ private fun TransactionPreview() {
             headers = mapOf(
                 "Content-Type" to listOf("text/html"),
                 "Content-Length" to listOf("1234"),
-            ),
+            ).toImmutableHeaders(),
             body = DetailUiState.Body(
                 image = null,
                 raw = "Hello, World!",

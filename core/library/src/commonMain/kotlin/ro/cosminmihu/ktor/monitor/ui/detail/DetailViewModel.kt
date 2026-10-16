@@ -21,6 +21,7 @@ import ro.cosminmihu.ktor.monitor.domain.ExportCallRequestAsWgetUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallUrlUseCase
 import ro.cosminmihu.ktor.monitor.domain.GetCallUseCase
 import ro.cosminmihu.ktor.monitor.domain.GetStreamEventsUseCase
+import ro.cosminmihu.ktor.monitor.domain.model.toImmutableHeaders
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 import ro.cosminmihu.ktor.monitor.domain.model.asString
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
@@ -96,7 +97,7 @@ internal class DetailViewModel(
                         host = call.host,
                         pathAndQuery = call.encodedPathAndQuery,
                         requestTime = call.requestTimeAsText,
-                        headers = call.requestHeaders,
+                        headers = call.requestHeaders.toImmutableHeaders(),
                         body = DetailUiState.Body(
                             bytes = call.requestBody?.toBytesString(),
                             raw = ifNotTruncated(
@@ -119,7 +120,7 @@ internal class DetailViewModel(
                         duration = call.durationAsText ?: "",
                         size = call.responseContentLength?.sizeAsText() ?: "",
                         error = call.error ?: "",
-                        headers = responseHeaders,
+                        headers = responseHeaders.toImmutableHeaders(),
                         body = DetailUiState.Body(
                             bytes = call.responseBody?.toBytesString(),
                             raw = ifNotTruncated(
