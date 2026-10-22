@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+### Fixed
+* Recent calls observer now retries after a transient database error and logs it, so notifications and old-call retention keep working for the rest of the session. Fixes for [#68](https://github.com/CosminMihuMDC/KtorMonitor/issues/68).
+
 ## [1.17.0] - 2026-10-15
 ### Added
 * WebSocket and SSE stream recording and viewer.
