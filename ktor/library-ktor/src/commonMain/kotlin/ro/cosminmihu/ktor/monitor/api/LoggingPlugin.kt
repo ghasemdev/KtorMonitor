@@ -133,29 +133,29 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
         return@on
       }
 
+      if (call.attributes.contains(KtorMonitorResponseBody)) {
+        ignoreMonitorFailure {
+          logResponseBody(
+            id = call.attributes[CallIdentifier],
+            maxContentLength = pluginConfig.maxContentLength,
+            response = call.response,
+          )
+        }
+      }
+
       try {
         proceed()
       } catch (cause: Throwable) {
         // If ktor-encryptor provided decrypted body override, update DB with the decrypted body
-        if (call.attributes.contains(KtorMonitorResponseBody)) {
+        if (cause !is ResponseException || !cause.isContentLengthMismatch()) {
           ignoreMonitorFailure {
-            logResponseBody(
+            logResponseException(
               id = call.attributes[CallIdentifier],
-              maxContentLength = pluginConfig.maxContentLength,
-              response = call.response,
+              cause = cause
             )
           }
-        } else {
-          if (cause !is ResponseException) {
-            ignoreMonitorFailure {
-              logResponseException(
-                id = call.attributes[CallIdentifier],
-                cause = cause
-              )
-            }
-          }
-          throw cause
         }
+        throw cause
       }
     }
 
@@ -201,3 +201,6 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
 
     // Removed ResponseObserver as logging is now handled in ReceiveHook to support decryption plugins.
   }
+
+private fun Throwable.isContentLengthMismatch(): Boolean = this is IllegalStateException
+    && message?.contains("Content-Length mismatch", ignoreCase = true) == true
