@@ -2,7 +2,7 @@ package ro.cosminmihu.ktor.monitor.domain
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import ro.cosminmihu.ktor.monitor.db.sqldelight.Call
+import ro.cosminmihu.ktor.monitor.db.Call
 import ro.cosminmihu.ktor.monitor.domain.model.buildShellCommand
 
 internal class ExportCallRequestAsCurlUseCase {
@@ -11,9 +11,10 @@ internal class ExportCallRequestAsCurlUseCase {
         buildShellCommand(
             call = call,
             tool = "curl",
-            method = { """-X "$it"""" },
-            header = { """-H "$it"""" },
-            data = { """--data-binary "$it"""" },
+            method = { "-X $it" },
+            header = { "-H $it" },
+            data = { "--data-binary $it" },
+            binaryData = { "--data-binary @$it" },
         )
     }
 }

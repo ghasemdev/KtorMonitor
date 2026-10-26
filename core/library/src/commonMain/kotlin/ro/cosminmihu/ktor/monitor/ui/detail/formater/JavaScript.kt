@@ -14,8 +14,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import ro.cosminmihu.ktor.monitor.ui.icons.Icons
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.ArrowDropDown
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -488,7 +488,7 @@ private val JS_OPERATORS = setOf(
  * source so that braces / semicolons start a new indented line. Strings,
  * template literals, regex and comments are passed through verbatim.
  */
-private fun beautifyJavaScript(input: String): String {
+internal fun beautifyJavaScript(input: String): String {
     if (input.isEmpty()) return input
     val sb = StringBuilder(input.length + 64)
     var indent = 0

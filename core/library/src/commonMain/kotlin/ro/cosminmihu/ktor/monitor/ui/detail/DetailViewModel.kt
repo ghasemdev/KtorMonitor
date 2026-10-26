@@ -4,18 +4,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.koin.core.annotation.InjectedParam
 import ro.cosminmihu.ktor.monitor.core.ClipboardManager
 import ro.cosminmihu.ktor.monitor.core.ShareManager
+import ro.cosminmihu.ktor.monitor.domain.CallsExportFormat
+import ro.cosminmihu.ktor.monitor.domain.ExportCallAsMarkdownUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallAsTextUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallRequestAsCurlUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallRequestAsWgetUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallUrlUseCase
 import ro.cosminmihu.ktor.monitor.domain.GetCallUseCase
+import ro.cosminmihu.ktor.monitor.domain.GetStreamEventsUseCase
+import ro.cosminmihu.ktor.monitor.domain.model.toImmutableHeaders
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 import ro.cosminmihu.ktor.monitor.domain.model.asString
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
@@ -23,6 +29,7 @@ import ro.cosminmihu.ktor.monitor.domain.model.decodeBody
 import ro.cosminmihu.ktor.monitor.domain.model.durationAsText
 import ro.cosminmihu.ktor.monitor.domain.model.encodedPathAndQuery
 import ro.cosminmihu.ktor.monitor.domain.model.host
+import ro.cosminmihu.ktor.monitor.domain.model.ifNotTruncated
 import ro.cosminmihu.ktor.monitor.domain.model.isError
 import ro.cosminmihu.ktor.monitor.domain.model.isHttpError
 import ro.cosminmihu.ktor.monitor.domain.model.isInProgress
@@ -32,6 +39,7 @@ import ro.cosminmihu.ktor.monitor.domain.model.requestDateTimeAsText
 import ro.cosminmihu.ktor.monitor.domain.model.requestTimeAsText
 import ro.cosminmihu.ktor.monitor.domain.model.responseDateTimeAsText
 import ro.cosminmihu.ktor.monitor.domain.model.sizeAsText
+import ro.cosminmihu.ktor.monitor.domain.model.supportsStreamTransport
 import ro.cosminmihu.ktor.monitor.domain.model.toBytesString
 import ro.cosminmihu.ktor.monitor.domain.model.totalSizeAsText
 import ro.cosminmihu.ktor.monitor.ui.detail.DetailUiState.Call
@@ -42,22 +50,27 @@ import kotlin.time.Duration.Companion.seconds
 
 private const val NO_DATA = "-"
 private const val SHARE_FILE_NAME = "ktormonitor.http"
+private const val SHARE_FILE_NAME_MARKDOWN = "ktormonitor.md"
 
 internal class DetailViewModel(
-    id: String,
+    @InjectedParam private val id: String,
     getCallUseCase: GetCallUseCase,
+    getStreamEventsUseCase: GetStreamEventsUseCase,
     private val exportCallUrlUseCase: ExportCallUrlUseCase,
     private val exportCallRequestAsCurlUseCase: ExportCallRequestAsCurlUseCase,
     private val exportCallRequestAsWgetUseCase: ExportCallRequestAsWgetUseCase,
     private val exportCallAsTextUseCase: ExportCallAsTextUseCase,
+    private val exportCallAsMarkdownUseCase: ExportCallAsMarkdownUseCase,
     private val clipboardManager: ClipboardManager,
     private val shareManager: ShareManager,
 ) : ViewModel() {
 
     private val call = getCallUseCase(id)
-    val uiState = call
-        .map { call ->
-            call ?: return@map DetailUiState()
+    val streamEvents = getStreamEventsUseCase(id)
+    val uiState = combine(call, streamEvents) { call, events ->
+            call ?: return@combine DetailUiState()
+
+            val responseHeaders = call.responseHeaders ?: mapOf()
 
             DetailUiState(
                 summary = DetailUiState.Summary(
@@ -84,7 +97,7 @@ internal class DetailViewModel(
                         host = call.host,
                         pathAndQuery = call.encodedPathAndQuery,
                         requestTime = call.requestTimeAsText,
-                        headers = call.requestHeaders,
+                        headers = call.requestHeaders.toImmutableHeaders(),
                         body = DetailUiState.Body(
                             bytes = call.requestBody?.toBytesString(),
                             raw = ifNotTruncated(
@@ -97,7 +110,8 @@ internal class DetailViewModel(
                             isTrimmed = call.isRequestBodyTruncated == true,
                             contentFormat = ifNotTruncated(call.isRequestBodyTruncated) {
                                 call.requestContentType?.contentType?.contentFormat
-                            }
+                            },
+                            supportsStream = call.requestHeaders.supportsStreamTransport(),
                         ),
                     ),
                     response = Response(
@@ -106,21 +120,23 @@ internal class DetailViewModel(
                         duration = call.durationAsText ?: "",
                         size = call.responseContentLength?.sizeAsText() ?: "",
                         error = call.error ?: "",
-                        headers = call.responseHeaders ?: mapOf(),
+                        headers = responseHeaders.toImmutableHeaders(),
                         body = DetailUiState.Body(
                             bytes = call.responseBody?.toBytesString(),
                             raw = ifNotTruncated(
                                 call.isResponseBodyTruncated,
                                 fallback = call.responseBody?.asString(),
-                            ) { call.responseBody?.decodeBody(call.responseHeaders) },
+                            ) { call.responseBody?.decodeBody(responseHeaders) },
                             image = ifNotTruncated(call.isResponseBodyTruncated) {
                                 bodyImage(call.responseContentType, call.responseBody)
                             },
                             isTrimmed = call.isResponseBodyTruncated == true,
                             contentFormat = ifNotTruncated(call.isResponseBodyTruncated) {
                                 call.responseContentType?.contentType?.contentFormat
-                            }
+                            },
+                            supportsStream = responseHeaders.supportsStreamTransport(),
                         ),
+                        stream = call.toStream(events),
                     )
                 )
             )
@@ -140,7 +156,7 @@ internal class DetailViewModel(
                 DetailUiState.ClipboardCopyType.Url -> exportCallUrlUseCase(call)
                 DetailUiState.ClipboardCopyType.Curl -> exportCallRequestAsCurlUseCase(call)
                 DetailUiState.ClipboardCopyType.Wget -> exportCallRequestAsWgetUseCase(call)
-                DetailUiState.ClipboardCopyType.Text -> exportCallAsTextUseCase(call)
+                DetailUiState.ClipboardCopyType.Text -> exportCallAsTextUseCase(call, streamEvents.first())
             }
 
             clipboardManager.setText(copy)
@@ -152,17 +168,21 @@ internal class DetailViewModel(
             val call = this@DetailViewModel.call.firstOrNull() ?: return@launch
 
             val share = when (type) {
-                DetailUiState.FileShareType.Text -> exportCallAsTextUseCase(call)
+                DetailUiState.FileShareType.Text -> exportCallAsTextUseCase(call, streamEvents.first())
+                DetailUiState.FileShareType.Markdown -> exportCallAsMarkdownUseCase(call, streamEvents.first())
             }
 
-            shareManager.shareAsFile(share, SHARE_FILE_NAME)
+            val fileName = when (type) {
+                DetailUiState.FileShareType.Text -> SHARE_FILE_NAME
+                DetailUiState.FileShareType.Markdown -> SHARE_FILE_NAME_MARKDOWN
+            }
+
+            val mimeType = when (type) {
+                DetailUiState.FileShareType.Text -> CallsExportFormat.Text.mimeType
+                DetailUiState.FileShareType.Markdown -> CallsExportFormat.Markdown.mimeType
+            }
+
+            shareManager.shareAsFile(share, fileName, mimeType = mimeType)
         }
     }
 }
-
-
-private inline fun <T> ifNotTruncated(
-    isTruncated: Boolean?,
-    fallback: T? = null,
-    value: () -> T?,
-): T? = if (isTruncated == true) fallback else value()

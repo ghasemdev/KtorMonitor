@@ -1,7 +1,8 @@
 package ro.cosminmihu.ktor.monitor.ui.detail
 
-import androidx.compose.runtime.Stable
+import kotlinx.collections.immutable.ImmutableList
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
+import ro.cosminmihu.ktor.monitor.domain.model.Headers
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
 
 internal data class DetailUiState(
@@ -32,34 +33,65 @@ internal data class DetailUiState(
         val isHttpError: Boolean,
     )
 
-    @Stable
     data class Request(
         val method: String,
         val host: String,
         val pathAndQuery: String,
         val requestTime: String,
-        val headers: Map<String, List<String>>,
+        val headers: Headers,
         val body: Body,
     )
 
-    @Stable
     data class Response(
         val responseCode: String,
         val contentType: ContentType,
         val duration: String,
         val size: String,
         val error: String,
-        val headers: Map<String, List<String>>,
+        val headers: Headers,
         val body: Body,
+        val stream: Stream? = null,
     )
 
-    @Stable
+    /** WebSocket connection or SSE stream of a call. */
+    data class Stream(
+        val kind: StreamKind,
+        val status: StreamStatus,
+        val closeCode: String,
+        val closeReason: String,
+        val error: String,
+        val messages: ImmutableList<StreamMessage>,
+    )
+
+    data class StreamMessage(
+        val id: Long,
+        val isSent: Boolean,
+        val type: StreamMessageType,
+        // SSE event name or WebSocket close code.
+        val name: String?,
+        val eventId: String?,
+        val text: String?,
+        val prettyJson: String?,
+        // First bytes as hex, for binary frames.
+        val hexPreview: String?,
+        val size: String,
+        val time: String,
+        val isTruncated: Boolean,
+    )
+
+    enum class StreamKind { WebSocket, Sse }
+
+    enum class StreamStatus { Open, Closed, Failed }
+
+    enum class StreamMessageType { Text, Binary, Ping, Pong, Close, Sse }
+
     data class Body(
         val bytes: String?,
         val raw: String?,
         val image: ByteArray?,
         val isTrimmed: Boolean,
-        val contentFormat: ContentFormat?
+        val contentFormat: ContentFormat?,
+        val supportsStream: Boolean = false,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -68,6 +100,7 @@ internal data class DetailUiState(
             if (raw != other.raw) return false
             if (isTrimmed != other.isTrimmed) return false
             if (contentFormat != other.contentFormat) return false
+            if (supportsStream != other.supportsStream) return false
             if (image == null) return other.image == null
             if (other.image == null) return false
             return image.contentEquals(other.image)
@@ -79,6 +112,7 @@ internal data class DetailUiState(
             result = 31 * result + (image?.contentHashCode() ?: 0)
             result = 31 * result + isTrimmed.hashCode()
             result = 31 * result + (contentFormat?.hashCode() ?: 0)
+            result = 31 * result + supportsStream.hashCode()
             return result
         }
     }
@@ -92,6 +126,7 @@ internal data class DetailUiState(
 
     enum class FileShareType {
         Text,
+        Markdown,
     }
 
     enum class ContentFormat {
@@ -180,6 +215,7 @@ internal fun DetailUiState.Body.hasCopyableContent(displayMode: DisplayMode): Bo
     DisplayMode.CODE,
     DisplayMode.RAW -> !raw.isNullOrEmpty()
     DisplayMode.BYTES -> !bytes.isNullOrEmpty()
+    DisplayMode.STREAM -> !raw.isNullOrEmpty() || !bytes.isNullOrEmpty()
     DisplayMode.PREVIEW -> false
 }
 
@@ -187,5 +223,6 @@ internal fun DetailUiState.Body.copyTextFor(displayMode: DisplayMode): String? =
     DisplayMode.CODE,
     DisplayMode.RAW -> raw?.takeIf { it.isNotEmpty() }
     DisplayMode.BYTES -> bytes?.takeIf { it.isNotEmpty() }
+    DisplayMode.STREAM -> raw?.takeIf { it.isNotEmpty() } ?: bytes?.takeIf { it.isNotEmpty() }
     DisplayMode.PREVIEW -> null
 }

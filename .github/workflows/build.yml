@@ -3,9 +3,24 @@ name: Build
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "**/site/**"
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "**/site/**"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096M -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
@@ -14,9 +29,16 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5.0.0
 
       - name: Run unit tests
         run: ./gradlew jvmTest
@@ -27,16 +49,33 @@ jobs:
 #          name: test-reports
 #          path: "**/build/reports/tests/"
 
-  build-android:
-    name: Build Android
+  api-check:
+    name: Api Check
     runs-on: ubuntu-latest
-    needs: test
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5.0.0
+
+      - name: Run api check
+        run: ./gradlew apiCheck
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: [test, api-check]
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5.0.0
+
       - name: Build Android APKs
-        run: ./gradlew :sample:ktor:assembleDebug :sample:ktor:assembleRelease :sample:okhttp:assembleDebug :sample:okhttp:assembleRelease
+        run: ./gradlew :sample:ktor:androidApp:assembleDebug :sample:okhttp:androidApp:assembleDebug :sample:http4k:androidApp:assembleDebug
 
 #      - name: Upload Android APKs
 #        uses: actions/upload-artifact@v7
@@ -44,24 +83,56 @@ jobs:
 #          name: android-apks
 #          path: "**/build/outputs/apk/**/*.apk"
 
-#  build-ios:
-#    name: Build iOS simulator app
-#    runs-on: macos-latest
-#    needs: test
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v6
-#
-#      - name: Build iOS simulator app
-#        run: |
-#          xcodebuild build \
-#          -project sample/ktor/iosApp/iosApp.xcodeproj \
-#          -configuration Debug \
-#          -scheme ios \
-#          -sdk iphonesimulator \
-#          -arch arm64 \
-#          -derivedDataPath ./build \
-#          -verbose
+  build-web-js:
+    name: Build Web JS
+    runs-on: ubuntu-latest
+    needs: [test, api-check]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5.0.0
+
+      - name: Build JS bundle
+        run: ./gradlew :sample:ktor:webApp:jsBrowserProductionWebpack
+
+  build-web-wasm:
+    name: Build Web Wasm
+    runs-on: ubuntu-latest
+    needs: [test, api-check]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5.0.0
+
+      - name: Build Wasm bundle
+        run: ./gradlew :sample:ktor:webApp:wasmJsBrowserProductionWebpack
+
+  build-ios:
+    name: Build iOS simulator app
+    runs-on: macos-latest
+    needs: [test, api-check]
+    timeout-minutes: 30
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild build \
+          -project sample/ktor/iosApp/iosApp.xcodeproj \
+          -configuration Debug \
+          -scheme ios \
+          -sdk iphonesimulator \
+          -arch arm64 \
+          -derivedDataPath ./build \
+          -verbose
 
 #      - name: Upload App Folder
 #        uses: actions/upload-artifact@v7
@@ -72,13 +143,18 @@ jobs:
   build-desktop-macos:
     name: Build Desktop macOS
     runs-on: macos-latest
-    needs: test
+    needs: [test, api-check]
+    timeout-minutes: 30
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5.0.0
+
       - name: Build macOS DMGs
-        run: ./gradlew :sample:ktor:packageDmg :sample:okhttp:packageDmg
+        run: ./gradlew :sample:ktor:jvmApp:packageDmg :sample:okhttp:jvmApp:packageDmg :sample:http4k:jvmApp:packageDmg
 
 #      - name: Upload macOS DMGs
 #        uses: actions/upload-artifact@v7
@@ -89,7 +165,9 @@ jobs:
   build-desktop-windows:
     name: Build Desktop Windows
     runs-on: windows-latest
-    needs: test
+    needs: [test, api-check]
+    timeout-minutes: 30
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -98,7 +176,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5.0.0
 
       - name: Build Windows MSIs
-        run: ./gradlew :sample:ktor:packageMsi :sample:okhttp:packageMsi
+        run: ./gradlew :sample:ktor:jvmApp:packageMsi :sample:okhttp:jvmApp:packageMsi :sample:http4k:jvmApp:packageMsi
 
 #      - name: Upload Windows MSIs
 #        uses: actions/upload-artifact@v7
@@ -109,13 +187,18 @@ jobs:
   build-desktop-linux:
     name: Build Desktop Linux
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, api-check]
+    timeout-minutes: 25
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5.0.0
+
       - name: Build Linux DEBs and RPMs
-        run: ./gradlew :sample:ktor:packageDeb :sample:ktor:packageRpm :sample:okhttp:packageDeb :sample:okhttp:packageRpm
+        run: ./gradlew :sample:ktor:jvmApp:packageDeb :sample:ktor:jvmApp:packageRpm :sample:okhttp:jvmApp:packageDeb :sample:okhttp:jvmApp:packageRpm :sample:http4k:jvmApp:packageDeb :sample:http4k:jvmApp:packageRpm
 
 #      - name: Upload Linux DEBs and RPMs
 #        uses: actions/upload-artifact@v7

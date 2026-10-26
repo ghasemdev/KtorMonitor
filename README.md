@@ -5,6 +5,7 @@
 [![JetBrains Klibs.io](https://img.shields.io/badge/JetBrains-klibs.io-4284F3?logo=jetbrains&logoColor=white)](https://klibs.io/project/CosminMihuMDC/KtorMonitor)
 [![Documentation](https://img.shields.io/badge/Docs-gray?logo=readthedocs&logoColor=white)](https://cosminmihumdc.github.io/KtorMonitor)
 [![API](https://img.shields.io/badge/API-gray?logo=codersrank&logoColor=white)](https://cosminmihumdc.github.io/KtorMonitor/api)
+[![AI Skill](https://img.shields.io/badge/AI%20Skill-gray?logo=anthropic&logoColor=white)](.agents/skills/ktormonitor/skill.md)
 [![GitHub stars](https://img.shields.io/github/stars/CosminMihuMDC/KtorMonitor)](https://github.com/CosminMihuMDC/KtorMonitor)
 [![GitHub forks](https://img.shields.io/github/forks/CosminMihuMDC/KtorMonitor)](https://github.com/CosminMihuMDC/KtorMonitor/fork)
 
@@ -12,6 +13,10 @@
 Powerful tool to monitor [Ktor Client](https://ktor.io/), [OkHttp](https://square.github.io/okhttp/) and [http4k](https://www.http4k.org/) requests and responses, making it easier to debug and analyze network communication.
 
 <img src="extra/readme/ktormonitor.png" alt="ktormonitor"/>
+
+## 🌍 Live Demo
+
+Try the live web demo: [DEMO](https://cosminmihu.ro/static/apps/ktormonitor/web/)
 
 ## ✨ Features
 
@@ -22,6 +27,7 @@ Powerful tool to monitor [Ktor Client](https://ktor.io/), [OkHttp](https://squar
 *   🛠️**Highly Configurable**: Customize retention periods, content length limits, and notification behavior.
 *   🔒**Security First**: Redact sensitive headers (e.g., *Authorization*).
 *   📂**Data Export**: Save request/response details to local files for easier debugging or sharing.
+*   📤**Bulk Share**: Export multiple calls in JSON, Text, Markdown, cURL/Wget, or URLs for easy sharing and replay.
 *   🎨**Rich Previews**: Built-in viewers for *JSON*, *XML*, *HTML*, *CSS*, *YAML*, *MARKDOWN*, *Form Data*, *Image* (*JPG*, *PNG*, *SVG*, *GIF*, *WEBP*).
 *   📡**SSE & WebSockets**: Track one-way streams (*SSE*) and bidirectional traffic (*WebSockets*).
 *   🛡️**Production Safe**: No-Op version to ensure monitoring code is excluded from your production builds.
@@ -34,7 +40,7 @@ Powerful tool to monitor [Ktor Client](https://ktor.io/), [OkHttp](https://squar
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.13.0")
+            implementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.17.0")
         }
     }
 }
@@ -48,7 +54,7 @@ To isolate KtorMonitor from release builds, use the `ktor-monitor-logging-no-op`
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.13.0")
+            implementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.17.0")
         }
     }
 }
@@ -60,8 +66,8 @@ kotlin {
 
 ```kotlin
 dependencies {
-    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.13.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.13.0")
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-logging:1.17.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-logging-no-op:1.17.0")
 }
 ```
 
@@ -94,8 +100,8 @@ HttpClient {
 
 ```kotlin
 dependencies {
-    debugImplementation("`ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.13.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.13.0")
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor:1.17.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-okhttp-interceptor-no-op:1.17.0")
 }
 ```
 
@@ -105,7 +111,7 @@ For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.andro
 
 ```kotlin
 OkHttpClient.Builder()
-    .addNetworkInterceptor(
+    .addInterceptor(
         KtorMonitorInterceptor {
             sanitizeHeader { header -> header == "Authorization" }
             filter { request -> !request.url.host.contains("cosminmihu.ro") }
@@ -123,14 +129,16 @@ OkHttpClient.Builder()
 - ```retentionPeriod``` - The retention period for the logs. Default is **1h**.
 - ```maxContentLength``` - The maximum length of the content that will be logged. After this, body will be truncated. Default is **250_000**. To log the entire body use ```ContentLength.Full```.
 
+> **Note:** Install it with `addInterceptor`, not `addNetworkInterceptor`. OkHttp does not run network interceptors for WebSocket calls, so a WebSocket handshake would not be logged. To also log WebSocket frames, open the socket with `client.newMonitoredWebSocket(request, listener)` instead of `client.newWebSocket(...)`. With `addInterceptor`, redirects are logged as a single call.
+
 ## 📦 Setup (Android & JVM) for [http4k](https://www.http4k.org/)
 
 ### <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Gradle_logo.svg" width="100"/>
 
 ```kotlin
 dependencies {
-    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.13.0")
-    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.13.0")
+    debugImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter:1.17.0")
+    releaseImplementation("ro.cosminmihu.ktor:ktor-monitor-http4k-filter-no-op:1.17.0")
 }
 ```
 
@@ -174,7 +182,7 @@ fun Composable() {
 <details>
 <summary><b>Android</b></summary>
 
-- If ```showNotifcation = true``` and **android.permission.POST_NOTIFICATIONS** is granted, the library will display a notification showing a summary of ongoing KTOR activity. Tapping on the notification launches the full ```KtorMonitor```.
+- If ```showNotification = true``` and **android.permission.POST_NOTIFICATIONS** is granted, the library will display a notification showing a summary of ongoing KTOR activity. Tapping on the notification launches the full ```KtorMonitor```.
 - Apps can optionally use the ```KtorMonitor()``` Composable directly into own Composable code.
 - For ***Android minSdk < 26***, [Core Library Desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) is required.
 </details>
@@ -182,7 +190,7 @@ fun Composable() {
 <details>
 <summary><b>iOS</b></summary>
 
-* If ```showNotifcation = true``` and notification permission is granted, the library will display a notification showing a summary of ongoing KTOR activity.
+* If ```showNotification = true``` and notification permission is granted, the library will display a notification showing a summary of ongoing KTOR activity.
 
 * Use ```KtorMonitorViewController```
 
@@ -268,36 +276,28 @@ fun main() = application {
 <details>
 <summary><b>Wasm / Js</b></summary>
 
-* Web targets require a few additional webpack steps.
-
-```kotlin
-kotlin {
-    sourceSets {
-        webMain.dependencies {
-            implementation(devNpm("copy-webpack-plugin", "9.1.0"))
-        }
-    }
-}
-```
+* Web targets store the data with SQLite WASM and need a small Web Worker (`WebWorkerSQLiteDriver` does not ship one).
+  Copy [`sqlite.worker.js`](https://github.com/CosminMihuMDC/KtorMonitor/blob/main/sample/ktor/webApp/webpack-resources/sqlite.worker.js)
+  into your web project (e.g. `{project}/webpack-resources/sqlite.worker.js`) and alias it in webpack.
+  The data is kept in memory, so no special HTTP headers are required.
 
 ```javascript
-// {project}/webpack.config.d/sqljs.js
+// {project}/webpack.config.d/sqlite.js
+const path = require('path');
+
 config.resolve = {
+    modules: ['node_modules', path.resolve(__dirname, '../../node_modules')],
     fallback: {
         fs: false,
         path: false,
         crypto: false,
-    }
+        os: false,
+    },
+    alias: {
+        ...(config.resolve && config.resolve.alias),
+        'ktor-monitor-sqlite-worker/sqlite.worker.js': path.resolve(__dirname, '../../../../webpack-resources/sqlite.worker.js'),
+    },
 };
-
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-config.plugins.push(
-    new CopyWebpackPlugin({
-        patterns: [
-            '../../node_modules/sql.js/dist/sql-wasm.wasm'
-        ]
-    })
-);
 ```
 
 ```kotlin
@@ -313,13 +313,13 @@ Found a bug or have a feature request? [File an issue](https://github.com/Cosmin
 
 ## 🙌 Acknowledgments
 
-[![Kotlin](https://img.shields.io/badge/2.3.21-white?logo=kotlin&logoColor=white&color=7F52FF)](http://kotlinlang.org)
-[![Compose Multiplatform](https://img.shields.io/badge/1.11.0-white?logo=jetpackcompose&logoColor=white&color=4284F3)](https://www.jetbrains.com/lp/compose-multiplatform)
-[![Android](https://img.shields.io/badge/Android%2017-white?logo=android&logoColor=white&color=34A853)](https://developer.android.com/about/versions/16)
-[![Ktor](https://img.shields.io/badge/3.4.3-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
-[![OkHttp](https://img.shields.io/badge/4.11.0-white?logo=square&logoColor=white&color=003B57)](https://square.github.io/okhttp/)
-[![http4k](https://img.shields.io/badge/6.45.1.0-white?logo=httpie&logoColor=white&color=087CFA)](https://www.http4k.org/)
-[![SQLDelight](https://img.shields.io/badge/2.3.2-white?logo=sqlite&logoColor=white&color=003B57)](https://sqldelight.github.io/sqldelight)
+[![Kotlin](https://img.shields.io/badge/2.4.21-white?logo=kotlin&logoColor=white&color=7F52FF)](http://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/1.12.1-white?logo=jetpackcompose&logoColor=white&color=4284F3)](https://www.jetbrains.com/lp/compose-multiplatform)
+[![Android](https://img.shields.io/badge/Android%2017-white?logo=android&logoColor=white&color=34A853)](https://developer.android.com/about/versions)
+[![Ktor](https://img.shields.io/badge/3.6.0-white?logo=ktor&logoColor=white&color=087CFA)](https://ktor.io)
+[![OkHttp](https://img.shields.io/badge/5.5.0-white?logo=square&logoColor=white&color=003B57)](https://square.github.io/okhttp/)
+[![http4k](https://img.shields.io/badge/6.61.0.0-white?logo=httpie&logoColor=white&color=087CFA)](https://www.http4k.org/)
+[![Room](https://img.shields.io/badge/3.0.3-white?logo=sqlite&logoColor=white&color=003B57)](https://developer.android.com/jetpack/androidx/releases/room3)
 
 Community discussions on Slack — join us in the [#ktormonitor](https://kotlinlang.slack.com/archives/C0AB9GA32H0) channel.
 <br>
@@ -330,6 +330,8 @@ API is available at [KtorMonitor API](https://cosminmihumdc.github.io/KtorMonito
 KtorMonitor is available also on JetBrains' [klibs.io](https://klibs.io/project/CosminMihuMDC/KtorMonitor).
 <br>
 KtorMonitor on [Context7](https://context7.com/cosminmihumdc/ktormonitor).
+<br>
+AI Skill (for Copilot, Claude, Cursor, ChatGPT and others) is available at [skill.md](https://github.com/CosminMihuMDC/KtorMonitor/blob/main/.agents/skills/ktormonitor/skill.md).
 <br>
 <br>
 Some parts of this project are reusing ideas that are originally coming from [Chucker](https://github.com/ChuckerTeam/chucker).
@@ -351,3 +353,4 @@ You can sponsor us by clicking [<span style="color:#bf3989">♥ Sponsor</span>](
 ## 🙏🏻 Credits
 
 KtorMonitor is brought to you by these [contributors](https://github.com/CosminMihuMDC/KtorMonitor/graphs/contributors).
+

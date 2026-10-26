@@ -7,7 +7,7 @@ internal data class Config(
     val showNotification: Boolean,
     val retentionPeriod: Duration,
     val maxContentLength: Int,
-    val clientSource: ClientSource? = null,
+    val networkClient: NetworkClient? = null,
     val iosGroupId: String? = null,
 ) {
     companion object {
@@ -17,7 +17,7 @@ internal data class Config(
                 showNotification = false,
                 retentionPeriod = Duration.ZERO,
                 maxContentLength = 0,
-                clientSource = null,
+                networkClient = null,
                 iosGroupId = null,
             )
     }

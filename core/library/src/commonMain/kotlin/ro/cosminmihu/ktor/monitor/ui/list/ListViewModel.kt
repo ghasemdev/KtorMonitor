@@ -12,11 +12,14 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCalls
+import ro.cosminmihu.ktor.monitor.db.SelectCalls
+import ro.cosminmihu.ktor.monitor.domain.CallsExportFormat
 import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 import ro.cosminmihu.ktor.monitor.domain.DeleteCallsUseCase
+import ro.cosminmihu.ktor.monitor.domain.ExportCallsUseCase
 import ro.cosminmihu.ktor.monitor.domain.GetCallsUseCase
-import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
+import ro.cosminmihu.ktor.monitor.core.ShareManager
+import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 import ro.cosminmihu.ktor.monitor.domain.model.contentType
 import ro.cosminmihu.ktor.monitor.domain.model.durationAsText
@@ -34,13 +37,36 @@ internal class ListViewModel(
     configUseCase: ConfigUseCase,
     getCallsUseCase: GetCallsUseCase,
     private val deleteCallsUseCase: DeleteCallsUseCase,
+    private val exportCallsUseCase: ExportCallsUseCase,
+    private val shareManager: ShareManager,
 ) : ViewModel() {
 
     private val _filter = MutableStateFlow(ListUiState.Filter.NoFilter)
+    private val _isSelectionMode = MutableStateFlow(false)
+    private val _selectedCallIds = MutableStateFlow<Set<String>>(emptySet())
     private val filter = _filter.debounce(0.2.seconds)
     private val calls = getCallsUseCase()
 
-    val uiState = combine(this@ListViewModel.filter, calls, configUseCase.clientSource) { filterOption, calls, clientSource ->
+    init {
+        viewModelScope.launch {
+            calls.collect { list ->
+                if (list.isEmpty()) {
+                    clearSelection()
+                } else {
+                    val ids = list.map { it.id }.toSet()
+                    _selectedCallIds.update { it.intersect(ids) }
+                }
+            }
+        }
+    }
+
+    val uiState = combine(
+        this@ListViewModel.filter,
+        calls,
+        configUseCase.networkClient,
+        _isSelectionMode,
+        _selectedCallIds,
+    ) { filterOption, calls, networkClient, isSelectionMode, selectedCallIds ->
         val (appliedFilter, filtered) = filter(filterOption, calls)
         val availableMethods = calls.map { it.method }.toSet()
         val availableHosts = calls.map { it.host }.toSet()
@@ -50,7 +76,19 @@ internal class ListViewModel(
                 else -> call.responseContentType?.contentType?.takeIf { it != ContentType.UNKNOWN }
             }
         }.toSet()
-        buildUiState(appliedFilter, filtered, configUseCase.isShowNotification(), clientSource, availableMethods, availableHosts, availableContentTypes)
+
+        buildUiState(
+            filter = appliedFilter,
+            calls = filtered,
+            showNotification = configUseCase.isShowNotification(),
+            networkClient = networkClient,
+            availableMethods = availableMethods,
+            availableHosts = availableHosts,
+            availableContentTypes = availableContentTypes,
+            totalCallsCount = calls.size,
+            isSelectionMode = isSelectionMode,
+            selectedCallIds = selectedCallIds,
+        )
     }
         .flowOn(Dispatchers.Default)
         .stateIn(
@@ -120,17 +158,23 @@ internal class ListViewModel(
         filter: ListUiState.Filter,
         calls: List<SelectCalls>,
         showNotification: Boolean,
-        clientSource: ClientSource?,
+        networkClient: NetworkClient?,
         availableMethods: Set<String> = emptySet(),
         availableHosts: Set<String> = emptySet(),
         availableContentTypes: Set<ContentType> = emptySet(),
+        totalCallsCount: Int = 0,
+        isSelectionMode: Boolean = false,
+        selectedCallIds: Set<String> = emptySet(),
     ): ListUiState = ListUiState(
         filter = filter,
         showNotification = showNotification,
-        clientSource = clientSource,
+        networkClient = networkClient,
         availableMethods = availableMethods,
         availableHosts = availableHosts,
         availableContentTypes = availableContentTypes,
+        totalCallsCount = totalCallsCount,
+        isSelectionMode = isSelectionMode,
+        selectedCallIds = selectedCallIds,
         calls = calls.map {
             ListUiState.Call(
                 id = it.id,
@@ -155,9 +199,67 @@ internal class ListViewModel(
         }
     )
 
-    fun deleteCalls() {
+
+    fun deleteSelectedCalls() {
         viewModelScope.launch {
-            deleteCallsUseCase()
+            val selectedIds = uiState.value.selectedCallIds
+            if (selectedIds.isEmpty()) return@launch
+
+            deleteCallsUseCase(selectedIds)
+            clearSelection()
+        }
+    }
+
+    fun enterSelectionMode() {
+        _isSelectionMode.value = true
+    }
+
+    fun clearSelection() {
+        _selectedCallIds.value = emptySet()
+        _isSelectionMode.value = false
+    }
+
+    fun clearSelectedCalls() {
+        _selectedCallIds.value = emptySet()
+        _isSelectionMode.value = true
+    }
+
+    fun toggleSelection(id: String) {
+        _isSelectionMode.value = true
+        _selectedCallIds.update { selected ->
+            when (id in selected) {
+                true -> selected - id
+                false -> selected + id
+            }
+        }
+    }
+
+    fun selectAllVisible() {
+        val visibleIds = uiState.value.calls.orEmpty().map(ListUiState.Call::id).toSet()
+        if (visibleIds.isEmpty()) return
+
+        _isSelectionMode.value = true
+        _selectedCallIds.value = visibleIds
+    }
+
+    fun exportSelectedCalls(type: ListUiState.BulkShareType) {
+        viewModelScope.launch {
+            val selectedIds = uiState.value.selectedCallIds.toList()
+            val format = when (type) {
+                ListUiState.BulkShareType.Json -> CallsExportFormat.Json
+                ListUiState.BulkShareType.Text -> CallsExportFormat.Text
+                ListUiState.BulkShareType.Markdown -> CallsExportFormat.Markdown
+                ListUiState.BulkShareType.Curl -> CallsExportFormat.Curl
+                ListUiState.BulkShareType.Wget -> CallsExportFormat.Wget
+                ListUiState.BulkShareType.Url -> CallsExportFormat.Url
+            }
+            val export = exportCallsUseCase(selectedIds, format) ?: return@launch
+            shareManager.shareAsFile(
+                content = export.content,
+                name = export.fileName,
+                mimeType = export.mimeType,
+            )
+            clearSelection()
         }
     }
 

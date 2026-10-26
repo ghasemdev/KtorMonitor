@@ -13,7 +13,7 @@ Operational guide for AI coding agents (and new contributors) working in this re
 Multiplatform UI for inspecting requests and responses.
 
 - **Targets:** Android, iOS (arm64 / simulator arm64), Desktop JVM (Windows / macOS / Linux), JS (browser), Wasm/JS (browser).
-- **Tech stack:** Kotlin **2.3.21**, Compose Multiplatform **1.11.0-beta01**, Ktor **3.4.3**, OkHttp **5.3.2**, http4k **6.15.1.0**, SQLDelight **2.3.2** (async driver, `sql.js` on web), Koin **4.2.1**, Coil **3.4.0**, kotlinx.atomicfu, kotlinx.coroutines, kotlinx.datetime, kotlinx.serialization.
+- **Tech stack:** Kotlin **2.3.21**, Compose Multiplatform **1.11.0-beta01**, Ktor **3.4.3**, OkHttp **5.3.2**, http4k **6.15.1.0**, Room 3 **3.0.3** (`androidx.room3`, SQLite-bundled/framework drivers, SQLite WASM worker on web), Koin **4.2.1**, Coil **3.4.0**, kotlinx.atomicfu, kotlinx.coroutines, kotlinx.datetime, kotlinx.serialization.
 - **Group / artifacts** (group `ro.cosminmihu.ktor`):
   - `ktor-monitor-core`            — shared core (UI + storage)
   - `ktor-monitor-core-no-op`      — ABI-equivalent no-op
@@ -29,7 +29,7 @@ Multiplatform UI for inspecting requests and responses.
 
 | Path                              | Plugin / target            | Purpose                                                                 |
 |-----------------------------------|----------------------------|-------------------------------------------------------------------------|
-| `core/library`                    | KMP library (all targets)  | DB (SQLDelight), Compose UI, Koin DI, notification & share managers.    |
+| `core/library`                    | KMP library (all targets)  | DB (Room 3), Compose UI, Koin DI, notification & share managers.    |
 | `core/library-no-op`              | KMP library                | API-compatible empty implementation for production builds.              |
 | `ktor/library-ktor`               | KMP library                | Ktor client `KtorMonitorLogging` plugin; depends on `core/library`.     |
 | `ktor/library-ktor-no-op`         | KMP library                | No-op mirror of `library-ktor`.                                         |
@@ -37,9 +37,16 @@ Multiplatform UI for inspecting requests and responses.
 | `okhttp/library-okhttp-no-op`     | KMP (Android + JVM)        | No-op mirror of `library-okhttp`.                                       |
 | `http4k/library-http4k`           | KMP (Android + JVM)        | `KtorMonitorFilter` for http4k; depends on `core/library`.              |
 | `http4k/library-http4k-no-op`     | KMP (Android + JVM)        | No-op mirror of `library-http4k`.                                       |
-| `sample/ktor`                     | Compose Multiplatform app  | Demo for Ktor monitor (Android, iOS, JVM, JS, Wasm).                    |
-| `sample/okhttp`                   | Compose Multiplatform app  | Demo for OkHttp monitor (Android + JVM).                                |
-| `sample/http4k`                   | Compose Multiplatform app  | Demo for http4k monitor (Android + JVM).                                |
+| `sample/ktor/shared`              | KMP shared module          | Shared business/UI code for Ktor sample.                                 |
+| `sample/ktor/androidApp`          | Android application        | Android app for Ktor sample.                                             |
+| `sample/ktor/jvmApp`              | JVM desktop application    | Desktop app for Ktor sample.                                             |
+| `sample/ktor/webApp`              | KMP web app module         | JS + Wasm browser targets for Ktor sample.                               |
+| `sample/okhttp/shared`            | KMP shared module          | Shared business/UI code for OkHttp sample.                               |
+| `sample/okhttp/androidApp`        | Android application        | Android app for OkHttp sample.                                           |
+| `sample/okhttp/jvmApp`            | JVM desktop application    | Desktop app for OkHttp sample.                                           |
+| `sample/http4k/shared`            | KMP shared module          | Shared business/UI code for http4k sample.                               |
+| `sample/http4k/androidApp`        | Android application        | Android app for http4k sample.                                           |
+| `sample/http4k/jvmApp`            | JVM desktop application    | Desktop app for http4k sample.                                           |
 | `docs/`                           | MkDocs Material            | Documentation site, including generated Dokka API docs in `docs/api/`.  |
 
 Type-safe project accessors are enabled (`enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")`); reference modules as `projects.core.library`, `projects.ktor.libraryKtor`, `projects.http4k.libraryHttp4k`, etc.
@@ -49,12 +56,12 @@ Type-safe project accessors are enabled (`enableFeaturePreview("TYPESAFE_PROJECT
 ```
 core/library/src/
   commonMain/   — shared Kotlin + Compose UI (ui/, db/, di/, domain/, core/)
-  commonMain/sqldelight/  — SQLDelight schema (Call.sq → ro.cosminmihu.ktor.monitor.db.sqldelight)
+  commonMain/.../db/  — Room entity/DAO/database (Call, CallDao, LibraryDatabase); schemas exported to core/library/schemas/
   commonMain/composeResources/  — Compose Multiplatform resources (drawables, strings)
   androidMain/  — Activity, notification channel, clipboard, share, permission banner
   iosMain/      — UNUserNotificationCenter, UIPasteboard, UIActivityViewController
   jvmMain/      — Swing/AWT clipboard & share, KtorMonitorWindow / Panel / MenuItem
-  jsMain/ wasmJsMain/ webMain/ — Web fallbacks; SQLDelight web-worker driver, sql.js webpack plugin
+  jsMain/ wasmJsMain/ webMain/ — Web fallbacks; WebWorkerSQLiteDriver + `webpack-resources/sqlite.worker.js`
 ```
 
 ## 3. Build, test, run
@@ -66,11 +73,11 @@ A wrapper is included; always use `./gradlew`. JVM toolchain is **Java 11** for 
 | Full build                            | `./gradlew build`                                                     |
 | All checks (lint + tests + apiCheck)  | `./gradlew check`                                                     |
 | JVM unit tests (run in CI)            | `./gradlew jvmTest`                                                   |
-| Android sample APKs (debug + release) | `./gradlew :sample:ktor:assembleDebug :sample:okhttp:assembleDebug :sample:http4k:assembleDebug` |
-| Desktop sample run (JVM)              | `./gradlew :sample:ktor:run` / `:sample:okhttp:run` / `:sample:http4k:run`                      |
-| Desktop installer (current OS)        | `./gradlew :sample:ktor:packageDmg` (mac) / `packageMsi` / `packageDeb` |
-| Web (JS) dev server                   | `./gradlew :sample:ktor:jsBrowserDevelopmentRun`                      |
-| Wasm dev server                       | `./gradlew :sample:ktor:wasmJsBrowserDevelopmentRun`                  |
+| Android sample APKs (debug + release) | `./gradlew :sample:ktor:androidApp:assembleDebug :sample:okhttp:androidApp:assembleDebug :sample:http4k:androidApp:assembleDebug` |
+| Desktop sample run (JVM)              | `./gradlew :sample:ktor:jvmApp:run` / `:sample:okhttp:jvmApp:run` / `:sample:http4k:jvmApp:run` |
+| Desktop installer (current OS)        | `./gradlew :sample:ktor:jvmApp:packageDmg` (mac) / `packageMsi` / `packageDeb` |
+| Web (JS) dev server                   | `./gradlew :sample:ktor:webApp:jsBrowserDevelopmentRun`               |
+| Wasm dev server                       | `./gradlew :sample:ktor:webApp:wasmJsBrowserDevelopmentRun`           |
 | iOS                                   | Open `sample/ktor/iosApp/iosApp.xcodeproj` in Xcode and run.          |
 | ABI check (binary-compatibility)      | `./gradlew apiCheck`                                                  |
 | ABI dump (after intentional changes)  | `./gradlew apiDump`                                                   |
@@ -101,7 +108,7 @@ CI workflows live in [`.github/workflows/`](.github/workflows): `build.yml` (PR/
   - `Modifier.semantics { contentDescription = ... }` — never write `Modifier.semantics { someString }` (no-op lambda).
   - Cache heavyweight builders (e.g. Coil `ImageLoader`) with `remember`.
 - Coroutines:
-  - Use `withContext(Dispatchers.Default)` for CPU work and `Dispatchers.IO` for blocking IO. Database mutations go through SQLDelight's async APIs (`generateAsync = true`).
+  - Use `withContext(Dispatchers.Default)` for CPU work and `Dispatchers.IO` for blocking IO. Room DAO mutations are `suspend` functions.
   - **Never call `runBlocking` from an interceptor** — use `InternalLibraryBridge.coroutineScope().launch { ... }` for fire-and-forget DB writes.
   - Avoid `GlobalScope`. The single library scope is provided by Koin and exposed via `InternalLibraryBridge.coroutineScope()`.
 - Multiplatform:
@@ -110,7 +117,7 @@ CI workflows live in [`.github/workflows/`](.github/workflows): `build.yml` (PR/
 - Logging: keep all UI strings in `core/library/src/commonMain/composeResources/values/strings.xml` and reference them with `stringResource(Res.string....)`.
 
 ### Data layer
-- DB schema is defined in [`Call.sq`](core/library/src/commonMain/sqldelight/ro/cosminmihu/ktor/monitor/db/sqldelight/Call.sq). Headers are stored as JSON via [`HeadersAdapter`](core/library/src/commonMain/kotlin/ro/cosminmihu/ktor/monitor/db/HeadersAdapter.kt). Add an `INDEX` whenever you introduce an `ORDER BY` / `WHERE` on a non-primary-key column.
+- DB schema is defined by the Room `@Entity` [`Call`](core/library/src/commonMain/kotlin/ro/cosminmihu/ktor/monitor/db/Call.kt) and `CallDao`/`LibraryDatabase` in the same package. Headers are stored as JSON via `HeadersConverter` (`@ColumnTypeConverter`). Bump the `LibraryDatabase` version and commit the regenerated `core/library/schemas/` JSON on schema changes. Add an `@Index` whenever you introduce an `ORDER BY` / `WHERE` on a non-primary-key column.
 - Long-running export use cases (`ExportCall*UseCase`) must wrap CPU work in `withContext(Dispatchers.Default)`.
 
 ### Accessibility (a11y)
@@ -140,8 +147,8 @@ CI workflows live in [`.github/workflows/`](.github/workflows): `build.yml` (PR/
 - **OkHttp interceptor** runs on OkHttp's HTTP dispatcher thread. The DB writes are dispatched onto the library coroutine scope (do **not** call `runBlocking` here). Response bodies are read via `Response.peekBody(maxContentLength)` to avoid loading multi-megabyte payloads.
 - **http4k Filter** runs synchronously on the caller's thread (http4k is a synchronous, functional framework). The DB writes are dispatched onto the library coroutine scope (do **not** call `runBlocking` here). Request/response bodies are read via `Body.payload.duplicate()` to avoid consuming the original `ByteBuffer`; streaming bodies are not supported in v1.
 - **Ktor plugin** wires into `HttpSendPipeline.Monitoring`, `HttpReceivePipeline.State`, `HttpResponsePipeline.Receive`, and an additional `ResponseObserver`. When changing hook order, retest streaming (SSE) and WebSocket flows.
-- **SQLDelight** uses `generateAsync = true`; always call mutation queries from a `suspend` context.
-- **Web targets** require the `sql.js` wasm artifact to be copied via the webpack config in `core/library/webpack.config.d/sqljs-config.js` (and mirrored in `sample/ktor/webpack.config.d/`).
-- **iOS** binaries link against `sqlite3` (`linkerOpts("-lsqlite3")`); keep this when adding new iOS targets.
+- **Room 3** DAO functions are `suspend` or return `Flow`; KSP runs per target (`kspAndroid`, `kspJvm`, `kspIos*`, `kspJs`, `kspWasmJs`). Use `CAST(... AS BLOB)` when concatenating blobs in SQL (web `||` yields TEXT).
+- **Web targets** use an in-memory SQLite WASM worker (`core/library/webpack-resources/sqlite.worker.js`, mirrored in `sample/ktor/webApp/webpack-resources/`) aliased through `webpack.config.d/sqlite-config.js`; npm dep `@sqlite.org/sqlite-wasm`.
+- **iOS** uses `BundledSQLiteDriver` (`androidx.sqlite:sqlite-bundled`); no `-lsqlite3` needed.
 - The Android `minSdk` is **24**; users below `26` must enable Core Library Desugaring (kotlinx-datetime / `java.time`).
 

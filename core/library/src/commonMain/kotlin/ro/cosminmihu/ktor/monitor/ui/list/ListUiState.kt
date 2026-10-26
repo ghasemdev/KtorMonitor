@@ -1,17 +1,29 @@
 package ro.cosminmihu.ktor.monitor.ui.list
 
-import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
+import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import ro.cosminmihu.ktor.monitor.domain.model.ContentType
 
 internal data class ListUiState(
     val calls: List<Call>? = null,
     val filter: Filter = Filter.NoFilter,
     val showNotification: Boolean = false,
-    val clientSource: ClientSource? = null,
+    val networkClient: NetworkClient? = null,
     val availableMethods: Set<String> = emptySet(),
     val availableHosts: Set<String> = emptySet(),
     val availableContentTypes: Set<ContentType> = emptySet(),
+    val totalCallsCount: Int = 0,
+    val isSelectionMode: Boolean = false,
+    val selectedCallIds: Set<String> = emptySet(),
 ) {
+    enum class BulkShareType {
+        Json,
+        Text,
+        Markdown,
+        Curl,
+        Wget,
+        Url,
+    }
+
     data class Call(
         val id: String,
         val isSecure: Boolean,
@@ -74,6 +86,12 @@ internal data class ListUiState(
         }
     }
 }
+
+internal val ListUiState.selectedCount
+    get() = selectedCallIds.size
+
+internal val ListUiState.canBulkExport
+    get() = selectedCallIds.isNotEmpty()
 
 internal val ListUiState.isLoading
     get() = calls == null

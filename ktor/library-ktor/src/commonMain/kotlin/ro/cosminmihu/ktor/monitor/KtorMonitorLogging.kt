@@ -2,9 +2,6 @@ package ro.cosminmihu.ktor.monitor
 
 import io.ktor.client.plugins.api.ClientPlugin
 import ro.cosminmihu.ktor.monitor.api.LoggingPlugin
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
 
 /**
  * A [Ktor](https://ktor.io/) client plugin that provides the capability to log HTTP calls.
@@ -23,5 +20,9 @@ import kotlin.time.Duration.Companion.hours
  *    }
  * }
  * ```
+ *
+ * Server-Sent Events are recorded from the events parsed by the Ktor `SSE` plugin, so the stored
+ * body is reconstructed. SSE comments and `retry` events are only recorded when the
+ * session is opened with `showCommentEvents = true` and `showRetryEvents = true`.
  */
 public val KtorMonitorLogging: ClientPlugin<KtorMonitorLoggingConfig> = LoggingPlugin

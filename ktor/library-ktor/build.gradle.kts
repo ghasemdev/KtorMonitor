@@ -78,7 +78,7 @@ kotlin {
     explicitApi()
 
     jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 
     compilerOptions {
@@ -94,11 +94,10 @@ kotlin {
         browser()
     }
 
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
-        }
-        publishLibraryVariants("debug", "release")
+    android {
+        namespace = "ro.cosminmihu.ktor.monitor.ktor"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
     }
 
     listOf(
@@ -106,7 +105,11 @@ kotlin {
         iosSimulatorArm64(),
     )
 
-    jvm()
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
@@ -114,22 +117,11 @@ kotlin {
             api(projects.ktor.libraryAttr)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.websockets)
         }
     }
 }
 
-android {
-    namespace = "ro.cosminmihu.ktor.monitor.ktor"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-}
 
 afterEvaluate {
     publishing {

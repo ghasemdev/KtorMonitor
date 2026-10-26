@@ -11,6 +11,7 @@ internal fun ResponseScreen(response: DetailUiState.Response, modifier: Modifier
         isError = response.isError,
         headers = response.headers,
         body = response.body,
+        stream = response.stream,
         error = response.error,
         modifier = modifier,
     )

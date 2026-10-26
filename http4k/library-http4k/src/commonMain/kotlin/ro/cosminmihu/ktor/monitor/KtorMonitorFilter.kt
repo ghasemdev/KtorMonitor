@@ -1,13 +1,15 @@
 package ro.cosminmihu.ktor.monitor
 
 import kotlinx.coroutines.launch
+import org.http4k.core.ContentType
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
-import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
-import kotlin.math.abs
-import kotlin.random.Random
+import org.http4k.core.Response
+import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
+import java.io.BufferedInputStream
+import java.io.FilterInputStream
+import java.io.IOException
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 /**
  * An [http4k](https://www.http4k.org/) [Filter] that provides the capability to log HTTP calls.
@@ -24,13 +26,13 @@ import kotlin.time.ExperimentalTime
  * }.then(JavaHttpClient())
  * ```
  */
-public class KtorMonitorFilter() : Filter {
+public class KtorMonitorFilter(
+    private val config: KtorMonitorFilterConfig = KtorMonitorFilterConfig(),
+) : Filter {
 
-    private val config: KtorMonitorFilterConfig = KtorMonitorFilterConfig()
-
-    public constructor(block: KtorMonitorFilterConfig.() -> Unit) : this() {
-        config.apply(block)
-    }
+    public constructor(block: KtorMonitorFilterConfig.() -> Unit) : this(
+        KtorMonitorFilterConfig().apply(block)
+    )
 
     init {
         @OptIn(InternalKtorMonitorApi::class)
@@ -39,7 +41,7 @@ public class KtorMonitorFilter() : Filter {
             showNotification = config.showNotification,
             retentionPeriod = config.retentionPeriod,
             maxContentLength = config.maxContentLength,
-            clientSource = ClientSource.Http4k,
+            networkClient = NetworkClient.Http4k,
         )
 
         if (config.isActive && config.retentionPeriod.isPositive()) {
@@ -48,7 +50,7 @@ public class KtorMonitorFilter() : Filter {
         }
     }
 
-    @OptIn(InternalKtorMonitorApi::class, ExperimentalTime::class)
+    @OptIn(InternalKtorMonitorApi::class)
     override fun invoke(next: HttpHandler): HttpHandler = { request ->
         // Check if plugin is active.
         if (!config.isActive || !config.retentionPeriod.isPositive()) {
@@ -60,7 +62,7 @@ public class KtorMonitorFilter() : Filter {
                 next(request)
             } else {
                 // Generate call id.
-                val id = callIdentifier
+                val id = InternalLibraryBridge.newCallId()
 
                 // Log request.
                 val requestTimestamp = Clock.System.now().toEpochMilliseconds()
@@ -69,27 +71,23 @@ public class KtorMonitorFilter() : Filter {
                 val requestContentType = request.header("Content-Type")
 
                 // Request body bytes — duplicate ByteBuffer to avoid consuming the original.
+                var requestBodySize: Long? = null
                 val requestBodyBytes = try {
                     val buf = request.body.payload.duplicate()
-                    val bytes = ByteArray(buf.remaining()).also { buf.get(it) }
-                    if (config.maxContentLength != ContentLength.Full) {
-                        bytes.take(config.maxContentLength).toByteArray()
-                    } else bytes
+                    requestBodySize = buf.remaining().toLong()
+                    ByteArray(minOf(buf.remaining(), config.maxContentLength)).also { buf.get(it) }
                 } catch (_: Throwable) {
                     null
                 }
                 val requestContentLength = request.body.length
-                    ?: requestBodyBytes?.size?.toLong()
+                    ?: requestBodySize
                     ?: 0L
 
                 // Request headers.
-                val requestHeaders = request.headers
-                    .groupBy({ it.first }) { it.second ?: "" }
-                    .mapValues { (key, values) ->
-                        val sanitized = config.sanitizedHeaders.firstOrNull { it.predicate(key) }
-                        if (sanitized != null) listOf(sanitized.placeholder) else values
-                    }
-                    .toSortedMap()
+                val requestHeaders = InternalLibraryBridge.sanitizeHeaders(
+                    request.headers.groupBy({ it.first }) { it.second ?: "" },
+                    { name -> config.sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder },
+                )
 
                 InternalLibraryBridge.coroutineScope().launch {
                     try {
@@ -129,13 +127,10 @@ public class KtorMonitorFilter() : Filter {
                 val responseContentType = response.header("Content-Type")
 
                 // Response headers.
-                val responseHeaders = response.headers
-                    .groupBy({ it.first }) { it.second ?: "" }
-                    .mapValues { (key, values) ->
-                        val sanitized = config.sanitizedHeaders.firstOrNull { it.predicate(key) }
-                        if (sanitized != null) listOf(sanitized.placeholder) else values
-                    }
-                    .toSortedMap()
+                val responseHeaders = InternalLibraryBridge.sanitizeHeaders(
+                    response.headers.groupBy({ it.first }) { it.second ?: "" },
+                    { name -> config.sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder },
+                )
 
                 InternalLibraryBridge.coroutineScope().launch {
                     try {
@@ -152,49 +147,111 @@ public class KtorMonitorFilter() : Filter {
                     }
                 }
 
-                // Response body — duplicate ByteBuffer so the caller still receives a full body.
-                val responseBodyBytes = try {
-                    val buf = response.body.payload.duplicate()
-                    ByteArray(buf.remaining()).also { buf.get(it) }
-                } catch (_: Throwable) {
-                    null
-                }
-                val responseContentLength = responseBodyBytes?.size?.toLong()
-                    ?: response.body.length
-                    ?: 0L
+                // Server-Sent Events — the body never closes on its own, so eagerly reading
+                // `payload` (which fully drains the stream) would block indefinitely. Instead,
+                // wrap the stream so each chunk read by the consumer is mirrored into the DB,
+                // letting the detail screen update live.
+                val isServerSentEvents = responseContentType
+                    ?.substringBefore(';')
+                    ?.trim()
+                    ?.equals(ContentType.TEXT_EVENT_STREAM.value, ignoreCase = true) == true
 
-                val truncatedBody = if (config.maxContentLength != ContentLength.Full) {
-                    responseBodyBytes?.take(config.maxContentLength)?.toByteArray()
+                if (isServerSentEvents) {
+                    wrapForStreaming(response, id, config.maxContentLength)
                 } else {
-                    responseBodyBytes
-                }
-                val isResponseBodyTruncated = responseContentLength > config.maxContentLength
-
-                InternalLibraryBridge.coroutineScope().launch {
-                    try {
-                        InternalLibraryBridge.saveResponseBody(
-                            id = id,
-                            responseContentLength = responseContentLength,
-                            responseBody = truncatedBody ?: ByteArray(0),
-                            isResponseBodyTruncated = isResponseBodyTruncated,
-                        )
+                    // Response body — duplicate ByteBuffer so the caller still receives a full body.
+                    var responseBodySize: Long? = null
+                    val truncatedBody = try {
+                        val buf = response.body.payload.duplicate()
+                        responseBodySize = buf.remaining().toLong()
+                        ByteArray(minOf(buf.remaining(), config.maxContentLength)).also { buf.get(it) }
                     } catch (_: Throwable) {
+                        null
                     }
-                }
+                    val responseContentLength = responseBodySize
+                        ?: response.body.length
+                        ?: 0L
+                    val isResponseBodyTruncated = responseContentLength > config.maxContentLength
 
-                response
+                    InternalLibraryBridge.coroutineScope().launch {
+                        try {
+                            InternalLibraryBridge.saveResponseBody(
+                                id = id,
+                                responseContentLength = responseContentLength,
+                                responseBody = truncatedBody ?: ByteArray(0),
+                                isResponseBodyTruncated = isResponseBodyTruncated,
+                            )
+                        } catch (_: Throwable) {
+                        }
+                    }
+
+                    response
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalTime::class)
-private val callIdentifier: String
-    get() {
-        val timestamp = Clock.System.now().toEpochMilliseconds().toString()
-        val randomLong = Random.nextLong().toString()
-        val raw = "$timestamp-$randomLong"
-        val hash = abs(raw.hashCode()).toString(16)
-        return "$raw-$hash"
+@OptIn(InternalKtorMonitorApi::class)
+private fun wrapForStreaming(
+    response: Response,
+    id: String,
+    maxContentLength: Int,
+): Response {
+    val recorder = StreamRecorder(isWebSocket = false)
+    recorder.bind(id, maxContentLength)
+
+    val originalLength = response.body.length
+
+    val tee = object : FilterInputStream(BufferedInputStream(response.body.stream)) {
+        override fun read(): Int {
+            val byte = try {
+                super.read()
+            } catch (cause: IOException) {
+                recorder.finish(error = "${cause::class.simpleName}: ${cause.message.orEmpty()}")
+                throw cause
+            }
+            if (byte < 0) {
+                recorder.finish()
+                return byte
+            }
+            recorder.appendSseBytes(byteArrayOf(byte.toByte()))
+            return byte
+        }
+
+        // Hand data to the consumer one line at a time, so only what the consumer actually
+        // received is recorded instead of everything that was buffered.
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            if (len == 0) return 0
+            var read = 0
+            try {
+                while (read < len) {
+                    val byte = super.read()
+                    if (byte < 0) break
+                    b[off + read++] = byte.toByte()
+                    if (byte == '\n'.code) break
+                }
+            } catch (cause: IOException) {
+                if (read == 0) {
+                    recorder.finish(error = "${cause::class.simpleName}: ${cause.message.orEmpty()}")
+                    throw cause
+                }
+            }
+            if (read == 0) {
+                recorder.finish()
+                return -1
+            }
+            recorder.appendSseBytes(b, off, read)
+            return read
+        }
+
+        override fun available(): Int = 0
+
+        override fun close() {
+            recorder.finish()
+            super.close()
+        }
     }
 
+    return response.body(tee, originalLength)
+}

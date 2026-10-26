@@ -1,14 +1,16 @@
 package ro.cosminmihu.ktor.monitor.db
 
-import app.cash.sqldelight.Query
-import app.cash.sqldelight.coroutines.asFlow
+import io.ktor.utils.io.ioDispatcher
 import kotlinx.coroutines.flow.Flow
-import ro.cosminmihu.ktor.monitor.db.sqldelight.Call
-import ro.cosminmihu.ktor.monitor.db.sqldelight.LibraryDatabase
-import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCalls
-import ro.cosminmihu.ktor.monitor.db.sqldelight.SelectCallsWithLimit
+import kotlinx.coroutines.withContext
+import kotlin.time.Clock
 
-internal class LibraryDao(private val database: LibraryDatabase) {
+private fun now(): Long = Clock.System.now().toEpochMilliseconds()
+
+internal class LibraryDao(database: LibraryDatabase) {
+
+    private val callDao = database.callDao()
+    private val streamEventDao = database.streamEventDao()
 
     suspend fun saveRequest(
         id: String,
@@ -20,28 +22,26 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         requestContentLength: Long,
         requestBody: ByteArray?,
         isRequestBodyTruncated: Boolean,
-    ) {
-        database.callQueries.saveRequest(
-            id,
-            method,
-            url,
-            requestTimestamp,
-            requestHeaders,
-            requestContentType,
-            requestContentLength,
-            requestBody,
-            isRequestBodyTruncated,
+    ) = withContext(ioDispatcher()) {
+        callDao.saveRequest(
+            id = id,
+            method = method,
+            url = url,
+            requestTimestamp = requestTimestamp,
+            requestHeaders = requestHeaders,
+            requestContentType = requestContentType,
+            requestContentLength = requestContentLength,
+            requestBody = requestBody,
+            isRequestBodyTruncated = isRequestBodyTruncated,
         )
     }
 
     suspend fun saveRequest(
         id: String,
         error: Throwable,
-    ) {
-        database.callQueries.saveError(
-            error.stackTraceToString(),
-            id
-        )
+    ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, now())
+        callDao.saveError(id = id, error = error.stackTraceToString())
     }
 
     suspend fun saveResponse(
@@ -52,15 +52,15 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         responseTimestamp: Long,
         responseContentType: String?,
         responseHeaders: Map<String, List<String>>?,
-    ) {
-        database.callQueries.saveResponse(
-            protocol,
-            requestTimestamp,
-            responseCode.toLong(),
-            responseTimestamp,
-            responseContentType,
-            responseHeaders,
-            id
+    ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, requestTimestamp)
+        callDao.saveResponse(
+            id = id,
+            protocol = protocol,
+            responseCode = responseCode.toLong(),
+            responseTimestamp = responseTimestamp,
+            responseContentType = responseContentType,
+            responseHeaders = responseHeaders,
         )
     }
 
@@ -69,12 +69,13 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         responseContentLength: Long?,
         responseBody: ByteArray?,
         isResponseBodyTruncated: Boolean,
-    ) {
-        database.callQueries.saveResponseBody(
-            responseContentLength,
-            responseBody,
-            isResponseBodyTruncated,
-            id
+    ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, now())
+        callDao.saveResponseBody(
+            id = id,
+            responseContentLength = responseContentLength,
+            responseBody = responseBody,
+            isResponseBodyTruncated = isResponseBodyTruncated,
         )
     }
 
@@ -83,39 +84,79 @@ internal class LibraryDao(private val database: LibraryDatabase) {
         chunk: ByteArray,
         deltaSize: Long,
         isResponseBodyTruncated: Boolean,
-    ) {
-        database.callQueries.appendResponseBody(
-            chunk,
-            deltaSize,
-            isResponseBodyTruncated,
-            id,
+    ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, now())
+        callDao.appendResponseBody(
+            id = id,
+            chunk = chunk,
+            deltaSize = deltaSize,
+            isResponseBodyTruncated = isResponseBodyTruncated,
         )
     }
 
     suspend fun saveResponse(
         id: String,
         error: Throwable,
-    ) {
-        database.callQueries.saveError(
-            error.stackTraceToString(),
-            id
+    ) = withContext(ioDispatcher()) {
+        callDao.ensureCall(id, now())
+        callDao.saveError(id = id, error = error.stackTraceToString())
+    }
+
+    fun getCalls(): Flow<List<SelectCalls>> =
+        callDao.selectCalls()
+
+    fun getCall(id: String): Flow<Call?> =
+        callDao.selectCall(id)
+
+    suspend fun getCalls(ids: Collection<String>): List<Call> = withContext(ioDispatcher()) {
+        if (ids.isEmpty()) return@withContext emptyList()
+        callDao.selectCallsByIds(ids)
+    }
+
+    fun getCalls(limit: Long): Flow<List<SelectCallsWithLimit>> =
+        callDao.selectCallsWithLimit(limit)
+
+
+    suspend fun deleteCalls(ids: Collection<String>) = withContext(ioDispatcher()) {
+        if (ids.isEmpty()) return@withContext
+        callDao.deleteCallsByIds(ids)
+    }
+
+    suspend fun deleteCallsBefore(threshold: Long) = withContext(ioDispatcher()) {
+        callDao.deleteCallsBefore(threshold)
+    }
+
+    suspend fun openStream(id: String, kind: String) = withContext(ioDispatcher()) {
+        callDao.openStream(id = id, kind = kind, status = StreamStatus.OPEN)
+    }
+
+    suspend fun closeStream(
+        id: String,
+        closeCode: Int?,
+        closeReason: String?,
+        error: String?,
+        closedAt: Long,
+    ) = withContext(ioDispatcher()) {
+        callDao.closeStream(
+            id = id,
+            status = if (error != null) StreamStatus.FAILED else StreamStatus.CLOSED,
+            closeCode = closeCode,
+            closeReason = closeReason,
+            error = error,
+            closedAt = closedAt,
         )
     }
 
-    fun getCalls(): Flow<Query<SelectCalls>> =
-        database.callQueries.selectCalls().asFlow()
-
-    fun getCall(id: String): Flow<Query<Call>> =
-        database.callQueries.selectCall(id).asFlow()
-
-    fun getCalls(limit: Long): Flow<Query<SelectCallsWithLimit>> =
-        database.callQueries.selectCallsWithLimit(limit).asFlow()
-
-    suspend fun deleteCalls() {
-        database.callQueries.deleteCalls()
+    suspend fun saveStreamEvent(event: StreamEvent) = withContext(ioDispatcher()) {
+        streamEventDao.insert(event)
     }
 
-    suspend fun deleteCallsBefore(threshold: Long) {
-        database.callQueries.deleteCallsBefore(threshold)
-    }
+    fun getStreamEvents(callId: String): Flow<List<StreamEvent>> =
+        streamEventDao.selectEvents(callId)
+
+    suspend fun getStreamEvents(callIds: Collection<String>): List<StreamEvent> =
+        withContext(ioDispatcher()) {
+            if (callIds.isEmpty()) return@withContext emptyList()
+            streamEventDao.selectEventsByCallIds(callIds)
+        }
 }

@@ -8,27 +8,34 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
-    alias(libs.plugins.sqldelight)
-    alias(libs.plugins.kotlinx.atomicfu)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
     alias(libs.plugins.koin.compiler)
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.binary.compatibility.validator)
     alias(libs.plugins.dokka)
+    alias(libs.plugins.buildkonfig)
 
     id("maven-publish")
 }
 
 group = "ir.parsuomash.ktor"
-version = "1.13.0"
+version = "1.17.0"
 
-sqldelight {
-    databases {
-        create("LibraryDatabase") {
-            packageName.set("ro.cosminmihu.ktor.monitor.db.sqldelight")
-            generateAsync = true
-        }
+buildkonfig {
+    packageName = "ro.cosminmihu.ktor.monitor.core"
+
+    defaultConfigs {
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "LIBRARY_VERSION",
+            project.version.toString(),
+        )
     }
-    linkSqlite = true
+}
+
+room3 {
+    schemaDirectory("$projectDir/schemas")
 }
 
 compose.resources {
@@ -47,13 +54,8 @@ dokka {
         )
 
         suppressedFiles.from(
-            file("src/commonMain/kotlin/ro/cosminmihu/ktor/monitor/domain/model/ClientSource.kt")
+            file("src/commonMain/kotlin/ro/cosminmihu/ktor/monitor/domain/model/NetworkClient.kt")
         )
-
-        perPackageOption {
-            matchingRegex.set("ro.cosminmihu.ktor.monitor.db.sqldelight")
-            suppress.set(true)
-        }
 
         perPackageOption {
             matchingRegex.set("ro.cosminmihu.ktor.monitor.ui.resources")
@@ -72,9 +74,12 @@ apiValidation {
     publicPackages.add("ro.cosminmihu.ktor.monitor")
     ignoredClasses.add("ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi")
     ignoredClasses.add("ro.cosminmihu.ktor.monitor.InternalLibraryBridge")
-    ignoredClasses.add("ro.cosminmihu.ktor.monitor.domain.model.ClientSource")
+    ignoredClasses.add("ro.cosminmihu.ktor.monitor.StreamRecorder")
+    ignoredClasses.add("ro.cosminmihu.ktor.monitor.StreamRecorder\$Companion")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.db")
+    ignoredPackages.add("ro.cosminmihu.ktor.monitor.domain")
     ignoredPackages.add("ro.cosminmihu.ktor.monitor.ui")
+    ignoredPackages.add("org.koin.plugin.hints")
 }
 
 mavenPublishing {
@@ -145,9 +150,13 @@ kotlin {
         browser()
     }
 
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+    android {
+        namespace = "ro.cosminmihu.ktor.monitor"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+
+        androidResources {
+            enable = true
         }
     }
 
@@ -157,30 +166,32 @@ kotlin {
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             isStatic = true
-            linkerOpts("-lsqlite3")
         }
     }
 
-    jvm()
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
     sourceSets {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.android.permisssions)
-            implementation(libs.sqldelight.android)
+            implementation(libs.sqlite.framework)
             implementation(libs.koin.android)
             implementation(libs.coil.gif)
             implementation(libs.core.splashscreen)
             implementation(libs.material)
         }
         iosMain.dependencies {
-            implementation(libs.sqldelight.native)
+            implementation(libs.sqlite.bundled)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
-            implementation(libs.compose.material.icons.extended)
             implementation(libs.compose.material3.adaptive.navigation.suite)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
@@ -188,13 +199,15 @@ kotlin {
             implementation(libs.compose.adaptive)
             implementation(libs.compose.adaptive.layout)
             implementation(libs.compose.adaptive.navigation)
-            implementation(libs.navigation.event)
+            implementation(libs.compose.adaptive.navigation3)
+            implementation(libs.navigation3.ui)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
-            implementation(libs.sqldelight.runtime)
-            implementation(libs.sqldelight.coroutines)
-            implementation(libs.sqldelight.primitive.adapters)
+            api(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.collections.immutable)
+            implementation(libs.room.runtime)
             implementation(libs.koin.core)
+            implementation(libs.koin.annotations)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.kotlinx.datetime)
@@ -206,43 +219,48 @@ kotlin {
             implementation(libs.ksoup)
             implementation(libs.ktor.utils)
         }
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
+        webTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
-            implementation(libs.sqldelight.jvm)
+            implementation(libs.sqlite.bundled)
             implementation(libs.slf4j.simple)
         }
 
         webMain.dependencies {
-            implementation(libs.sqldelight.web)
-            implementation(npm("sql.js", libs.versions.sqljs.get()))
-            implementation(npm("@cashapp/sqldelight-sqljs-worker", libs.versions.sqldelight.get()))
-            implementation(devNpm("copy-webpack-plugin", libs.versions.webpack.get()))
+            implementation(libs.sqlite.web)
+            implementation(npm("@sqlite.org/sqlite-wasm", libs.versions.sqlite.wasm.get()))
         }
     }
 
     jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
-android {
-    namespace = "ro.cosminmihu.ktor.monitor"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
-    }
+dependencies {
+    listOf(
+        "kspAndroid",
+        "kspJvm",
+        "kspIosArm64",
+        "kspIosSimulatorArm64",
+        "kspJs",
+        "kspWasmJs",
+    ).forEach { add(it, libs.room.compiler) }
 }
+
+// The web tests only exercise the database and do not use Compose UI testing.
+tasks.matching { it.name.startsWith("checkComposeUiTestConfigurationFor") }.configureEach {
+    enabled = false
+}
+
 
 afterEvaluate {
     publishing {

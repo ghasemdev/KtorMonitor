@@ -9,22 +9,12 @@ import io.ktor.util.copyToBoth
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.charsets.Charset
-import io.ktor.utils.io.core.readText
-import io.ktor.utils.io.readRemaining
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writer
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 
-internal suspend inline fun ByteReadChannel.tryReadText(charset: Charset): String? = try {
-    readRemaining().readText(charset = charset)
-} catch (cause: Throwable) {
-    null
-}
-
-internal suspend fun OutgoingContent.observe(log: ByteWriteChannel): OutgoingContent = when (this) {
+internal suspend fun OutgoingContent.observe(log: ByteWriteChannel, scope: CoroutineScope): OutgoingContent = when (this) {
     is OutgoingContent.ByteArrayContent -> {
         log.writeFully(bytes())
         log.flushAndClose()
@@ -41,21 +31,20 @@ internal suspend fun OutgoingContent.observe(log: ByteWriteChannel): OutgoingCon
 
     is OutgoingContent.WriteChannelContent -> {
         val responseChannel = ByteChannel()
-        val content = toReadChannel()
+        val content = toReadChannel(scope)
         content.copyToBoth(log, responseChannel)
         LoggedContent(this, responseChannel)
     }
 
-    is OutgoingContent.ContentWrapper -> copy(delegate().observe(log))
+    is OutgoingContent.ContentWrapper -> copy(delegate().observe(log, scope))
     is OutgoingContent.NoContent, is OutgoingContent.ProtocolUpgrade -> {
         log.flushAndClose()
         this
     }
 }
 
-@OptIn(DelicateCoroutinesApi::class)
-private fun OutgoingContent.WriteChannelContent.toReadChannel(): ByteReadChannel =
-    GlobalScope.writer(Dispatchers.Default) {
+private fun OutgoingContent.WriteChannelContent.toReadChannel(scope: CoroutineScope): ByteReadChannel =
+    scope.writer(Dispatchers.Default) {
         writeTo(channel)
     }.channel
 

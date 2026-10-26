@@ -2,7 +2,7 @@ package ro.cosminmihu.ktor.monitor.domain
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import ro.cosminmihu.ktor.monitor.db.sqldelight.Call
+import ro.cosminmihu.ktor.monitor.db.Call
 import ro.cosminmihu.ktor.monitor.domain.model.buildShellCommand
 
 internal class ExportCallRequestAsWgetUseCase {
@@ -11,9 +11,10 @@ internal class ExportCallRequestAsWgetUseCase {
         buildShellCommand(
             call = call,
             tool = "wget",
-            method = { """--method="$it"""" },
-            header = { """--header="$it"""" },
-            data = { """--body-data="$it"""" },
+            method = { "--method=$it" },
+            header = { "--header=$it" },
+            data = { "--body-data=$it" },
+            binaryData = { "--body-file=$it" },
         )
     }
 }

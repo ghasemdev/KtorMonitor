@@ -6,8 +6,9 @@ plugins {
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
-    alias(libs.plugins.sqldelight) apply false
-    alias(libs.plugins.kotlinx.atomicfu) apply false
+    alias(libs.plugins.kotlinJvm) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.room) apply false
     alias(libs.plugins.koin.compiler) apply false
     alias(libs.plugins.maven.publish) apply false
     alias(libs.plugins.binary.compatibility.validator) apply false
@@ -16,13 +17,13 @@ plugins {
 
 allprojects {
     group = "ro.cosminmihu.ktor"
-    version = "1.13.0"
+    version = "1.17.0"
 }
 
 dependencies {
-    dokka(project(":ktor:library-ktor"))
-    dokka(project(":okhttp:library-okhttp"))
-    dokka(project(":http4k:library-http4k"))
+    dokka(projects.ktor.libraryKtor)
+    dokka(projects.okhttp.libraryOkhttp)
+    dokka(projects.http4k.libraryHttp4k)
 }
 
 dokka {

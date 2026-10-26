@@ -81,17 +81,20 @@ kotlin {
     explicitApi()
 
     jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 
-    androidTarget {
+    android {
+        namespace = "ro.cosminmihu.ktor.monitor.okhttp"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+    }
+
+    jvm {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
         }
-        publishLibraryVariants("debug", "release")
     }
-
-    jvm()
 
     sourceSets {
         commonMain.dependencies {
@@ -101,16 +104,4 @@ kotlin {
     }
 }
 
-android {
-    namespace = "ro.cosminmihu.ktor.monitor.okhttp"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-}
 

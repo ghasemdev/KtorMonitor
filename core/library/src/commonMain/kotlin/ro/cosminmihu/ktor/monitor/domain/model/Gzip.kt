@@ -3,7 +3,7 @@ package ro.cosminmihu.ktor.monitor.domain.model
 import io.ktor.http.HttpHeaders
 import io.ktor.util.GZipEncoder
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.readBuffer
 import kotlinx.coroutines.coroutineScope
 import kotlinx.io.readByteArray
 
@@ -13,7 +13,7 @@ internal suspend fun ByteArray.gunzip(): ByteArray? {
         coroutineScope {
             val inputChannel = ByteReadChannel(this@gunzip)
             val decodedChannel = GZipEncoder.decode(inputChannel, coroutineContext)
-            decodedChannel.readRemaining().readByteArray()
+            decodedChannel.readBuffer().readByteArray()
         }
     } catch (_: Exception) {
         null

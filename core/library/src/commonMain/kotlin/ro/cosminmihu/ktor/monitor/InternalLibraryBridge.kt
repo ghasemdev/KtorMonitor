@@ -7,9 +7,10 @@ import ro.cosminmihu.ktor.monitor.di.LibraryKoinContext
 import ro.cosminmihu.ktor.monitor.di.inject
 import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
 import ro.cosminmihu.ktor.monitor.domain.ListenByRecentCallsUseCase
-import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
+import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import ro.cosminmihu.ktor.monitor.domain.model.Config
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 /**
  * Marks declarations that are **internal** to the Ktor Monitor library modules.
@@ -45,7 +46,7 @@ public object InternalLibraryBridge {
         showNotification: Boolean,
         retentionPeriod: Duration,
         maxContentLength: Int,
-        clientSource: ClientSource,
+        networkClient: NetworkClient,
         iosGroupId: String?,
     ) {
         LibraryKoinContext.koin.get<ConfigUseCase>().setConfig(
@@ -54,7 +55,7 @@ public object InternalLibraryBridge {
                 showNotification = showNotification,
                 retentionPeriod = retentionPeriod,
                 maxContentLength = maxContentLength,
-                clientSource = clientSource,
+                networkClient = networkClient,
                 iosGroupId = iosGroupId,
             )
         )
@@ -70,13 +71,35 @@ public object InternalLibraryBridge {
 
 
     /**
+     * Generate a unique call identifier.
+     */
+    @InternalKtorMonitorApi
+    public fun newCallId(): String = Uuid.random().toString()
+
+    /**
+     * Replace the values of the headers that have a placeholder with that placeholder and sort by name.
+     *
+     * @param placeholderFor Returns the placeholder for a header name, or `null` to keep its values.
+     */
+    @InternalKtorMonitorApi
+    public fun sanitizeHeaders(
+        headers: Map<String, List<String>>,
+        placeholderFor: (name: String) -> String?,
+    ): Map<String, List<String>> = headers.entries
+        .sortedBy { it.key }
+        .associate { (name, values) ->
+            name to (placeholderFor(name)?.let { listOf(it) } ?: values)
+        }
+
+    /**
      * Get the library coroutine scope.
      */
     @InternalKtorMonitorApi
     public fun coroutineScope(): CoroutineScope {
-        val scope by LibraryKoinContext.inject<CoroutineScope>()
         return scope
     }
+
+    private val scope: CoroutineScope by lazy { LibraryKoinContext.koin.get<CoroutineScope>() }
 
     /**
      * Save request data.

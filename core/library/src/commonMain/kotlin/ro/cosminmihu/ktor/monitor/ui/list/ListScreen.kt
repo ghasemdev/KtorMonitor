@@ -8,7 +8,10 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,12 +19,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SearchOff
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -48,18 +47,47 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
+import ro.cosminmihu.ktor.monitor.core.BuildKonfig
 import ro.cosminmihu.ktor.monitor.core.URL
-import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
+import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.Loading
+import ro.cosminmihu.ktor.monitor.ui.VerticalScrollbarBox
+import ro.cosminmihu.ktor.monitor.ui.icons.Icons
+import ro.cosminmihu.ktor.monitor.ui.icons.automirrored.filled.Article
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Close
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Delete
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Downloading
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.FileDownload
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Laptop
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Link
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Markdown
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Search
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.SearchOff
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Share
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.TouchApp
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.Warning
 import ro.cosminmihu.ktor.monitor.ui.notification.NotificationPermissionBanner
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
-import ro.cosminmihu.ktor.monitor.ui.resources.ktor_clean
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_clear_selection
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_close
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_delete_selection
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_error
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_filter
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_ic_launcher
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_ic_warning_off
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_library_name
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_select
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_select_all
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_selection_remove
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_selection_selected
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_share_selection
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_share_selection_as_curl
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_share_selection_as_json
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_share_selection_as_markdown
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_share_selection_as_text
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_share_selection_as_url
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_share_selection_as_wget
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_http4k
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_ktor
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_source_none
@@ -74,7 +102,13 @@ internal fun ListScreen(
     toggleOnlyError: () -> Unit,
     setSearchQuery: (String) -> Unit,
     clearSearchQuery: () -> Unit,
-    deleteCalls: () -> Unit,
+    enterSelectionMode: () -> Unit,
+    clearSelection: () -> Unit,
+    clearSelectedCalls: () -> Unit,
+    toggleSelection: (String) -> Unit,
+    selectAllVisible: () -> Unit,
+    exportSelectedCalls: (ListUiState.BulkShareType) -> Unit,
+    deleteSelectedCalls: () -> Unit,
     onCallClick: (String) -> Unit,
     toggleMethod: (String) -> Unit,
     toggleResponseCodeRange: (ListUiState.Filter.ResponseCodeRange) -> Unit,
@@ -87,6 +121,7 @@ internal fun ListScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
+    var isShareMenuExpanded by rememberSaveable { mutableStateOf(false) }
     val searchFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(showSearchBar) {
@@ -104,19 +139,30 @@ internal fun ListScreen(
                 TopAppBar(
                     title = {
                         Column {
-                            Text(
-                                text = stringResource(Res.string.ktor_library_name),
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable { uriHandler.openUri(URL.GITHUB_REPO) },
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Row(verticalAlignment = Alignment.Bottom) {
+                                Text(
+                                    text = stringResource(Res.string.ktor_library_name),
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable { uriHandler.openUri(URL.GITHUB_REPO) },
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
 
-                            uiState.clientSource?.let { source ->
+                                Text(
+                                    text = "v${BuildKonfig.LIBRARY_VERSION}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = Dimens.ExtraSmall),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+
+                            uiState.networkClient?.let { source ->
                                 val (label, url) = when (source) {
-                                    ClientSource.Ktor -> stringResource(Res.string.ktor_source_ktor) to URL.KTOR
-                                    ClientSource.OkHttp -> stringResource(Res.string.ktor_source_okhttp) to URL.OKHTTP
-                                    ClientSource.Http4k -> stringResource(Res.string.ktor_source_http4k) to URL.HTTP4K
+                                    NetworkClient.Ktor -> stringResource(Res.string.ktor_source_ktor) to URL.KTOR
+                                    NetworkClient.OkHttp -> stringResource(Res.string.ktor_source_okhttp) to URL.OKHTTP
+                                    NetworkClient.Http4k -> stringResource(Res.string.ktor_source_http4k) to URL.HTTP4K
                                 }
                                 Text(
                                     text = "${stringResource(Res.string.ktor_source_prefix)} $label",
@@ -146,6 +192,99 @@ internal fun ListScreen(
                     },
                     actions = {
                         if (uiState.isEmpty) return@TopAppBar
+
+                        if (uiState.isSelectionMode) {
+                            if (uiState.canBulkExport) {
+                                IconButton(onClick = clearSelectedCalls) {
+                                    Icon(
+                                        imageVector = vectorResource(Res.drawable.ktor_selection_remove),
+                                        contentDescription = stringResource(Res.string.ktor_clear_selection),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            } else {
+                                IconButton(onClick = selectAllVisible) {
+                                    Icon(
+                                        imageVector = vectorResource(Res.drawable.ktor_select_all),
+                                        contentDescription = stringResource(Res.string.ktor_select_all),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+
+                            if (uiState.canBulkExport) {
+                                Box {
+                                    IconButton(onClick = { isShareMenuExpanded = true }) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Share,
+                                            contentDescription = stringResource(Res.string.ktor_share_selection),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                    DropdownMenu(
+                                        expanded = isShareMenuExpanded,
+                                        onDismissRequest = { isShareMenuExpanded = false },
+                                    ) {
+                                        ListUiState.BulkShareType.entries.forEach { type ->
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(Dimens.Small),
+                                                    ) {
+                                                        val label = stringResource(
+                                                            when (type) {
+                                                                ListUiState.BulkShareType.Json -> Res.string.ktor_share_selection_as_json
+                                                                ListUiState.BulkShareType.Text -> Res.string.ktor_share_selection_as_text
+                                                                ListUiState.BulkShareType.Markdown -> Res.string.ktor_share_selection_as_markdown
+                                                                ListUiState.BulkShareType.Curl -> Res.string.ktor_share_selection_as_curl
+                                                                ListUiState.BulkShareType.Wget -> Res.string.ktor_share_selection_as_wget
+                                                                ListUiState.BulkShareType.Url -> Res.string.ktor_share_selection_as_url
+                                                            }
+                                                        )
+
+                                                        Icon(
+                                                            imageVector = when (type) {
+                                                                ListUiState.BulkShareType.Json -> Icons.Default.FileDownload
+                                                                ListUiState.BulkShareType.Text -> Icons.AutoMirrored.Filled.Article
+                                                                ListUiState.BulkShareType.Markdown -> Icons.Default.Markdown
+                                                                ListUiState.BulkShareType.Curl -> Icons.Default.Laptop
+                                                                ListUiState.BulkShareType.Wget -> Icons.Default.Downloading
+                                                                ListUiState.BulkShareType.Url -> Icons.Default.Link
+                                                            },
+                                                            contentDescription = label,
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                        )
+                                                        Text(text = label)
+                                                    }
+                                                },
+                                                onClick = {
+                                                    exportSelectedCalls(type)
+                                                    isShareMenuExpanded = false
+                                                },
+                                            )
+                                        }
+                                    }
+                                }
+
+                                IconButton(onClick = deleteSelectedCalls) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Delete,
+                                        contentDescription = stringResource(Res.string.ktor_delete_selection),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+
+                            IconButton(onClick = clearSelection) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = stringResource(Res.string.ktor_close),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+
+                            return@TopAppBar
+                        }
 
                         IconButton(
                             onClick = toggleOnlyError
@@ -178,20 +317,29 @@ internal fun ListScreen(
                             )
                         }
                         IconButton(
-                            onClick = {
-                                deleteCalls()
-                                resetFilter()
-                                showSearchBar = false
-                            }
+                            onClick = enterSelectionMode,
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = stringResource(Res.string.ktor_clean),
+                                imageVector = Icons.Filled.TouchApp,
+                                contentDescription = stringResource(Res.string.ktor_select),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                     },
                 )
+
+                if (uiState.isSelectionMode) {
+                    Text(
+                        text = stringResource(
+                            Res.string.ktor_selection_selected,
+                            uiState.selectedCount,
+                            uiState.totalCallsCount,
+                        ),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(Dimens.Small)
+                    )
+                }
 
                 AnimatedVisibility(visible = showSearchBar) {
                     Surface {
@@ -248,10 +396,6 @@ internal fun ListScreen(
                 }
 
                 uiState.calls != null -> {
-                    var selectedItemId: String? by rememberSaveable {
-                        mutableStateOf(null)
-                    }
-
                     val listState = rememberLazyListState()
                     VerticalScrollbarBox(
                         state = listState,
@@ -270,14 +414,13 @@ internal fun ListScreen(
                                     modifier = Modifier
                                         .animateItem()
                                         .clickable {
-                                            selectedItemId = item.id
-                                            onCallClick(item.id)
+                                            when (uiState.isSelectionMode) {
+                                                true -> toggleSelection(item.id)
+                                                false -> onCallClick(item.id)
+                                            }
                                         }
                                         .background(
-                                            when (selectedItemId) {
-                                                item.id -> MaterialTheme.colorScheme.surfaceVariant
-                                                else -> MaterialTheme.colorScheme.surface
-                                            }
+                                            if (item.id in uiState.selectedCallIds) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface
                                         )
                                 )
                                 HorizontalDivider()
@@ -300,7 +443,13 @@ private fun ListScreenPreview() {
             toggleOnlyError = {},
             setSearchQuery = {},
             clearSearchQuery = {},
-            deleteCalls = {},
+            enterSelectionMode = {},
+            clearSelection = {},
+            clearSelectedCalls = {},
+            toggleSelection = {},
+            selectAllVisible = {},
+            exportSelectedCalls = { _ -> },
+            deleteSelectedCalls = {},
             onCallClick = {},
             toggleMethod = {},
             toggleResponseCodeRange = {},

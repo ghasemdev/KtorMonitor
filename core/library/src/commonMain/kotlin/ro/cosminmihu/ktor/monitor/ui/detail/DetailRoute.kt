@@ -2,10 +2,11 @@ package ro.cosminmihu.ktor.monitor.ui.detail
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TouchApp
+import ro.cosminmihu.ktor.monitor.ui.icons.Icons
+import ro.cosminmihu.ktor.monitor.ui.icons.filled.TouchApp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,20 +23,28 @@ import org.koin.core.parameter.parametersOf
 import ro.cosminmihu.ktor.monitor.ui.Dimens
 import ro.cosminmihu.ktor.monitor.ui.resources.Res
 import ro.cosminmihu.ktor.monitor.ui.resources.ktor_no_selection
+import ro.cosminmihu.ktor.monitor.ui.resources.ktor_selection_count
 
 @Composable
 internal fun DetailRoute(
     id: String?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    selectionCount: Int? = null,
 ) {
     if (id == null) {
-        EmptyState(modifier)
+        if (selectionCount != null) SelectionState(selectionCount, modifier) else EmptyState(modifier)
         return
     }
 
     val viewModel: DetailViewModel = koinViewModel(key = id) { parametersOf(id) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // ViewModel stays alive during selection so the detail doesn't reload empty afterwards.
+    if (selectionCount != null) {
+        SelectionState(selectionCount, modifier)
+        return
+    }
 
     DetailScreen(
         modifier = modifier,
@@ -50,6 +59,28 @@ internal fun DetailRoute(
 private fun EmptyState(modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         val string = stringResource(Res.string.ktor_no_selection)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.semantics(true) { contentDescription = string },
+        ) {
+            Icon(
+                imageVector = Icons.Default.TouchApp,
+                contentDescription = null,
+                modifier = Modifier.size(Dimens.ExtraLarge)
+            )
+            Text(
+                text = string,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = Dimens.Medium)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionState(count: Int, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val string = stringResource(Res.string.ktor_selection_count, count)
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.semantics(true) { contentDescription = string },

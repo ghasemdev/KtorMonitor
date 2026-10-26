@@ -1,5 +1,6 @@
 package ro.cosminmihu.ktor.monitor.di
 
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -12,15 +13,18 @@ import ro.cosminmihu.ktor.monitor.core.ClipboardManager
 import ro.cosminmihu.ktor.monitor.core.ShareManager
 import ro.cosminmihu.ktor.monitor.db.LibraryDao
 import ro.cosminmihu.ktor.monitor.db.createDatabase
-import ro.cosminmihu.ktor.monitor.db.createDatabaseDriver
 import ro.cosminmihu.ktor.monitor.domain.ConfigUseCase
+import ro.cosminmihu.ktor.monitor.domain.DeleteAllCallsUseCase
 import ro.cosminmihu.ktor.monitor.domain.DeleteCallsUseCase
+import ro.cosminmihu.ktor.monitor.domain.ExportCallAsMarkdownUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallAsTextUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallRequestAsCurlUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallRequestAsWgetUseCase
 import ro.cosminmihu.ktor.monitor.domain.ExportCallUrlUseCase
+import ro.cosminmihu.ktor.monitor.domain.ExportCallsUseCase
 import ro.cosminmihu.ktor.monitor.domain.GetCallUseCase
 import ro.cosminmihu.ktor.monitor.domain.GetCallsUseCase
+import ro.cosminmihu.ktor.monitor.domain.GetStreamEventsUseCase
 import ro.cosminmihu.ktor.monitor.domain.ListenByRecentCallsUseCase
 import ro.cosminmihu.ktor.monitor.domain.RetentionUseCase
 import ro.cosminmihu.ktor.monitor.ui.detail.DetailViewModel
@@ -37,14 +41,14 @@ internal fun libraryModule() = listOf(
 )
 
 internal val databaseModule = module {
-    factory { create(::createDatabaseDriver) }
     single { create(::createDatabase) }
     factory<LibraryDao>()
 }
 
 internal val coroutineModule = module {
     single {
-        CoroutineScope(Dispatchers.Default + SupervisorJob())
+        val exceptionHandler = CoroutineExceptionHandler { _, _ -> }
+        CoroutineScope(Dispatchers.Default + SupervisorJob() + exceptionHandler)
     }
 }
 
@@ -66,7 +70,9 @@ internal val domainModule = module {
 
     factory<GetCallsUseCase>()
     factory<GetCallUseCase>()
+    factory<GetStreamEventsUseCase>()
     factory<DeleteCallsUseCase>()
+    factory<DeleteAllCallsUseCase>()
 
     factory<ClipboardManager>()
     factory<ShareManager>()
@@ -75,4 +81,6 @@ internal val domainModule = module {
     factory<ExportCallRequestAsCurlUseCase>()
     factory<ExportCallRequestAsWgetUseCase>()
     factory<ExportCallAsTextUseCase>()
+    factory<ExportCallAsMarkdownUseCase>()
+    factory<ExportCallsUseCase>()
 }

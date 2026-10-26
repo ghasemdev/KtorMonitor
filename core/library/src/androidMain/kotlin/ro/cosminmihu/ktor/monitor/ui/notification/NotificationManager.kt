@@ -81,7 +81,7 @@ internal actual class NotificationManager : LibraryKoinComponent {
 
         return PendingIntent.getActivity(
             context,
-            0,
+            OPEN_REQUEST_CODE,
             intent,
             PendingIntent.FLAG_IMMUTABLE
         )
@@ -94,9 +94,9 @@ internal actual class NotificationManager : LibraryKoinComponent {
         val pendingBroadcastIntent =
             PendingIntent.getBroadcast(
                 context,
-                0,
+                CLEAR_REQUEST_CODE,
                 clearTransactionsBroadcastIntent,
-                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
         return NotificationCompat.Action(
             R.drawable.ktor_ic_clear_all,
@@ -118,3 +118,6 @@ internal actual class NotificationManager : LibraryKoinComponent {
         }
     }
 }
+
+private const val OPEN_REQUEST_CODE = 1
+private const val CLEAR_REQUEST_CODE = 2

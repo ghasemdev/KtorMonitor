@@ -3,6 +3,60 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+### Fixed
+* Recent calls observer now retries after a transient database error and logs it, so notifications and old-call retention keep working for the rest of the session. Fixes for [#68](https://github.com/CosminMihuMDC/KtorMonitor/issues/68).
+
+## [1.17.0] - 2026-10-15
+### Added
+* WebSocket and SSE stream recording and viewer.
+* Markdown share functionality.
+* Support for streaming responses and updated HTTP URL handling.
+
+### Changed
+* Migrated the database from SQLDelight to Room 3 (KMP), updating related data access methods and removing SQLDelight dependencies.
+* Updated Gradle and library versions to the latest stable releases.
+* Renamed `ClientSource` to `NetworkClient` and updated all references.
+* Added the OkHttp client dependency for JVM and removed the CIO client dependency.
+* Updated the web storage layer to use SQLite WASM worker for JS/Wasm targets.
+
+### Fixed
+* Fixed SSE monitoring for Ktor, OkHttp, and http4k.
+* Improved stream handling for real-time request/response monitoring.
+
+## [1.16.0] - 2026-08-30
+### Added
+* Bulk Share.
+
+## [1.15.0] - 2026-08-29
+### Changed
+* Set JVM target and JVM toolchain to 17 for published modules (improves runtime compatibility).
+
+### Added
+* Add `llms.txt` and AI skill docs.
+
+## [1.14.4] - 2026-07-15
+### Fixed
+* Fixes for [#59](https://github.com/CosminMihuMDC/KtorMonitor/issues/59).
+* Fixes for [#60](https://github.com/CosminMihuMDC/KtorMonitor/issues/60).
+
+## [1.14.3] - 2026-07-09
+### Fixed
+* Stability fixes for the 1.14.x line.
+
+## [1.14.2] - 2026-07-09
+### Changed
+* Remove `material-icons-extended` dependency ([#64](https://github.com/CosminMihuMDC/KtorMonitor/issues/64)).
+
+### Fixed
+* Fix StrictMode DiskWriteViolation from response logging ([#63](https://github.com/CosminMihuMDC/KtorMonitor/issues/63)).
+
+## [1.14.1] - 2026-06-13
+* Enhance Share as file for gzip body
+* Support for Markdown
+* Support for YAML
+* Copy to clipboard for body
+
 ## [1.13.0] - 2026-05-01
 * Add Filter By Host, Duration and Content-Type, Method, Status Code and Response Size
 * Wrap Code Viewer in a scrollable container
@@ -135,6 +189,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Enable iOS edge to edge
 * Add KtorMonitorViewController for iOS
 
-## [1.0.0] - 2025-02-9
+## [1.0.0] - 2025-02-09
 * Initial release
 * Targets: Android, iOS, Desktop.

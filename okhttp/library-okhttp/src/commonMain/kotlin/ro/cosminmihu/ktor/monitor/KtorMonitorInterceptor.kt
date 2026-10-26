@@ -9,12 +9,13 @@ import okhttp3.ResponseBody.Companion.asResponseBody
 import okio.Buffer
 import okio.BufferedSource
 import okio.ForwardingSource
+import okio.Sink
 import okio.Source
+import okio.Timeout
 import okio.buffer
-import ro.cosminmihu.ktor.monitor.domain.model.ClientSource
-import kotlin.math.abs
+import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
+import okio.IOException
 import kotlin.math.min
-import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -25,7 +26,7 @@ import kotlin.time.ExperimentalTime
  *
  * ```kotlin
  * OkHttpClient.Builder()
- *     .addNetworkInterceptor(
+ *     .addInterceptor(
  *         KtorMonitorInterceptor {
  *             sanitizeHeader { header -> header == "Authorization" }
  *             isActive = true
@@ -36,14 +37,18 @@ import kotlin.time.ExperimentalTime
  *     )
  *     .build()
  * ```
+ *
+ * Install it with `addInterceptor`, not `addNetworkInterceptor`: OkHttp does not run network
+ * interceptors for WebSocket calls, so a WebSocket handshake would not be logged. To also log
+ * WebSocket frames, open the socket with [newMonitoredWebSocket].
  */
-public class KtorMonitorInterceptor() : Interceptor {
+public class KtorMonitorInterceptor(
+    private val config: KtorMonitorInterceptorConfig = KtorMonitorInterceptorConfig(),
+) : Interceptor {
 
-    private val config: KtorMonitorInterceptorConfig = KtorMonitorInterceptorConfig()
-
-    public constructor(block: KtorMonitorInterceptorConfig.() -> Unit) : this() {
-        config.apply(block)
-    }
+    public constructor(block: KtorMonitorInterceptorConfig.() -> Unit) : this(
+        KtorMonitorInterceptorConfig().apply(block)
+    )
 
     init {
         @OptIn(InternalKtorMonitorApi::class)
@@ -52,7 +57,7 @@ public class KtorMonitorInterceptor() : Interceptor {
             showNotification = config.showNotification,
             retentionPeriod = config.retentionPeriod,
             maxContentLength = config.maxContentLength,
-            clientSource = ClientSource.OkHttp,
+            networkClient = NetworkClient.OkHttp,
         )
 
         if (config.isActive && config.retentionPeriod.isPositive()) {
@@ -64,18 +69,22 @@ public class KtorMonitorInterceptor() : Interceptor {
     @OptIn(InternalKtorMonitorApi::class, ExperimentalTime::class)
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        // Present only for WebSocket calls opened through `newMonitoredWebSocket`.
+        val webSocketTag = request.tag(WebSocketMonitorTag::class.java)
 
         // Check if plugin is active.
-        if (!config.isActive) return chain.proceed(request)
+        if (!config.isActive) return chain.proceed(request).also { webSocketTag?.recorder?.discard() }
         // Check if retention period is zero.
-        if (!config.retentionPeriod.isPositive()) return chain.proceed(request)
+        if (!config.retentionPeriod.isPositive()) {
+            return chain.proceed(request).also { webSocketTag?.recorder?.discard() }
+        }
 
         // Filter.
         val shouldLog = config.filters.isEmpty() || config.filters.any { it(request) }
-        if (!shouldLog) return chain.proceed(request)
+        if (!shouldLog) return chain.proceed(request).also { webSocketTag?.recorder?.discard() }
 
         // Generate call id.
-        val id = callIdentifier
+        val id = InternalLibraryBridge.newCallId()
 
         // Log request.
         val requestTimestamp = Clock.System.now().toEpochMilliseconds()
@@ -85,23 +94,21 @@ public class KtorMonitorInterceptor() : Interceptor {
         val requestContentLength = request.body?.contentLength() ?: 0L
 
         // Headers.
-        val requestHeaders = request.headers.toMultimap()
-            .mapValues { (key, values) ->
-                val sanitized = config.sanitizedHeaders.firstOrNull { it.predicate(key) }
-                if (sanitized != null) listOf(sanitized.placeholder) else values
-            }
-            .toSortedMap()
+        val requestHeaders = InternalLibraryBridge.sanitizeHeaders(request.headers.toMultimap(), { name -> config.sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder })
 
-        // Request body.
-        val requestBody = try {
-            val buffer = okio.Buffer()
-            request.body?.writeTo(buffer)
-            val bytes = buffer.readByteArray()
-            if (config.maxContentLength != ContentLength.Full) {
-                bytes.take(config.maxContentLength).toByteArray()
-            } else bytes
-        } catch (_: Throwable) {
+        // Request body. One-shot and duplex bodies can be written only once, so writing them
+        // here would make the real call fail.
+        val body = request.body
+        val requestBody = if (body == null || body.isOneShot() || body.isDuplex()) {
             null
+        } else {
+            try {
+                val sink = BoundedSink(config.maxContentLength)
+                sink.buffer().use { body.writeTo(it) }
+                sink.bytes()
+            } catch (_: Throwable) {
+                null
+            }
         }
 
         InternalLibraryBridge.coroutineScope().launch {
@@ -126,6 +133,7 @@ public class KtorMonitorInterceptor() : Interceptor {
         try {
             response = chain.proceed(request)
         } catch (cause: Throwable) {
+            webSocketTag?.recorder?.discard()
             InternalLibraryBridge.coroutineScope().launch {
                 try {
                     InternalLibraryBridge.saveRequestError(id = id, error = cause)
@@ -142,12 +150,7 @@ public class KtorMonitorInterceptor() : Interceptor {
         val responseContentType = response.body.contentType()?.toString()
 
         // Response headers.
-        val responseHeaders = response.headers.toMultimap()
-            .mapValues { (key, values) ->
-                val sanitized = config.sanitizedHeaders.firstOrNull { it.predicate(key) }
-                if (sanitized != null) listOf(sanitized.placeholder) else values
-            }
-            .toSortedMap()
+        val responseHeaders = InternalLibraryBridge.sanitizeHeaders(response.headers.toMultimap(), { name -> config.sanitizedHeaders.firstOrNull { it.predicate(name) }?.placeholder })
 
         // Response body.
         val responseBody = response.body
@@ -170,13 +173,19 @@ public class KtorMonitorInterceptor() : Interceptor {
                     responseContentType = responseContentType,
                     responseHeaders = responseHeaders,
                 )
+                // Frames can only be appended once the call row exists.
+                if (isWebSocketUpgrade) {
+                    webSocketTag?.recorder?.bind(id, config.maxContentLength)
+                }
             } catch (_: Throwable) {
+            } finally {
+                webSocketTag?.recorder?.discard()
             }
         }
 
-        // WebSocket upgrade — frames travel through the upgraded socket and are not
-        // visible from a network interceptor. Don't try to read the body or we'd
-        // block the upgrade indefinitely.
+        // WebSocket upgrade — frames travel through the upgraded socket and are recorded by
+        // `newMonitoredWebSocket`. Don't try to read the body or we'd block the upgrade
+        // indefinitely.
         if (isWebSocketUpgrade) {
             return response
         }
@@ -187,19 +196,14 @@ public class KtorMonitorInterceptor() : Interceptor {
             return wrapForStreaming(response, responseBody, id, config.maxContentLength)
         }
 
-        // Default (non-streaming) path: drain the buffered body once.
-        val responseBodySource = responseBody.source()
-        responseBodySource.request(Long.MAX_VALUE)
-        val responseBodyBytes = responseBodySource.buffer.clone().readByteArray()
-        val responseContentLength = responseBodyBytes.size.toLong()
-
-        val truncatedBody =
-            if (config.maxContentLength != ContentLength.Full) {
-                responseBodyBytes.take(config.maxContentLength).toByteArray()
-            } else {
-                responseBodyBytes
-            }
-        val isResponseBodyTruncated = responseContentLength > config.maxContentLength
+        // Default (non-streaming) path: peek at most `maxContentLength` bytes, so large
+        // downloads are not loaded into memory and the caller still gets the full body.
+        val declaredLength = responseBody.contentLength()
+        val truncatedBody = response.peekBody(config.maxContentLength.toLong()).bytes()
+        val responseContentLength = if (declaredLength >= 0L) declaredLength else truncatedBody.size.toLong()
+        val isResponseBodyTruncated = responseContentLength > config.maxContentLength || (
+            declaredLength < 0L && truncatedBody.size >= config.maxContentLength
+        )
 
         InternalLibraryBridge.coroutineScope().launch {
             try {
@@ -217,7 +221,25 @@ public class KtorMonitorInterceptor() : Interceptor {
     }
 }
 
+/** Keeps the first [max] bytes written to it and discards the rest. */
+private class BoundedSink(private val max: Int) : Sink {
+    private val kept = Buffer()
+
+    override fun write(source: Buffer, byteCount: Long) {
+        val keep = min(byteCount, max - kept.size)
+        if (keep > 0L) kept.write(source, keep)
+        source.skip(source.size)
+    }
+
+    override fun flush() = Unit
+    override fun timeout(): Timeout = Timeout.NONE
+    override fun close() = Unit
+
+    fun bytes(): ByteArray = kept.readByteArray()
+}
+
 private const val WEBSOCKET_UPGRADE_STATUS = 101
+private const val MAX_STREAM_LINE_LENGTH = 64L * 1024
 
 @OptIn(InternalKtorMonitorApi::class)
 private fun wrapForStreaming(
@@ -226,69 +248,39 @@ private fun wrapForStreaming(
     id: String,
     maxContentLength: Int,
 ): Response {
-    // Initialise the body row so the UI shows an empty (streaming) response immediately.
-    InternalLibraryBridge.coroutineScope().launch {
-        try {
-            InternalLibraryBridge.saveResponseBody(
-                id = id,
-                responseContentLength = 0L,
-                responseBody = ByteArray(0),
-                isResponseBodyTruncated = false,
-            )
-        } catch (_: Throwable) {
-        }
-    }
+    val recorder = StreamRecorder(isWebSocket = false)
+    recorder.bind(id, maxContentLength)
 
-    val unbounded = maxContentLength == ContentLength.Full
     val contentType: MediaType? = body.contentType()
     val originalContentLength = body.contentLength()
 
-    val tee = object : ForwardingSource(body.source()) {
-        private var stored: Long = 0L
-        private var truncated: Boolean = false
-
+    val upstream = body.source()
+    val tee = object : ForwardingSource(upstream) {
         override fun read(sink: Buffer, byteCount: Long): Long {
+            // Hand data to the consumer one line at a time, so only what the consumer actually
+            // received is recorded instead of everything the socket had buffered.
+            val lineEnd = upstream.indexOf('\n'.code.toByte(), 0L, MAX_STREAM_LINE_LENGTH)
+            val available = if (lineEnd >= 0L) lineEnd + 1 else upstream.buffer.size
             val sizeBefore = sink.size
-            val read = super.read(sink, byteCount)
+            val read = try {
+                super.read(sink, if (available > 0L) min(byteCount, available) else byteCount)
+            } catch (cause: IOException) {
+                recorder.finish(error = "${cause::class.simpleName}: ${cause.message.orEmpty()}")
+                throw cause
+            }
+            if (read < 0L) recorder.finish()
             if (read <= 0L) return read
 
             // Snapshot only the newly read bytes from the sink.
             val snapshot = Buffer()
             sink.copyTo(snapshot, sizeBefore, read)
-            val newBytes = snapshot.readByteArray()
-
-            val keep: ByteArray = when {
-                unbounded -> newBytes
-                stored >= maxContentLength -> {
-                    truncated = true
-                    ByteArray(0)
-                }
-                stored + newBytes.size > maxContentLength -> {
-                    truncated = true
-                    val remaining = (maxContentLength - stored).toInt()
-                    newBytes.copyOf(min(remaining, newBytes.size))
-                }
-                else -> newBytes
-            }
-
-            if (keep.isNotEmpty()) {
-                stored += keep.size
-            }
-            val isTruncated = truncated
-
-            InternalLibraryBridge.coroutineScope().launch {
-                try {
-                    InternalLibraryBridge.appendResponseBody(
-                        id = id,
-                        chunk = keep,
-                        deltaSize = read,
-                        isResponseBodyTruncated = isTruncated,
-                    )
-                } catch (_: Throwable) {
-                }
-            }
-
+            recorder.appendSseBytes(snapshot.readByteArray())
             return read
+        }
+
+        override fun close() {
+            recorder.finish()
+            super.close()
         }
     }
 
@@ -296,13 +288,3 @@ private fun wrapForStreaming(
     val wrappedBody: ResponseBody = wrappedSource.asResponseBody(contentType, originalContentLength)
     return response.newBuilder().body(wrappedBody).build()
 }
-
-@OptIn(ExperimentalTime::class)
-private val callIdentifier: String
-    get() {
-        val timestamp = Clock.System.now().toEpochMilliseconds().toString()
-        val randomLong = Random.nextLong().toString()
-        val raw = "$timestamp-$randomLong"
-        val hash = abs(raw.hashCode()).toString(16)
-        return "$raw-$hash"
-    }
