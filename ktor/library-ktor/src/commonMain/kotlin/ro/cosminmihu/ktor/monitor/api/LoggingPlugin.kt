@@ -1,6 +1,5 @@
 package ro.cosminmihu.ktor.monitor.api
 
-import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.sse.ClientSSESession
@@ -26,7 +25,6 @@ import ro.cosminmihu.ktor.monitor.api.util.logResponseBody
 import ro.cosminmihu.ktor.monitor.api.util.logResponseException
 import ro.cosminmihu.ktor.monitor.api.util.monitored
 import ro.cosminmihu.ktor.monitor.api.util.monitoredFrames
-import ro.cosminmihu.ktor.monitor.attr.KtorMonitorResponseBody
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 
 private val DisableLogging = AttributeKey<Unit>("KtorMonitorDisableLogging")
@@ -133,7 +131,9 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
         return@on
       }
 
-      if (call.attributes.contains(KtorMonitorResponseBody)) {
+      try {
+        proceed()
+
         ignoreMonitorFailure {
           logResponseBody(
             id = call.attributes[CallIdentifier],
@@ -141,21 +141,25 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
             response = call.response,
           )
         }
-      }
-
-      try {
-        proceed()
       } catch (cause: Throwable) {
         // If ktor-encryptor provided decrypted body override, update DB with the decrypted body
-        if (cause !is ResponseException || !cause.isContentLengthMismatch()) {
+        if (!cause.isContentLengthMismatch()) {
           ignoreMonitorFailure {
             logResponseException(
               id = call.attributes[CallIdentifier],
               cause = cause
             )
           }
+          throw cause
         }
-        throw cause
+
+        ignoreMonitorFailure {
+          logResponseBody(
+            id = call.attributes[CallIdentifier],
+            maxContentLength = pluginConfig.maxContentLength,
+            response = call.response,
+          )
+        }
       }
     }
 
