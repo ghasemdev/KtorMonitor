@@ -1,15 +1,16 @@
 package ro.cosminmihu.ktor.monitor.api
 
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.observer.ResponseHandler
 import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.plugins.sse.ClientSSESession
+import io.ktor.client.plugins.sse.SSESession
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponseContainer
 import io.ktor.util.AttributeKey
-import io.ktor.client.plugins.sse.SSESession
-import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import ro.cosminmihu.ktor.monitor.InternalKtorMonitorApi
 import ro.cosminmihu.ktor.monitor.InternalLibraryBridge
 import ro.cosminmihu.ktor.monitor.SanitizedHeader
@@ -27,6 +28,7 @@ import ro.cosminmihu.ktor.monitor.api.util.logResponseBody
 import ro.cosminmihu.ktor.monitor.api.util.logResponseException
 import ro.cosminmihu.ktor.monitor.api.util.monitored
 import ro.cosminmihu.ktor.monitor.api.util.monitoredFrames
+import ro.cosminmihu.ktor.monitor.attr.KtorMonitorResponseBody
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 
 private val DisableLogging = AttributeKey<Unit>("KtorMonitorDisableLogging")
@@ -117,12 +119,14 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
       try {
         proceed()
       } catch (cause: Throwable) {
-        // Log response exception.
-        ignoreMonitorFailure {
-          logResponseException(
-            id = response.call.attributes[CallIdentifier],
-            cause = cause
-          )
+        // Log response exception only if not a 4xx/5xx ResponseException
+        if (cause !is ResponseException) {
+          ignoreMonitorFailure {
+            logResponseException(
+              id = response.call.attributes[CallIdentifier],
+              cause = cause
+            )
+          }
         }
         throw cause
       }
@@ -133,22 +137,27 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
         return@on
       }
 
+      // If ktor-encryptor provided decrypted body override, update DB with the decrypted body
+      if (call.attributes.contains(KtorMonitorResponseBody)) {
+        ignoreMonitorFailure {
+          logResponseBody(
+            id = call.attributes[CallIdentifier],
+            maxContentLength = pluginConfig.maxContentLength,
+            response = call.response,
+          )
+        }
+      }
+
       try {
         proceed()
-
-        // Log response body.
-        logResponseBody(
-          id = call.attributes[CallIdentifier],
-          maxContentLength = pluginConfig.maxContentLength,
-          response = call.response,
-        )
       } catch (cause: Throwable) {
-        // Log response exception.
-        ignoreMonitorFailure {
-          logResponseException(
-            id = call.attributes[CallIdentifier],
-            cause = cause
-          )
+        if (cause !is ResponseException) {
+          ignoreMonitorFailure {
+            logResponseException(
+              id = call.attributes[CallIdentifier],
+              cause = cause
+            )
+          }
         }
         throw cause
       }
@@ -194,5 +203,20 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
       )
     }
 
-    // Removed ResponseObserver as logging is now handled in ReceiveHook to support decryption plugins.
+    val responseObserver: ResponseHandler = observer@{ response ->
+      if (response.call.attributes.contains(DisableLogging)) {
+        return@observer
+      }
+
+      // Log response body safely for standard responses (uses split channel copy).
+      ignoreMonitorFailure {
+        logResponseBody(
+          id = response.call.attributes[CallIdentifier],
+          maxContentLength = pluginConfig.maxContentLength,
+          response = response,
+        )
+      }
+    }
+
+    ResponseObserver.install(ResponseObserver.prepare { onResponse(responseObserver) }, client)
   }

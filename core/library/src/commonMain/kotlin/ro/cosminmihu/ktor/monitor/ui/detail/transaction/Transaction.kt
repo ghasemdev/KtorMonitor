@@ -55,9 +55,13 @@ internal fun Transaction(
             return
         }
 
-        if (error.isNotBlank()) {
+        if (error.isNotBlank() && body == null && headers.isEmpty()) {
             Error(error)
             return
+        }
+
+        if (error.isNotBlank()) {
+            Error(error)
         }
 
         Headers(

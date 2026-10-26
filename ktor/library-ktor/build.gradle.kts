@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "ir.parsuomash.ktor"
-version = "1.13.0"
+version = "1.17.0"
 
 mavenPublishing {
 //    publishToMavenCentral()

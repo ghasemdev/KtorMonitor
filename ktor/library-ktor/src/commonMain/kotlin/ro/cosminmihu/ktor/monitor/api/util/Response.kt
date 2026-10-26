@@ -83,7 +83,16 @@ internal suspend fun logResponseBody(
   }
 
   // Read content, keeping only what is stored.
-  val bounded = overrideBody ?: response.bodyAsChannel().readBounded(maxContentLength)
+  val bounded = if (overrideBody != null) {
+    val toKeep = if (maxContentLength == ContentLength.Full) {
+      overrideBody
+    } else {
+      overrideBody.copyOf(minOf(overrideBody.size, maxContentLength))
+    }
+    BoundedBytes(toKeep, overrideBody.size.toLong())
+  } else {
+    response.bodyAsChannel().readBounded(maxContentLength)
+  }
 
   // Save response body.
   InternalLibraryBridge.saveResponseBody(
