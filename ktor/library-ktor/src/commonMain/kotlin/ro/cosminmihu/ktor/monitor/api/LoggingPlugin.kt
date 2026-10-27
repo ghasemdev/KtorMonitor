@@ -2,6 +2,8 @@ package ro.cosminmihu.ktor.monitor.api
 
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.client.plugins.observer.ResponseHandler
+import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.plugins.sse.ClientSSESession
 import io.ktor.client.plugins.sse.SSESession
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
@@ -25,6 +27,7 @@ import ro.cosminmihu.ktor.monitor.api.util.logResponseBody
 import ro.cosminmihu.ktor.monitor.api.util.logResponseException
 import ro.cosminmihu.ktor.monitor.api.util.monitored
 import ro.cosminmihu.ktor.monitor.api.util.monitoredFrames
+import ro.cosminmihu.ktor.monitor.attr.KtorMonitorResponseBody
 import ro.cosminmihu.ktor.monitor.domain.model.NetworkClient
 
 private val DisableLogging = AttributeKey<Unit>("KtorMonitorDisableLogging")
@@ -134,16 +137,26 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
       try {
         proceed()
 
-        ignoreMonitorFailure {
-          logResponseBody(
-            id = call.attributes[CallIdentifier],
-            maxContentLength = pluginConfig.maxContentLength,
-            response = call.response,
-          )
+        // If ktor-encryptor provided decrypted body override, update DB with the decrypted body
+        if (call.attributes.contains(KtorMonitorResponseBody)) {
+          ignoreMonitorFailure {
+            logResponseBody(
+              id = call.attributes[CallIdentifier],
+              maxContentLength = pluginConfig.maxContentLength,
+              response = call.response,
+            )
+          }
         }
       } catch (cause: Throwable) {
-        // If ktor-encryptor provided decrypted body override, update DB with the decrypted body
-        if (!cause.isContentLengthMismatch()) {
+        if (call.attributes.contains(KtorMonitorResponseBody) && cause.isContentLengthMismatch()) {
+          ignoreMonitorFailure {
+            logResponseBody(
+              id = call.attributes[CallIdentifier],
+              maxContentLength = pluginConfig.maxContentLength,
+              response = call.response,
+            )
+          }
+        } else {
           ignoreMonitorFailure {
             logResponseException(
               id = call.attributes[CallIdentifier],
@@ -151,14 +164,6 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
             )
           }
           throw cause
-        }
-
-        ignoreMonitorFailure {
-          logResponseBody(
-            id = call.attributes[CallIdentifier],
-            maxContentLength = pluginConfig.maxContentLength,
-            response = call.response,
-          )
         }
       }
     }
@@ -203,7 +208,27 @@ internal val LoggingPlugin: ClientPlugin<LoggingConfig> =
       )
     }
 
-    // Removed ResponseObserver as logging is now handled in ReceiveHook to support decryption plugins.
+    val responseObserver: ResponseHandler = observer@{ response ->
+      if (response.call.attributes.contains(DisableLogging)) {
+        return@observer
+      }
+
+      // If ktor-encryptor provided decrypted body override, skip observer logging
+      if (response.call.attributes.contains(KtorMonitorResponseBody)) {
+        return@observer
+      }
+
+      // Log response body safely for standard responses (uses split channel copy).
+      ignoreMonitorFailure {
+        logResponseBody(
+          id = response.call.attributes[CallIdentifier],
+          maxContentLength = pluginConfig.maxContentLength,
+          response = response,
+        )
+      }
+    }
+
+    ResponseObserver.install(ResponseObserver.prepare { onResponse(responseObserver) }, client)
   }
 
 private fun Throwable.isContentLengthMismatch(): Boolean = this is IllegalStateException

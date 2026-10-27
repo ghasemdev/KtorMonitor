@@ -20,7 +20,7 @@ plugins {
 }
 
 group = "ir.parsuomash.ktor"
-version = "1.17.0"
+version = "1.17.1"
 
 buildkonfig {
     packageName = "ro.cosminmihu.ktor.monitor.core"

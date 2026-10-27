@@ -20,7 +20,7 @@ apiValidation {
 
 val artifact = "ktor-monitor-logging-no-op"
 group = "ir.parsuomash.ktor"
-version = "1.17.0"
+version = "1.17.1"
 
 mavenPublishing {
     publishToMavenCentral()
